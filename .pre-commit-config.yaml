@@ -1,21 +1,4 @@
 repos:
-  # 钩子1：自动清理代码（尾部空格、文件结尾换行符）
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0  # 使用最新稳定版本（可替换为官网最新版）
-    hooks:
-      # 清理代码行尾部的空格
-      - id: trailing-whitespace
-        name: Clean trailing whitespace  # 钩子显示名称
-        # 可选：排除不需要清理的文件（比如 .md 或配置文件）
-        exclude: |
-          (?x)^(
-            README.md|
-            .gitignore
-          )$
-      # 确保文件结尾以一个换行符结束（避免 git 报警告）
-      - id: end-of-file-fixer
-        name: Fix end of file (add newline)
-
   # - repo: https://github.com/pre-commit/pre-commit-hooks
   - repo: https://gitlab.cern.ch/pre-commit-hook-mirrors/pre-commit/pre-commit-hooks
     rev: v5.0.0

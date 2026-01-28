@@ -1,0 +1,19 @@
+{
+    "name" : "AutoFlow",
+    "appid" : "__UNI__AUTOFLOW",
+    "description" : "AutoFlow Mobile Client",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "transformPx" : false,
+    "app-plus" : {
+        "modules" : {}
+    },
+    "quickapp" : {},
+    "mp-weixin" : {
+        "appid" : "",
+        "setting" : {
+            "urlCheck" : false
+        },
+        "usingComponents" : true
+    }
+}

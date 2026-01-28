@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoflow-backend"
+version = "0.1.0"
+description = "AutoFlow Backend API and Execution Engine"
+authors = [
+    {name = "AutoFlow Team", email = "team@autoflow.dev"},
+]
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.11.0",
+    "python-dotenv>=1.0.0",
+    "redis>=5.0.0",
+    "celery>=5.3.0",
+    "playwright>=1.36.0",
+    "pyautogui>=0.9.54",
+    "loguru>=0.7.0",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
