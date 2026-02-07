@@ -1,0 +1,6 @@
+name: "backend-core"
+strategies:
+  python: poetry
+system:
+  - name: libpq-dev  # Common for Postgres
+    scope: prod

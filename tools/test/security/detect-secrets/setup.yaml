@@ -1,0 +1,6 @@
+name: "detect-secrets"
+scan_subdirs: false
+scripts:
+  install:
+    - "pip install detect-secrets==1.4.0"
+    - "detect-secrets --version"

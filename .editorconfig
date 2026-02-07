@@ -1,4 +1,5 @@
 # EditorConfig is awesome: https://EditorConfig.org
+# 跨编辑器 / IDE 的代码格式配置文件
 
 root = true
 

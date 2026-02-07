@@ -1,0 +1,10 @@
+{
+	"name": "AutoFlow Dev",
+	"dockerComposeFile": [
+		"../backend/docker-compose.yml",
+		"docker-compose.yml"
+	],
+	"service": "app",
+	"workspaceFolder": "/workspace",
+	"postCreateCommand": "pip install pyyaml && python tools/env_manager/main.py install --scope=dev"
+}
