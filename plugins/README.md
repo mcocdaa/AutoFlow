@@ -19,3 +19,12 @@ my_plugin/
 1. **Action Plugins**: Extend automation capabilities (e.g., OCR, PDF manipulation).
 2. **Device Plugins**: Add support for new devices/drivers.
 3. **Function Plugins**: Add business logic or integrations.
+
+## Plugin Loading
+
+AutoFlow loads plugins from:
+
+1. `plugins/` in the repository (default)
+2. Additional directories listed in `AUTOFLOW_PLUGIN_DIRS` (path-separated)
+
+Directory plugins must contain `__init__.py` and expose a `register()` function that returns an object with `name`, `version`, and an `actions` mapping.

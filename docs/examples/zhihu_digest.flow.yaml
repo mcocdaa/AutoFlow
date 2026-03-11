@@ -1,0 +1,21 @@
+# @file /docs/examples/zhihu_digest.flow.yaml
+# @brief 知乎回答总结示例 Flow（dry_run）
+# @create 2026-02-22 00:00:00
+
+version: "1"
+name: "zhihu-digest-demo"
+steps:
+  - id: "fetch"
+    name: "抓取知乎回答"
+    action:
+      type: "zhihu.fetch_answer"
+      params:
+        url: "https://www.zhihu.com/question/784489052/answer/1946200783080125276"
+        mode: "auto"
+  - id: "summarize"
+    name: "调用 DeepSeek 总结"
+    action:
+      type: "ai.deepseek_summarize"
+      params:
+        system_prompt: "请用中文总结要点，输出 3-6 条要点。"
+        model: "deepseek-chat"

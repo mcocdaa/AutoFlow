@@ -6,3 +6,16 @@
 __pycache__/
 .pytest_cache/
 .env
+
+# frontend
+node_modules
+dist
+dist-electron
+
+# Env files & secrets
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+secrets/*
+!secrets/.gitkeep

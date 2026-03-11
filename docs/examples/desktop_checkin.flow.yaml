@@ -1,0 +1,37 @@
+# @file /docs/examples/desktop_checkin.flow.yaml
+# @brief 桌面自动打卡（dry_run）示例 Flow
+# @create 2026-02-22 00:00:00
+
+version: "1"
+name: "desktop-checkin-demo"
+steps:
+  - id: "activate"
+    name: "激活窗口"
+    action:
+      type: "desktop.activate_window"
+      params:
+        title: "Checkin"
+        timeout_seconds: 3
+        focus: true
+        regex: false
+  - id: "click"
+    name: "点击按钮"
+    action:
+      type: "desktop.click"
+      params:
+        x: 100
+        y: 100
+        button: "left"
+  - id: "type"
+    name: "输入（脱敏）"
+    action:
+      type: "desktop.type_text"
+      params:
+        text: "password_or_code"
+        secret: true
+  - id: "shot"
+    name: "截图留存"
+    action:
+      type: "desktop.screenshot"
+      params:
+        name: "after.png"

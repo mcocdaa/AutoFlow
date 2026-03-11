@@ -1,0 +1,21 @@
+version: '3.8'
+
+networks:
+  default:
+    name: ${NETWORK_NAME}
+
+services:
+  frontend:
+    build:
+      context: ../
+      dockerfile: frontend/Dockerfile
+    container_name: ${CONTAINER_PREFIX:-autoflow}-frontend
+    restart: always
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    volumes:
+      - ../frontend:/app/frontend:cached # Hot reload
+      - /app/frontend/node_modules # Prevent host node_modules from overwriting container's
+    environment:
+      - VITE_API_URL=http://localhost:8000 # Browser accesses backend via localhost (if running on same machine)
+      - DOCKER_WEB=true

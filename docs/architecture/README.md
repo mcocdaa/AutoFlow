@@ -1,4 +1,9 @@
 # 智能可视化RPA自动化框架设计文档
+
+此文档为早期“总体设计说明书（V1）”。最新框架文档入口：
+
+- 中文索引：[`docs/zh/README.md`](../zh/README.md)
+- 架构总览：[`docs/zh/architecture/overview.md`](../zh/architecture/overview.md)
 **框架名称**：AutoFlow
 **核心定位**：多端适配、所见即所得、高可扩展的重复性劳动自动化RPA框架，聚焦网页自动化、自动签到等场景，支持多模式执行与全生命周期任务管理
 **文档版本**：V1.0

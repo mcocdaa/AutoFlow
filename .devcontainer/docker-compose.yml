@@ -1,29 +1,11 @@
-version: '3.8'
+# .devcontainer/docker-compose.yml
 services:
-  app:
-    # env_file:
-    #   - ./../backend/.env
-    container_name: ${CONTAINER_PREFIX}-app
+  dev-container:
     build:
-      context: ./../  # 构建上下文指向项目根目录
-      dockerfile: .devcontainer/Dockerfile
+      context: ./.devcontainer
+      dockerfile: Dockerfile  # 构建上面的开发镜像
     volumes:
-      - ./../:/workspace:cached
-    command: sleep infinity
-    environment:
-      # 容器间通信：用容器名访问（同网络下可解析）
-      - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@${CONTAINER_PREFIX}-mysql:3306/${DB_NAME}
-      - REDIS_URL=redis://${CONTAINER_PREFIX}-redis:6379/${REDIS_DB}
-      - INFLUXDB_URL=http://${CONTAINER_PREFIX}-influxdb:${INFLUXDB_PORT}
-      - MINIO_ENDPOINT=${CONTAINER_PREFIX}-minio:${MINIO_PORT}
-      - APP_ENV=${APP_ENV}
-      - SECRET_KEY=${SECRET_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
-    # 无需手动指定networks：默认加入autoflow_default网络（backend的yml已定义）
-    # networks:
-    #   - default
-
-# 删除重复的networks定义（复用backend的配置）
-# networks:
-#   default:
-#     name: ${NETWORK_NAME}
+      - ./:/workspace:cached  # 挂载整个项目到容器（写代码同步）
+      - /var/run/docker.sock:/var/run/docker.sock  # 容器内操作宿主机Docker
+    command: sleep infinity  # 保持容器运行（供VS Code连接）
+    network_mode: host  # 共享宿主机网络，方便访问业务容器

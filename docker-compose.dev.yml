@@ -1,0 +1,23 @@
+# docker-compose.dev.yml
+version: "3.8"
+
+services:
+  backend:
+    volumes:
+      - ./backend/.vscode:/app/backend/.vscode
+      - backend_dev_cache:/app/backend/.cache
+    ports:
+      - "5678:5678"
+    restart: "no"
+
+  frontend:
+    restart: "no"
+    ports:
+      - "9229:9229"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - NODE_ENV=development
+
+volumes:
+  backend_dev_cache:
+  frontend_dev_cache:
