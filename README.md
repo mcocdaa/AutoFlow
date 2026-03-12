@@ -1,29 +1,29 @@
 # AutoFlow
 
-**AutoFlow** 是一款面向“替换重复性劳动”的自动化（RPA）框架：用统一的流程描述（Flow）把触发（Trigger）→ 执行（Action）→ 校验（Check）串起来，并通过插件化机制接入具体业务。
+**AutoFlow** 是一款面向"替换重复性劳动"的自动化（RPA）框架：用统一的流程描述（Flow）把触发（Trigger）→ 执行（Action）→ 校验（Check）串起来，并通过插件化机制接入具体业务。
 
-当前仓库采用 Monorepo 统一管理后端、桌面端、移动端与插件示例。项目仍在快速迭代中，README 以“框架定位 + 未来计划”为主，便于后续按里程碑落地。
+当前仓库采用 Monorepo 统一管理后端、桌面端、移动端与插件示例。项目仍在快速迭代中，README 以"框架定位 + 未来计划"为主，便于后续按里程碑落地。
 
 ## 🚀 核心特性
 
 *   **可编排流程**：用统一流程描述把动作串起来，支持参数、上下文、失败重试与分支（逐步完善）。
-*   **可插拔触发**：定时触发 / 事件触发 / 文档触发（以“触发文档”为入口，逐步标准化）。
+*   **可插拔触发**：定时触发 / 事件触发 / 文档触发（以"触发文档"为入口，逐步标准化）。
 *   **可选结果校验**：每步动作可配置 Check；不配置则默认不校验（适合先跑通，再加严）。
 *   **多端适配**：面向 Windows/macOS 桌面与 Android/iOS 移动端的统一抽象（能力逐步补齐）。
-*   **插件化扩展**：具体业务能力（如“知乎自动总结”“桌面自动打卡”）以插件实现，框架提供运行时与安全边界。
+*   **插件化扩展**：具体业务能力（如"知乎自动总结""桌面自动打卡"）以插件实现，框架提供运行时与安全边界。
 
 ## 🧠 核心概念
 
 *   **Flow（流程）**：由一系列 Step 组成，每个 Step 至少包含 Action，可选包含 Check。
 *   **Trigger（触发器）**：决定何时启动某个 Flow。支持多种 TriggerType。
 *   **Action（动作）**：执行具体操作（HTTP 调用、抓取、点击、拖拽、输入等）。
-*   **Check（校验）**：在 Action 后对结果做断言（例如“页面出现某元素”“接口返回 200”“OCR 识别包含某文本”）。
+*   **Check（校验）**：在 Action 后对结果做断言（例如"页面出现某元素""接口返回 200""OCR 识别包含某文本"）。
 *   **Runner（运行器）**：负责加载 Trigger/Flow，执行 Step，并产生日志、截图、录屏等产物（能力逐步补齐）。
 *   **Plugin（插件）**：封装领域能力，提供 TriggerType / Action / Check / UI 配置面板等扩展点。
 
-## 🧩 “触发文档”约定（草案）
+## 🧩 "触发文档"约定（草案）
 
-为便于把“自动化任务”当作一种可版本化的资产管理，推荐用 Markdown/YAML 作为“触发文档（TriggerDoc）”载体：
+为便于把"自动化任务"当作一种可版本化的资产管理，推荐用 Markdown/YAML 作为"触发文档（TriggerDoc）"载体：
 
 ```yaml
 name: zhihu-digest
@@ -39,7 +39,7 @@ checks:
 ```
 
 说明：
-*   TriggerDoc 负责“为什么/何时跑”，Flow 负责“怎么跑”。
+*   TriggerDoc 负责"为什么/何时跑"，Flow 负责"怎么跑"。
 *   插件可以扩展 trigger.type 的枚举和值结构，并提供 UI 辅助生成。
 
 ## 📂 项目结构
@@ -50,6 +50,8 @@ checks:
 AutoFlow/
 ├── backend/               # 🐍 后端核心 (FastAPI + Python 3.10+)
 │   ├── app/               # 业务逻辑与 API
+│   ├── Dockerfile         # 生产环境 Docker 镜像
+│   ├── docker-compose.yml # 后端服务编排（含 MySQL、Redis）
 │   └── tests/             # 单元测试
 ├── frontend/              # 🖥️ 桌面客户端 (Electron + Vue3 + TypeScript)
 │   ├── electron/          # Electron 主进程
@@ -57,13 +59,13 @@ AutoFlow/
 ├── mobile/                # 📱 移动端 (UniApp)
 ├── plugins/               # 🔌 插件系统 (标准插件示例与文档)
 ├── docs/                  # 📚 项目文档
-├── docker-compose.base.yml # 🐳 基础服务编排入口（include backend/frontend）
-└── docker-compose.dev.yml  # 🧰 开发环境覆写（需与 base 叠加使用）
+├── docker-compose.yml     # 🐳 服务编排入口（include backend/frontend）
+└── build.sh               # 🔧 构建脚本（生成 secrets 文件）
 ```
 
 ## 🗺️ 路线图（框架 + 两个插件）
 
-下面按“框架能力”与“插件落地”拆分待办，便于逐步交付可用闭环。
+下面按"框架能力"与"插件落地"拆分待办，便于逐步交付可用闭环。
 
 ### 0. 框架必备能力（优先级从高到低）
 
@@ -104,7 +106,7 @@ AutoFlow/
 
 还需要做什么：
 *   **动作原语定义**：click/doubleClick/drag/typeText/hotkey/wait 等统一接口与参数（坐标、窗口、元素定位）。
-*   **定位与鲁棒性**：支持窗口匹配、图像/模板匹配、OCR 文本定位等；提供“找不到目标”的降级策略。
+*   **定位与鲁棒性**：支持窗口匹配、图像/模板匹配、OCR 文本定位等；提供"找不到目标"的降级策略。
 *   **结果检查机制**：为每个 Step 绑定可选 Check（元素出现、OCR 包含、窗口标题匹配等）；默认关闭。
 *   **录制与回放闭环**：桌面端录制输出 Flow；回放展示实时状态；失败时可回溯到某一步重跑。
 *   **环境适配**：多分辨率/DPI、不同主题、不同机器的偏移校正；提供校准向导与重录策略。
@@ -114,34 +116,27 @@ AutoFlow/
 
 ### 前置要求
 
-*   **Python**: 3.10+
-*   **Node.js**: 16+
-*   **Docker**: (可选，用于快速启动数据库等依赖)
+*   **Docker**: 20.10+
+*   **Docker Compose**: v2.0+
 
-### 1. 启动基础服务
+### 1. 启动后端服务
 
-使用 Docker Compose 一键启动 MySQL、Redis 以及前后端容器（敏感变量通过 Docker secrets 注入）：
-
-```bash
-bash ./build.sh dev
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --build
-```
-
-### 2. 运行后端 (Backend)
+使用 Docker Compose 一键启动后端、MySQL、Redis（敏感变量通过 Docker secrets 注入）：
 
 ```bash
-cd backend
+# 生成 secrets 文件
+bash ./build.sh
 
-# 安装依赖
-pip install -e .
-
-# 启动 API 服务
-uvicorn app.main:app --reload
+# 启动服务
+docker compose up -d --build
 ```
-说明：后端敏感配置不使用明文变量，请在 `backend/.env` 中配置 `DB_PASSWORD_FILE`、`SECRET_KEY_FILE` 指向本地 `secrets/`（参考 `backend/.env.example`），并先执行 `bash ./build.sh dev` 生成无后缀 secrets 文件。
-后端服务将运行在: `http://localhost:8000`
 
-### 3. 运行桌面端 (Frontend)
+说明：
+*   后端敏感配置不使用明文变量，通过 `secrets/` 目录下的文件注入
+*   后端服务将运行在: `http://localhost:8000`
+*   MySQL 端口: `3306`，Redis 端口: `6379`
+
+### 2. 运行桌面端 (Frontend)
 
 ```bash
 cd frontend

@@ -1,4 +1,0 @@
-# docker-compose.base.yml
-include:
-  - backend/docker-compose.base.yml
-  - frontend/docker-compose.base.yml
