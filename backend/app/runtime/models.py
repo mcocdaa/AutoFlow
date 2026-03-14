@@ -35,6 +35,7 @@ class StepSpec(_Base):
     action: ActionSpec
     check: CheckSpec | None = None
     retry: RetrySpec | None = None
+    output_var: str | None = None  # 如果设置，将 action_output 存入 runtime_vars[output_var]
 
 
 class FlowSpec(_Base):

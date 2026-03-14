@@ -1,0 +1,128 @@
+# @file /docs/examples/openclaw_skill_update.flow.yaml
+# @brief OpenClaw 技能市场批量更新
+# @description
+#   本流程用于批量更新已安装的技能：
+#   1. 列出当前已安装的所有技能
+#   2. 检查每个技能的更新版本
+#   3. 对新版本进行安全审查
+#   4. 执行批量更新
+#   
+#   触发方式：建议配置为每周检查一次 (cron: "0 3 * * 1")
+# @create 2026-03-14
+
+version: "1"
+name: "openclaw-skill-update"
+description: "OpenClaw 技能市场批量更新流程"
+
+defaults:
+  timeoutMs: 300000
+  retry:
+    maxAttempts: 2
+    backoffMs: 10000
+
+steps:
+  - id: "list-installed-skills"
+    name: "列出已安装技能"
+    description: "获取当前系统已安装的所有技能列表"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: "clawhub list --format json"
+        timeout_seconds: 30
+    check:
+      type: "json.hasField"
+      params:
+        field: "skills"
+
+  - id: "check-updates"
+    name: "检查技能更新"
+    description: "查询 ClawHub 检查每个技能的最新版本"
+    action:
+      type: "openclaw.http_request"
+      params:
+        method: "POST"
+        url: "https://api.clawhub.com/v1/skills/check-updates"
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{secrets.clawhub_token}}"
+        body:
+          installed_skills: "{{steps.list-installed-skills.output.skills}}"
+    check:
+      type: "json.hasField"
+      params:
+        field: "updates"
+
+  - id: "filter-updatable"
+    name: "筛选可更新技能"
+    description: "过滤出有可用更新的技能"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "agent_admin"
+        task: "分析以下技能更新信息，筛选出需要更新的技能：\n\n{{steps.check-updates.output}}\n\n排除以下情况：\n1. 主版本号变更（可能不兼容）\n2. 标记为 experimental 的版本\n3. 更新日志中包含 breaking changes\n\n返回需要更新的技能列表"
+        timeout_ms: 30000
+
+  - id: "security-review"
+    name: "安全审查"
+    description: "对即将更新的技能进行安全审查"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "qa_ops"
+        task: "对以下待更新技能进行安全审查：\n\n{{steps.filter-updatable.output}}\n\n审查要点：\n1. 新版本是否有权限变更\n2. 是否有新增的网络请求\n3. 是否有可疑的代码模式\n4. 更新日志中是否有安全相关修复\n\n标记存在风险的技能"
+        timeout_ms: 60000
+
+  - id: "batch-update"
+    name: "执行批量更新"
+    description: "批量执行技能更新（跳过标记为风险的技能）"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          echo "{{steps.security-review.output.safe_skills}}" | jq -r '.[] | .name' | 
+          while read skill; do
+            echo "Updating $skill..."
+            clawhub update "$skill" --yes || echo "Failed to update $skill"
+          done
+        timeout_seconds: 300
+
+  - id: "verify-updates"
+    name: "验证更新结果"
+    description: "验证更新后的技能是否正常工作"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: "clawhub verify --all --format json"
+        timeout_seconds: 120
+
+  - id: "generate-update-report"
+    name: "生成更新报告"
+    description: "汇总更新结果，生成报告"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "agent_admin"
+        task: "基于以下信息生成技能更新报告：\n\n待更新技能：{{steps.filter-updatable.output}}\n\n安全审查结果：{{steps.security-review.output}}\n\n更新执行结果：{{steps.batch-update.output}}\n\n验证结果：{{steps.verify-updates.output}}\n\n报告格式：\n1. 更新概览\n2. 成功更新的技能\n3. 跳过的技能及原因\n4. 失败的技能\n5. 建议后续操作"
+        timeout_ms: 30000
+
+  - id: "record-update-log"
+    name: "记录更新日志"
+    description: "将更新报告记录到 KnowFlow"
+    action:
+      type: "openclaw.knowflow_record"
+      params:
+        name: "技能批量更新报告 {{vars.update_date | default(today)}}"
+        type: "document"
+        content: "{{steps.generate-update-report.output}}"
+        summary: "OpenClaw 技能市场批量更新记录"
+        projectId: "openclaw-maintenance"
+
+  - id: "notify-update-complete"
+    name: "通知更新完成"
+    description: "发送更新完成通知"
+    action:
+      type: "openclaw.send_message"
+      params:
+        channel: "webchat"
+        target: "运维频道"
+        message: "📦 技能批量更新完成\n\n{{steps.generate-update-report.output.summary}}\n\n详细报告已记录到 KnowFlow"

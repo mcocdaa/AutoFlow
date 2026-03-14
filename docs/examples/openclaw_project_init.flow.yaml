@@ -1,0 +1,226 @@
+# @file /docs/examples/openclaw_project_init.flow.yaml
+# @brief OpenClaw 项目初始化
+# @description
+#   本流程用于自动化初始化新项目：
+#   1. 创建项目目录结构
+#   2. 初始化 OpenSpec 变更追踪
+#   3. 创建 Git 分支
+#   4. 记录项目信息到 KnowFlow
+#   
+#   触发方式：手动执行或通过项目创建 webhook 触发
+#   参数：project_name, project_type, description
+# @create 2026-03-14
+
+version: "1"
+name: "openclaw-project-init"
+description: "OpenClaw 项目初始化流程"
+
+defaults:
+  timeoutMs: 120000
+  retry:
+    maxAttempts: 1
+    backoffMs: 0
+
+steps:
+  - id: "validate-params"
+    name: "验证参数"
+    description: "检查必需参数是否提供"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          if [ -z "{{vars.project_name}}" ]; then
+            echo "Error: project_name is required" >&2
+            exit 1
+          fi
+          if [ -z "{{vars.project_type}}" ]; then
+            echo "Error: project_type is required" >&2
+            exit 1
+          fi
+          echo "Parameters validated: project_name={{vars.project_name}}, project_type={{vars.project_type}}"
+        timeout_seconds: 10
+    check:
+      type: "exit_code.zero"
+
+  - id: "create-directory"
+    name: "创建项目目录"
+    description: "创建项目根目录和基础子目录"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          mkdir -p "{{vars.workspace_path | default('.')}}/{{vars.project_name}}"/{src,docs,tests,.github,openspec/changes}
+          echo "Directory structure created"
+        timeout_seconds: 10
+
+  - id: "create-readme"
+    name: "创建 README"
+    description: "生成项目 README 文件"
+    action:
+      type: "openclaw.write_file"
+      params:
+        path: "{{vars.workspace_path | default('.')}}/{{vars.project_name}}/README.md"
+        content: |
+          # {{vars.project_name}}
+
+          {{vars.description | default('项目描述待补充')}}
+
+          ## 项目类型
+
+          {{vars.project_type}}
+
+          ## 目录结构
+
+          - `src/` - 源代码
+          - `docs/` - 文档
+          - `tests/` - 测试文件
+          - `.github/` - GitHub 配置
+          - `openspec/` - OpenSpec 变更追踪
+
+          ## 快速开始
+
+          待补充...
+
+          ---
+          *项目初始化时间: {{vars.init_date | default(today)}}*
+
+  - id: "create-gitignore"
+    name: "创建 .gitignore"
+    description: "根据项目类型创建合适的 .gitignore"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          cd "{{vars.workspace_path | default('.')}}/{{vars.project_name}}"
+          if [ "{{vars.project_type}}" = "node" ] || [ "{{vars.project_type}}" = "javascript" ]; then
+            curl -s https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore > .gitignore
+          elif [ "{{vars.project_type}}" = "python" ]; then
+            curl -s https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore > .gitignore
+          elif [ "{{vars.project_type}}" = "go" ]; then
+            curl -s https://raw.githubusercontent.com/github/gitignore/main/Go.gitignore > .gitignore
+          else
+            curl -s https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore > .gitignore
+          fi
+          echo ".env" >> .gitignore
+          echo ".secrets" >> .gitignore
+          echo ".gitignore created"
+        timeout_seconds: 30
+
+  - id: "init-git-repo"
+    name: "初始化 Git 仓库"
+    description: "初始化 Git 并创建 openclaw 分支"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          cd "{{vars.workspace_path | default('.')}}/{{vars.project_name}}"
+          git init
+          git config user.name "OpenClaw Bot"
+          git config user.email "bot@openclaw.local"
+          git checkout -b openclaw
+          git add .
+          git commit -m "chore: initial commit via OpenClaw"
+          echo "Git repository initialized with 'openclaw' branch"
+        timeout_seconds: 30
+
+  - id: "init-openspec"
+    name: "初始化 OpenSpec"
+    description: "初始化 OpenSpec 变更追踪系统"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          cd "{{vars.workspace_path | default('.')}}/{{vars.project_name}}"
+          opsx init --template {{vars.project_type}}
+          echo "OpenSpec initialized"
+        timeout_seconds: 30
+
+  - id: "create-openspec-proposal"
+    name: "创建初始 Proposal"
+    description: "创建项目初始化的 OpenSpec Proposal"
+    action:
+      type: "openclaw.write_file"
+      params:
+        path: "{{vars.workspace_path | default('.')}}/{{vars.project_name}}/openspec/changes/project-init/proposal.md"
+        content: |
+          # {{vars.project_name}} 项目初始化
+
+          > 文档类型: OpenSpec Proposal
+          > 作者: OpenClaw Flow
+          > 创建时间: {{vars.init_date | default(today)}}
+          > 状态: Draft
+
+          ## 项目信息
+
+          - **项目名称**: {{vars.project_name}}
+          - **项目类型**: {{vars.project_type}}
+          - **描述**: {{vars.description | default('待补充')}}
+
+          ## 初始化内容
+
+          - [x] 创建目录结构
+          - [x] 初始化 Git 仓库
+          - [x] 创建 README
+          - [x] 创建 .gitignore
+          - [x] 初始化 OpenSpec
+
+          ## 下一步
+
+          1. 补充项目详细描述
+          2. 配置 CI/CD
+          3. 添加初始代码
+
+  - id: "record-to-knowflow"
+    name: "记录到 KnowFlow"
+    description: "将新项目信息记录到 KnowFlow"
+    action:
+      type: "openclaw.knowflow_record"
+      params:
+        name: "项目: {{vars.project_name}}"
+        type: "document"
+        content: |
+          # {{vars.project_name}}
+
+          **类型**: {{vars.project_type}}
+          **创建时间**: {{vars.init_date | default(today)}}
+          **路径**: {{vars.workspace_path | default('.')}}/{{vars.project_name}}
+
+          ## 描述
+
+          {{vars.description | default('待补充')}}
+
+          ## 初始化步骤
+
+          1. ✅ 目录结构创建
+          2. ✅ Git 仓库初始化 (分支: openclaw)
+          3. ✅ OpenSpec 初始化
+          4. ✅ README 和 .gitignore 创建
+
+          ## 相关链接
+
+          - 本地路径: {{vars.workspace_path | default('.')}}/{{vars.project_name}}
+          - OpenSpec: openspec/changes/project-init/
+        summary: "OpenClaw 新项目初始化: {{vars.project_name}}"
+        projectId: "openclaw-projects"
+
+  - id: "notify-completion"
+    name: "通知完成"
+    description: "发送项目初始化完成通知"
+    action:
+      type: "openclaw.send_message"
+      params:
+        channel: "webchat"
+        target: "团队频道"
+        message: |
+          🎉 新项目初始化完成！
+
+          **项目名称**: {{vars.project_name}}
+          **项目类型**: {{vars.project_type}}
+          **路径**: {{vars.workspace_path | default('.')}}/{{vars.project_name}}
+
+          项目信息已记录到 KnowFlow。
+
+          下一步：
+          1. 进入项目目录开始开发
+          2. 补充 README 中的项目描述
+          3. 配置远程 Git 仓库
