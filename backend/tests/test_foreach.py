@@ -19,11 +19,6 @@ def test_foreach_basic() -> None:
     flow_yaml = """
 version: "1"
 name: "foreach_test"
-vars:
-  items:
-    - "a"
-    - "b"
-    - "c"
 steps:
   - id: "loop"
     action:
@@ -35,7 +30,7 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
+    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": ["a", "b", "c"]}})
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"
@@ -61,8 +56,6 @@ def test_foreach_empty() -> None:
     flow_yaml = """
 version: "1"
 name: "foreach_empty_test"
-vars:
-  items: []
 steps:
   - id: "loop"
     action:
@@ -74,7 +67,7 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
+    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": []}})
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"
@@ -91,10 +84,6 @@ def test_foreach_with_output_var() -> None:
     flow_yaml = """
 version: "1"
 name: "foreach_output_var_test"
-vars:
-  items:
-    - "x"
-    - "y"
 steps:
   - id: "loop"
     action:
@@ -107,7 +96,7 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
+    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": ["x", "y"]}})
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"

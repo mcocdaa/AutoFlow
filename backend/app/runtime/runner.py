@@ -220,6 +220,9 @@ class Runner:
                 
                 # 收集所有迭代结果
                 iterations: list[dict] = []
+                step_error: str | None = None
+                action_output: Any | None = None
+                check_passed: bool | None = None
                 
                 # 遍历列表执行
                 for item in loop_list:
