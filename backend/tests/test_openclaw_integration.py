@@ -26,9 +26,8 @@ class TestResolveTemplates:
         obj = {"greeting": "Hello {{vars.name}}!"}
         context = {"vars": {"name": "Alice"}}
         result = resolve_templates(obj, context)
-        # 替换后字符串为 'Hello "Alice"!'，因为 json.dumps("Alice") 添加引号
-        # 整体不是合法 JSON，所以保持字符串
-        assert result == {"greeting": 'Hello "Alice"!'}
+        # String values are substituted without quotes
+        assert result == {"greeting": "Hello Alice!"}
 
     def test_resolve_step_output(self) -> None:
         """{{steps.step1.output}} 替换为 step 输出"""
