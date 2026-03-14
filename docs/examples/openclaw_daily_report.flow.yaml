@@ -1,0 +1,73 @@
+# @file /docs/examples/openclaw_daily_report.flow.yaml
+# @brief OpenClaw 每日晨会报告自动生成
+# @description
+#   本流程用于自动化生成每日晨会报告：
+#   1. 收集各 Agent 昨日任务完成情况
+#   2. 汇总并生成结构化报告
+#   3. 将报告记录到 KnowFlow 知识库
+#   
+#   触发方式：建议配置为每日早上 9:00 的定时任务 (cron: "0 9 * * *")
+# @create 2026-03-14
+
+version: "1"
+name: "openclaw-daily-report"
+description: "OpenClaw 团队每日晨会报告自动生成流程"
+
+defaults:
+  timeoutMs: 120000
+  retry:
+    maxAttempts: 2
+    backoffMs: 5000
+
+steps:
+  - id: "collect-agent-status"
+    name: "收集各 Agent 状态"
+    description: "调用 agent_admin 收集昨日所有 Agent 的任务完成情况"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "agent_admin"
+        task: "收集昨日所有 Agent 任务完成情况，包括：\n1. 各 Agent 昨日完成的任务\n2. 进行中的任务及进度\n3. 遇到的问题和阻塞\n4. 今日计划"
+        timeout_ms: 60000
+    check:
+      type: "json.hasField"
+      params:
+        field: "reports"
+
+  - id: "generate-report"
+    name: "生成晨会报告"
+    description: "调用 coord 汇总收集到的数据，生成格式化的晨会报告"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "coord"
+        task: "基于以下数据生成晨会报告，格式要求：\n- 标题：OpenClaw 团队晨会报告（日期）\n- 各 Agent 昨日完成项\n- 进行中的任务\n- 阻塞问题（如有）\n- 今日计划\n\n数据来源：{{steps.collect-agent-status.output}}"
+        timeout_ms: 60000
+    check:
+      type: "text.notEmpty"
+
+  - id: "record-to-knowflow"
+    name: "记录到 KnowFlow"
+    description: "将生成的报告保存到 KnowFlow 知识库，便于后续查阅"
+    action:
+      type: "openclaw.knowflow_record"
+      params:
+        name: "晨会报告 {{vars.report_date | default(today)}}"
+        type: "document"
+        content: "{{steps.generate-report.output}}"
+        summary: "OpenClaw 团队每日晨会报告"
+        projectId: "openclaw-team"
+    check:
+      type: "json.hasField"
+      params:
+        field: "record_id"
+
+  - id: "notify-completion"
+    name: "通知完成"
+    description: "可选：发送通知告知报告已生成"
+    action:
+      type: "openclaw.send_message"
+      params:
+        channel: "webchat"
+        target: "团队频道"
+        message: "📋 今日晨会报告已生成并记录到 KnowFlow\n报告 ID: {{steps.record-to-knowflow.output.record_id}}"

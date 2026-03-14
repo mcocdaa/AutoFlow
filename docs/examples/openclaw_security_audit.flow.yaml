@@ -1,0 +1,130 @@
+# @file /docs/examples/openclaw_security_audit.flow.yaml
+# @brief OpenClaw 安全审计定期执行
+# @description
+#   本流程用于定期执行安全审计任务：
+#   1. 扫描开放端口和服务
+#   2. 检查系统配置安全
+#   3. 检查依赖项漏洞
+#   4. 生成安全审计报告
+#   
+#   触发方式：建议配置为每周日凌晨 2:00 执行 (cron: "0 2 * * 0")
+# @create 2026-03-14
+
+version: "1"
+name: "openclaw-security-audit"
+description: "OpenClaw 安全审计定期执行流程"
+
+defaults:
+  timeoutMs: 600000
+  retry:
+    maxAttempts: 1
+    backoffMs: 0
+
+steps:
+  - id: "scan-ports"
+    name: "扫描开放端口"
+    description: "扫描服务器开放端口，识别潜在风险服务"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: "nmap -sV -O --top-ports 1000 {{vars.target_host | default('localhost')}}"
+        timeout_seconds: 300
+    check:
+      type: "exit_code.zero"
+
+  - id: "check-ssh-config"
+    name: "检查 SSH 配置"
+    description: "检查 SSH 服务安全配置"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          ssh -G {{vars.target_host}} 2>/dev/null | grep -E '^(passwordauthentication|permitrootlogin|pubkeyauthentication|maxauthtries)' ||
+          echo "SSH config check completed"
+        timeout_seconds: 30
+
+  - id: "check-firewall"
+    name: "检查防火墙规则"
+    description: "检查防火墙配置和规则"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          if command -v ufw &> /dev/null; then
+            ufw status verbose
+          elif command -v iptables &> /dev/null; then
+            iptables -L -n -v
+          else
+            echo "No firewall detected"
+          fi
+        timeout_seconds: 30
+
+  - id: "check-dependency-vulns"
+    name: "检查依赖漏洞"
+    description: "扫描项目依赖的安全漏洞"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          cd {{vars.project_path | default('.')}} && 
+          if [ -f package-lock.json ]; then npm audit --json; 
+          elif [ -f Pipfile.lock ]; then pipenv check --json; 
+          elif [ -f requirements.txt ]; then safety check --json; 
+          else echo "No supported dependency file found"; fi
+        timeout_seconds: 180
+
+  - id: "check-secrets"
+    name: "检查敏感信息泄露"
+    description: "扫描代码仓库中的敏感信息"
+    action:
+      type: "openclaw.exec"
+      params:
+        command: |
+          if command -v gitleaks &> /dev/null; then
+            gitleaks detect --source {{vars.project_path | default('.')}} --verbose --redact
+          else
+            echo "gitleaks not installed, skipping secret scan"
+          fi
+        timeout_seconds: 120
+
+  - id: "analyze-results"
+    name: "分析审计结果"
+    description: "汇总所有检查结果，识别高危问题"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "qa_ops"
+        task: "分析以下安全审计结果，识别高危问题：\n\n端口扫描：{{steps.scan-ports.output}}\n\nSSH配置：{{steps.check-ssh-config.output}}\n\n防火墙：{{steps.check-firewall.output}}\n\n依赖漏洞：{{steps.check-dependency-vulns.output}}\n\n敏感信息：{{steps.check-secrets.output}}\n\n请按严重程度分类问题（CRITICAL/HIGH/MEDIUM/LOW）"
+        timeout_ms: 60000
+
+  - id: "generate-report"
+    name: "生成安全报告"
+    description: "生成结构化的安全审计报告"
+    action:
+      type: "openclaw.spawn_agent"
+      params:
+        agent: "coord"
+        task: "基于以下分析结果生成安全审计报告：\n\n{{steps.analyze-results.output}}\n\n报告格式：\n1. 执行摘要\n2. 发现的问题（按严重程度排序）\n3. 修复建议\n4. 合规性评估\n5. 下次审计建议"
+        timeout_ms: 60000
+
+  - id: "record-audit"
+    name: "记录审计结果"
+    description: "将审计报告记录到 KnowFlow"
+    action:
+      type: "openclaw.knowflow_record"
+      params:
+        name: "安全审计报告 {{vars.audit_date | default(today)}}"
+        type: "document"
+        content: "{{steps.generate-report.output}}"
+        summary: "OpenClaw 定期安全审计报告"
+        projectId: "openclaw-security"
+
+  - id: "alert-if-critical"
+    name: "高危问题告警"
+    description: "如果发现高危问题，发送告警通知"
+    action:
+      type: "openclaw.send_message"
+      params:
+        channel: "webchat"
+        target: "安全团队"
+        message: "🚨 安全审计完成\n\n{{steps.generate-report.output.summary}}\n\n详细报告已记录到 KnowFlow"
