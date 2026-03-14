@@ -1,0 +1,16 @@
+{
+  "id": "autoflow",
+  "name": "AutoFlow Plugin",
+  "version": "1.0.0",
+  "description": "AutoFlow workflow automation integration for OpenClaw",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "default": "http://localhost:8000",
+        "description": "AutoFlow API base URL"
+      }
+    }
+  }
+}

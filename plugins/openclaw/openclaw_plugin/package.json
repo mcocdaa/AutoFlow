@@ -1,0 +1,13 @@
+{
+  "name": "autoflow",
+  "version": "1.0.0",
+  "description": "AutoFlow workflow automation integration for OpenClaw",
+  "type": "module",
+  "main": "src/index.ts",
+  "keywords": ["autoflow", "openclaw", "plugin", "workflow", "automation"],
+  "author": "AutoFlow",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": ["./src/index.ts"]
+  }
+}
