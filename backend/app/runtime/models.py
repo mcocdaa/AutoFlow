@@ -36,6 +36,9 @@ class StepSpec(_Base):
     check: CheckSpec | None = None
     retry: RetrySpec | None = None
     output_var: str | None = None  # 如果设置，将 action_output 存入 runtime_vars[output_var]
+    for_each: str | None = None  # 引用一个列表变量，如 "{{vars.items}}"
+    for_item_var: str = "item"   # 循环变量名，默认 "item"
+    condition: str | None = None  # 条件表达式，为 None 时始终执行
 
 
 class FlowSpec(_Base):
@@ -57,6 +60,7 @@ class StepResult(_Base):
     action_output: Any | None = None
     check_passed: bool | None = None
     error: str | None = None
+    iterations: list[dict] | None = None  # for 循环时记录每次迭代结果
 
 
 class RunResult(_Base):
