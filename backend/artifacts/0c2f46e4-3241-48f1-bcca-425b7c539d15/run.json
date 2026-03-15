@@ -1,0 +1,67 @@
+{
+  "run_id": "0c2f46e4-3241-48f1-bcca-425b7c539d15",
+  "flow_name": "foreach_output_var_test",
+  "status": "running",
+  "started_at": "2026-03-14T14:14:03.407970Z",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [
+    {
+      "step_id": "loop",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:03.410024Z",
+      "finished_at": "2026-03-14T14:14:03.410024Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "y",
+        "vars": {
+          "items": [
+            "x",
+            "y"
+          ],
+          "item": "y"
+        }
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": [
+        {
+          "item": "x",
+          "output": {
+            "input": null,
+            "message": "x",
+            "vars": {
+              "items": [
+                "x",
+                "y"
+              ],
+              "item": "y"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0
+        },
+        {
+          "item": "y",
+          "output": {
+            "input": null,
+            "message": "y",
+            "vars": {
+              "items": [
+                "x",
+                "y"
+              ],
+              "item": "y"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0
+        }
+      ]
+    }
+  ],
+  "error": null
+}

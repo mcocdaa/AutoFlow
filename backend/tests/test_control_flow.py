@@ -1,5 +1,6 @@
-﻿# @file /backend/tests/test_control_flow.py
-# @brief AutoFlow Phase 2 鎺у埗娴佸寮洪泦鎴愭祴璇?# @create 2026-03-14
+# @file /backend/tests/test_control_flow.py
+# @brief AutoFlow Phase 2 控制流测试
+# @create 2026-03-14
 
 from __future__ import annotations
 

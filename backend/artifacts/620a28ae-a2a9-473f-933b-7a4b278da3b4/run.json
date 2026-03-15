@@ -1,0 +1,28 @@
+{
+  "run_id": "620a28ae-a2a9-473f-933b-7a4b278da3b4",
+  "flow_name": "test_condition_with_var",
+  "status": "success",
+  "started_at": "2026-03-14T14:08:14.875345Z",
+  "finished_at": "2026-03-14T14:08:14.878448Z",
+  "duration_ms": 3,
+  "steps": [
+    {
+      "step_id": "step1",
+      "status": "success",
+      "started_at": "2026-03-14T14:08:14.876891Z",
+      "finished_at": "2026-03-14T14:08:14.876891Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "executed",
+        "vars": {
+          "run_mode": "enabled"
+        }
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": null
+    }
+  ],
+  "error": null
+}

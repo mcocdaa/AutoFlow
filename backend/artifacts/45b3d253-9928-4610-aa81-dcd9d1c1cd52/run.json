@@ -1,0 +1,42 @@
+{
+  "run_id": "45b3d253-9928-4610-aa81-dcd9d1c1cd52",
+  "flow_name": "desktop-checkin-dry-run",
+  "status": "success",
+  "started_at": "2026-03-14T14:14:03.167864Z",
+  "finished_at": "2026-03-14T14:14:03.361851Z",
+  "duration_ms": 193,
+  "steps": [
+    {
+      "step_id": "type",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:03.169399Z",
+      "finished_at": "2026-03-14T14:14:03.169399Z",
+      "duration_ms": 0,
+      "action_output": {
+        "typed": true,
+        "length": 9,
+        "secret": true,
+        "dry_run": true
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": null
+    },
+    {
+      "step_id": "shot",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:03.170937Z",
+      "finished_at": "2026-03-14T14:14:03.360306Z",
+      "duration_ms": 189,
+      "action_output": {
+        "saved": true,
+        "path": "screenshots\\dry.png",
+        "dry_run": true
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": null
+    }
+  ],
+  "error": null
+}

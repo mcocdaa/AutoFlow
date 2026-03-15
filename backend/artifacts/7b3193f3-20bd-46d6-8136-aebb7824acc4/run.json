@@ -1,0 +1,25 @@
+{
+  "run_id": "7b3193f3-20bd-46d6-8136-aebb7824acc4",
+  "flow_name": "e2e-output-var-test",
+  "status": "running",
+  "started_at": "2026-03-14T07:44:53.377836Z",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [
+    {
+      "step_id": "step1",
+      "status": "success",
+      "started_at": "2026-03-14T07:44:53.381067Z",
+      "finished_at": "2026-03-14T07:44:53.381067Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "hello world",
+        "vars": {}
+      },
+      "check_passed": null,
+      "error": null
+    }
+  ],
+  "error": null
+}

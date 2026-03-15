@@ -1,0 +1,25 @@
+{
+  "run_id": "008ab36c-a210-476a-8fd6-bf10f8086d0a",
+  "flow_name": "smoke-test",
+  "status": "success",
+  "started_at": "2026-03-14T03:54:39.051167Z",
+  "finished_at": "2026-03-14T03:54:39.055937Z",
+  "duration_ms": 4,
+  "steps": [
+    {
+      "step_id": "echo-step",
+      "status": "success",
+      "started_at": "2026-03-14T03:54:39.054351Z",
+      "finished_at": "2026-03-14T03:54:39.054351Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "hello from openclaw bridge",
+        "vars": {}
+      },
+      "check_passed": null,
+      "error": null
+    }
+  ],
+  "error": null
+}

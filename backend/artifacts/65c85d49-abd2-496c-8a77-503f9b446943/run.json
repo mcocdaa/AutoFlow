@@ -1,0 +1,25 @@
+{
+  "run_id": "65c85d49-abd2-496c-8a77-503f9b446943",
+  "flow_name": "test",
+  "status": "running",
+  "started_at": "2026-03-14T07:45:15.376181Z",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [
+    {
+      "step_id": "s1",
+      "status": "success",
+      "started_at": "2026-03-14T07:45:15.379319Z",
+      "finished_at": "2026-03-14T07:45:15.379319Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "hi",
+        "vars": {}
+      },
+      "check_passed": null,
+      "error": null
+    }
+  ],
+  "error": null
+}

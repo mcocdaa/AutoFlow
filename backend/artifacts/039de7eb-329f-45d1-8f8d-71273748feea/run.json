@@ -1,0 +1,27 @@
+{
+  "run_id": "039de7eb-329f-45d1-8f8d-71273748feea",
+  "flow_name": "e2e-variable-test",
+  "status": "running",
+  "started_at": "2026-03-14T07:41:23.537060Z",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [
+    {
+      "step_id": "echo-hello",
+      "status": "success",
+      "started_at": "2026-03-14T07:41:23.540249Z",
+      "finished_at": "2026-03-14T07:41:23.540249Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "Hello from OpenClaw-AutoFlow-E2E",
+        "vars": {
+          "project_name": "OpenClaw-AutoFlow-E2E"
+        }
+      },
+      "check_passed": null,
+      "error": null
+    }
+  ],
+  "error": null
+}

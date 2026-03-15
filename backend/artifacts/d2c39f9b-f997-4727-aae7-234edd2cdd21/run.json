@@ -1,0 +1,22 @@
+{
+  "run_id": "d2c39f9b-f997-4727-aae7-234edd2cdd21",
+  "flow_name": "foreach_empty_test",
+  "status": "success",
+  "started_at": "2026-03-14T14:14:03.392995Z",
+  "finished_at": "2026-03-14T14:14:03.396067Z",
+  "duration_ms": 3,
+  "steps": [
+    {
+      "step_id": "loop",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:03.394534Z",
+      "finished_at": "2026-03-14T14:14:03.394534Z",
+      "duration_ms": 0,
+      "action_output": null,
+      "check_passed": null,
+      "error": null,
+      "iterations": []
+    }
+  ],
+  "error": null
+}

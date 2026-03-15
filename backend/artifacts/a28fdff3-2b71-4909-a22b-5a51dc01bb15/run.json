@@ -1,0 +1,28 @@
+{
+  "run_id": "a28fdff3-2b71-4909-a22b-5a51dc01bb15",
+  "flow_name": "demo",
+  "status": "success",
+  "started_at": "2026-03-14T14:14:04.055807Z",
+  "finished_at": "2026-03-14T14:14:04.060976Z",
+  "duration_ms": 5,
+  "steps": [
+    {
+      "step_id": "s1",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:04.057356Z",
+      "finished_at": "2026-03-14T14:14:04.057356Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": {
+          "foo": "bar"
+        },
+        "message": "hi",
+        "vars": {}
+      },
+      "check_passed": true,
+      "error": null,
+      "iterations": null
+    }
+  ],
+  "error": null
+}

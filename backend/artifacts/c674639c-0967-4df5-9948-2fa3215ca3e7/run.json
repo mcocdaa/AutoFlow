@@ -1,0 +1,49 @@
+{
+  "run_id": "c674639c-0967-4df5-9948-2fa3215ca3e7",
+  "flow_name": "e2e-simple-test",
+  "status": "success",
+  "started_at": "2026-03-14T07:41:32.596689Z",
+  "finished_at": "2026-03-14T07:41:32.604321Z",
+  "duration_ms": 7,
+  "steps": [
+    {
+      "step_id": "echo-hello",
+      "status": "success",
+      "started_at": "2026-03-14T07:41:32.599275Z",
+      "finished_at": "2026-03-14T07:41:32.599275Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "Hello from OpenClaw-AutoFlow-E2E",
+        "vars": {
+          "project_name": "OpenClaw-AutoFlow-E2E"
+        }
+      },
+      "check_passed": null,
+      "error": null
+    },
+    {
+      "step_id": "echo-result",
+      "status": "success",
+      "started_at": "2026-03-14T07:41:32.601123Z",
+      "finished_at": "2026-03-14T07:41:32.601123Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": {
+          "input": null,
+          "message": "Hello from OpenClaw-AutoFlow-E2E",
+          "vars": {
+            "project_name": "OpenClaw-AutoFlow-E2E"
+          }
+        },
+        "message": "Input was: {\"input\": null, \"message\": \"Hello from OpenClaw-AutoFlow-E2E\", \"vars\": {\"project_name\": \"OpenClaw-AutoFlow-E2E\"}}",
+        "vars": {
+          "project_name": "OpenClaw-AutoFlow-E2E"
+        }
+      },
+      "check_passed": null,
+      "error": null
+    }
+  ],
+  "error": null
+}

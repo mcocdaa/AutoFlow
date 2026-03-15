@@ -1,0 +1,46 @@
+{
+  "run_id": "2210c575-c610-4bcb-baab-baf7fd49850d",
+  "flow_name": "zhihu-digest-dry-run",
+  "status": "success",
+  "started_at": "2026-03-14T14:14:04.246762Z",
+  "finished_at": "2026-03-14T14:14:04.262143Z",
+  "duration_ms": 15,
+  "steps": [
+    {
+      "step_id": "fetch",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:04.248291Z",
+      "finished_at": "2026-03-14T14:14:04.252369Z",
+      "duration_ms": 4,
+      "action_output": {
+        "question_id": "784489052",
+        "answer_id": "1946200783080125276",
+        "question_title": null,
+        "answer_text_path": "zhihu/answers/1946200783080125276.txt",
+        "source_url": "https://www.zhihu.com/question/784489052/answer/1946200783080125276",
+        "fetched_at": "2026-03-14T14:14:04.252369+00:00",
+        "dry_run": true
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": null
+    },
+    {
+      "step_id": "sum",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:04.254408Z",
+      "finished_at": "2026-03-14T14:14:04.260097Z",
+      "duration_ms": 5,
+      "action_output": {
+        "summary_path": "ai/summary.md",
+        "prompt_path": "ai/prompt.txt",
+        "dry_run": true,
+        "provider": "deepseek"
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": null
+    }
+  ],
+  "error": null
+}

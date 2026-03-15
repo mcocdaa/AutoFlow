@@ -1,0 +1,88 @@
+{
+  "run_id": "796b3ff6-5722-48f4-9bae-f6f1049ea167",
+  "flow_name": "foreach_test",
+  "status": "success",
+  "started_at": "2026-03-14T14:14:03.376907Z",
+  "finished_at": "2026-03-14T14:14:03.380522Z",
+  "duration_ms": 3,
+  "steps": [
+    {
+      "step_id": "loop",
+      "status": "success",
+      "started_at": "2026-03-14T14:14:03.378975Z",
+      "finished_at": "2026-03-14T14:14:03.378975Z",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "c",
+        "vars": {
+          "items": [
+            "a",
+            "b",
+            "c"
+          ],
+          "item": "c"
+        }
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": [
+        {
+          "item": "a",
+          "output": {
+            "input": null,
+            "message": "a",
+            "vars": {
+              "items": [
+                "a",
+                "b",
+                "c"
+              ],
+              "item": "c"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0
+        },
+        {
+          "item": "b",
+          "output": {
+            "input": null,
+            "message": "b",
+            "vars": {
+              "items": [
+                "a",
+                "b",
+                "c"
+              ],
+              "item": "c"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0
+        },
+        {
+          "item": "c",
+          "output": {
+            "input": null,
+            "message": "c",
+            "vars": {
+              "items": [
+                "a",
+                "b",
+                "c"
+              ],
+              "item": "c"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0
+        }
+      ]
+    }
+  ],
+  "error": null
+}

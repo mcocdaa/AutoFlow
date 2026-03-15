@@ -1,0 +1,22 @@
+{
+  "run_id": "1403e8d9-4ac6-4a83-8229-21320ec9ea78",
+  "flow_name": "test_condition_false",
+  "status": "success",
+  "started_at": "2026-03-14T14:08:14.858077Z",
+  "finished_at": "2026-03-14T14:08:14.862774Z",
+  "duration_ms": 4,
+  "steps": [
+    {
+      "step_id": "step1",
+      "status": "skipped",
+      "started_at": "2026-03-14T14:08:14.859645Z",
+      "finished_at": "2026-03-14T14:08:14.859645Z",
+      "duration_ms": 0,
+      "action_output": null,
+      "check_passed": null,
+      "error": null,
+      "iterations": null
+    }
+  ],
+  "error": null
+}

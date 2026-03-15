@@ -1,0 +1,10 @@
+{
+  "run_id": "294b0304-041f-4c6f-a250-95b35b2c225f",
+  "flow_name": "foreach_empty_test",
+  "status": "running",
+  "started_at": "2026-03-14T14:11:59.711642Z",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [],
+  "error": null
+}

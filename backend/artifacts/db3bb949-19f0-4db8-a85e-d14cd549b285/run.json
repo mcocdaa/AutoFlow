@@ -1,0 +1,10 @@
+{
+  "run_id": "db3bb949-19f0-4db8-a85e-d14cd549b285",
+  "flow_name": "foreach_output_var_test",
+  "status": "running",
+  "started_at": "2026-03-14T14:12:00.283977Z",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [],
+  "error": null
+}
