@@ -75,6 +75,7 @@ class OpenClawPlugin:
                 "headers": dict(e.headers) if e.headers else {},
                 "body": e.read().decode("utf-8") if e.fp else None,
                 "error": str(e),
+                "error_type": "http_error",
             }
         except URLError as e:
             return {
@@ -82,6 +83,7 @@ class OpenClawPlugin:
                 "headers": None,
                 "body": None,
                 "error": str(e.reason),
+                "error_type": "network_error",
             }
         except Exception as e:
             return {
@@ -89,6 +91,7 @@ class OpenClawPlugin:
                 "headers": None,
                 "body": None,
                 "error": str(e),
+                "error_type": "unknown_error",
             }
 
     def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
@@ -144,6 +147,7 @@ class OpenClawPlugin:
                 "stdout": "",
                 "stderr": f"Command timed out after {timeout} seconds",
                 "error": "timeout",
+                "error_type": "timeout",
             }
         except Exception as e:
             return {
@@ -151,6 +155,7 @@ class OpenClawPlugin:
                 "stdout": "",
                 "stderr": str(e),
                 "error": str(e),
+                "error_type": "unknown_error",
             }
 
     def knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
@@ -202,21 +207,27 @@ class OpenClawPlugin:
             update_req = Request(update_url, data=update_data, method="PUT")
             update_req.add_header("Content-Type", "application/json")
 
+            update_warning = None
             try:
                 with urlopen(update_req, timeout=30) as response:
                     response.read()
-            except HTTPError:
-                pass
+            except HTTPError as e:
+                update_warning = f"openclaw attribute update failed: HTTP {e.code}"
+            except Exception as e:
+                update_warning = f"openclaw attribute update failed: {e}"
 
-            return {"item_id": item_id, "name": name, "success": True}
+            result = {"item_id": item_id, "name": name, "success": True}
+            if update_warning:
+                result["warning"] = update_warning
+            return result
 
         except HTTPError as e:
             error_body = e.read().decode("utf-8") if e.fp else ""
-            return {"item_id": None, "name": name, "success": False, "error": f"HTTP {e.code}: {error_body}"}
+            return {"item_id": None, "name": name, "success": False, "error": f"HTTP {e.code}: {error_body}", "error_type": "http_error"}
         except URLError as e:
-            return {"item_id": None, "name": name, "success": False, "error": str(e.reason)}
+            return {"item_id": None, "name": name, "success": False, "error": str(e.reason), "error_type": "network_error"}
         except Exception as e:
-            return {"item_id": None, "name": name, "success": False, "error": str(e)}
+            return {"item_id": None, "name": name, "success": False, "error": str(e), "error_type": "unknown_error"}
 
     def status_code_ok(self, ctx: CheckContext, params: dict[str, Any]) -> bool:
         expected = params.get("expected", 200)

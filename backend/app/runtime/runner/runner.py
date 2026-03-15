@@ -175,7 +175,7 @@ class Runner:
                     try:
                         runtime_vars_snapshot = copy.deepcopy(runtime_vars_clean)
                     except Exception:
-                        runtime_vars_snapshot = str(runtime_vars_clean)
+                        runtime_vars_snapshot = {k: str(v) for k, v in runtime_vars_clean.items()}
 
                     iterations.append({
                         "item": item,
@@ -236,7 +236,12 @@ class Runner:
 
                 step_outputs[step.id] = action_output
                 if step.output_var is not None:
-                    runtime_vars[step.output_var] = action_output
+                    # 用 json 序列化打断循环引用，避免 vars_snapshot 深拷贝失败
+                    try:
+                        import json as _json
+                        runtime_vars[step.output_var] = _json.loads(_json.dumps(action_output, default=str))
+                    except Exception:
+                        runtime_vars[step.output_var] = str(action_output)
 
                 current_input = action_output
                 continue
@@ -324,7 +329,11 @@ class Runner:
 
             step_outputs[step.id] = action_output
             if step.output_var is not None:
-                runtime_vars[step.output_var] = action_output
+                try:
+                    import json as _json
+                    runtime_vars[step.output_var] = _json.loads(_json.dumps(action_output, default=str))
+                except Exception:
+                    runtime_vars[step.output_var] = str(action_output)
 
             current_input = action_output
 
