@@ -1,0 +1,79 @@
+{
+  "run_id": "721dd9be-1c93-4c90-bed1-1f99768c1bec",
+  "flow_name": "foreach_output_var_test",
+  "status": "running",
+  "started_at": "2026-03-15 10:32:31.399304+00:00",
+  "finished_at": null,
+  "duration_ms": null,
+  "steps": [
+    {
+      "step_id": "loop",
+      "status": "success",
+      "started_at": "2026-03-15 10:32:31.401321+00:00",
+      "finished_at": "2026-03-15 10:32:31.401321+00:00",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "y",
+        "vars": {
+          "items": [
+            "x",
+            "y"
+          ],
+          "item": "y"
+        }
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": [
+        {
+          "item": "x",
+          "output": {
+            "input": null,
+            "message": "x",
+            "vars": {
+              "items": [
+                "x",
+                "y"
+              ],
+              "item": "x"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0,
+          "vars_snapshot": {
+            "items": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        {
+          "item": "y",
+          "output": {
+            "input": null,
+            "message": "y",
+            "vars": {
+              "items": [
+                "x",
+                "y"
+              ],
+              "item": "y"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0,
+          "vars_snapshot": {
+            "items": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "error": null
+}

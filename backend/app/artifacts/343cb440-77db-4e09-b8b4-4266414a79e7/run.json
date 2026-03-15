@@ -1,0 +1,109 @@
+{
+  "run_id": "343cb440-77db-4e09-b8b4-4266414a79e7",
+  "flow_name": "foreach_test",
+  "status": "success",
+  "started_at": "2026-03-15 10:32:31.366251+00:00",
+  "finished_at": "2026-03-15 10:32:31.369252+00:00",
+  "duration_ms": 3,
+  "steps": [
+    {
+      "step_id": "loop",
+      "status": "success",
+      "started_at": "2026-03-15 10:32:31.367252+00:00",
+      "finished_at": "2026-03-15 10:32:31.367252+00:00",
+      "duration_ms": 0,
+      "action_output": {
+        "input": null,
+        "message": "c",
+        "vars": {
+          "items": [
+            "a",
+            "b",
+            "c"
+          ],
+          "item": "c"
+        }
+      },
+      "check_passed": null,
+      "error": null,
+      "iterations": [
+        {
+          "item": "a",
+          "output": {
+            "input": null,
+            "message": "a",
+            "vars": {
+              "items": [
+                "a",
+                "b",
+                "c"
+              ],
+              "item": "a"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0,
+          "vars_snapshot": {
+            "items": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        },
+        {
+          "item": "b",
+          "output": {
+            "input": null,
+            "message": "b",
+            "vars": {
+              "items": [
+                "a",
+                "b",
+                "c"
+              ],
+              "item": "b"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0,
+          "vars_snapshot": {
+            "items": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        },
+        {
+          "item": "c",
+          "output": {
+            "input": null,
+            "message": "c",
+            "vars": {
+              "items": [
+                "a",
+                "b",
+                "c"
+              ],
+              "item": "c"
+            }
+          },
+          "error": null,
+          "check_passed": null,
+          "duration_ms": 0,
+          "vars_snapshot": {
+            "items": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "error": null
+}

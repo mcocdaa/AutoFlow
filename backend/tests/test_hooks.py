@@ -205,3 +205,45 @@ class TestHooks:
 
         # 主流程仍然是 success，hook 失败被静默处理
         assert result.status == "success"
+
+    def test_on_failure_triggered_on_foreach_failure(self, tmp_path):
+        """for_each step 失败时也触发 on_failure hook"""
+        hook_called = []
+
+        def hook_action(ctx, params):
+            hook_called.append("foreach-failure-hook")
+            return {}
+
+        # 创建一个会失败的 for_each flow
+        call_count = [0]
+        def fail_on_second(ctx, params):
+            call_count[0] += 1
+            if call_count[0] >= 2:
+                raise RuntimeError("second item fails")
+            return {"ok": True}
+
+        registry = _make_registry(actions={
+            "test.fail_on_second": fail_on_second,
+            "test.hook": hook_action,
+        })
+        store = _make_store(tmp_path)
+        runner = Runner(registry, store)
+
+        flow = FlowSpec(
+            version="1.0",
+            name="foreach-fail-flow",
+            steps=[
+                StepSpec(
+                    id="loop_step",
+                    action=ActionSpec(type="test.fail_on_second", params={}),
+                    for_each="{{vars.items}}",
+                )
+            ],
+            hooks=HookSpec(
+                on_failure=[ActionSpec(type="test.hook", params={})],
+            ),
+        )
+        result = runner.run_flow(flow, vars={"items": ["a", "b", "c"]})
+
+        assert result.status == "failed"
+        assert hook_called == ["foreach-failure-hook"]
