@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shlex
 import subprocess
 import sys
 from typing import Any
@@ -91,16 +93,41 @@ class OpenClawPlugin:
 
     def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
         command = params.get("command")
+        args = params.get("args")  # 可选参数列表
         cwd = params.get("cwd")
         timeout = params.get("timeout") or self.defaults.get("exec_timeout", 60)
+        safe_mode = params.get("safe_mode", self.defaults.get("safe_mode", False))
+        allowed_commands = self.defaults.get("allowed_commands", [])
 
         if not command:
             return {"exit_code": None, "stdout": "", "stderr": "command is required", "error": "command is required"}
 
+        # 白名单校验（若配置了 allowed_commands）
+        if allowed_commands:
+            matched = any(re.match(pattern, command) for pattern in allowed_commands)
+            if not matched:
+                return {"exit_code": -1, "stdout": "", "stderr": f"command not allowed: {command}", "error": "command_not_allowed"}
+
+        # 构建执行参数
+        # Windows 上内建命令（echo/dir等）需要 shell=True，safe_mode 下仍用 shlex 解析但保留 shell
+        _is_windows = sys.platform == "win32"
+        if args is not None:
+            # 显式传了 args，使用列表模式
+            cmd = [command] + list(args)
+            use_shell = _is_windows  # Windows 需要 shell=True 才能找到内建命令
+        elif safe_mode:
+            # safe_mode：用 shlex.split 解析参数，防止注入；Windows 下仍需 shell
+            cmd = shlex.split(command, posix=not _is_windows)
+            use_shell = _is_windows
+        else:
+            # 默认：shell=True（向后兼容）
+            cmd = command
+            use_shell = True
+
         try:
             result = subprocess.run(
-                command,
-                shell=True,
+                cmd,
+                shell=use_shell,
                 cwd=cwd,
                 capture_output=True,
                 text=True,
