@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from typing import Any
@@ -15,9 +16,12 @@ from app.plugin.registry import ActionContext, CheckContext
 
 
 class OpenClawPlugin:
-    def __init__(self) -> None:
+    def __init__(self, config: dict = None) -> None:
         self.name = "openclaw"
         self.version = "0.1.0"
+        self.config = config or {}
+        self.defaults = self.config.get("defaults", {})
+        self.secrets = self.config.get("secrets", {})
         self.actions = {
             "openclaw.http_request": self.http_request,
             "openclaw.exec": self.exec_command,
@@ -33,7 +37,7 @@ class OpenClawPlugin:
         url = params.get("url")
         headers = params.get("headers", {})
         body = params.get("body")
-        timeout = params.get("timeout", 30)
+        timeout = params.get("timeout") or self.defaults.get("http_timeout", 30)
 
         if not url:
             return {"error": "url is required", "status_code": None, "headers": None, "body": None}
@@ -88,7 +92,7 @@ class OpenClawPlugin:
     def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
         command = params.get("command")
         cwd = params.get("cwd")
-        timeout = params.get("timeout", 60)
+        timeout = params.get("timeout") or self.defaults.get("exec_timeout", 60)
 
         if not command:
             return {"exit_code": None, "stdout": "", "stderr": "command is required", "error": "command is required"}
@@ -123,7 +127,12 @@ class OpenClawPlugin:
             }
 
     def knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
-        base_url = params.get("base_url", "http://localhost:3000")
+        default_base_url = (
+            self.secrets.get("knowflow_base_url")
+            or os.environ.get("KNOWFLOW_BASE_URL")
+            or "http://localhost:3000"
+        )
+        base_url = params.get("base_url") or default_base_url
         name = params.get("name")
         project_id = params.get("project_id")
         archive_type = params.get("archive_type", "document")
@@ -202,5 +211,5 @@ class OpenClawPlugin:
         return exit_code == 0
 
 
-def register() -> OpenClawPlugin:
-    return OpenClawPlugin()
+def register(config: dict = None) -> OpenClawPlugin:
+    return OpenClawPlugin(config=config)
