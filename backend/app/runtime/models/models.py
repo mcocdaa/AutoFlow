@@ -41,10 +41,16 @@ class StepSpec(_Base):
     condition: str | None = None
 
 
+class HookSpec(_Base):
+    on_success: list[ActionSpec] | None = None
+    on_failure: list[ActionSpec] | None = None
+
+
 class FlowSpec(_Base):
     version: str
     name: str
     steps: list[StepSpec]
+    hooks: HookSpec | None = None
 
 
 StepStatus = Literal["success", "failed", "skipped"]

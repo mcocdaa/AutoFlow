@@ -1,0 +1,32 @@
+# @file /docs/examples/flow_with_hooks.yaml
+# @brief Flow hooks 示例：成功时自动归档到 KnowFlow，失败时记录日志
+# @create 2026-03-15
+
+version: "1.0"
+name: example-with-hooks
+
+steps:
+  - id: do_work
+    name: 执行工作
+    action:
+      type: openclaw.exec
+      params:
+        command: "echo working"
+    check:
+      type: openclaw.exit_code_zero
+
+hooks:
+  # 流程成功时：自动归档执行摘要到 KnowFlow
+  on_success:
+    - type: openclaw.knowflow_record
+      params:
+        name: "flow-success-record"
+        project_id: "my-project"
+        summary: "Flow executed successfully"
+        content: "Flow completed. Output: {{steps.do_work.stdout}}"
+
+  # 流程失败时：记录错误日志
+  on_failure:
+    - type: core.log
+      params:
+        message: "Flow failed! Check the run logs for details."
