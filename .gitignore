@@ -12,7 +12,5 @@ dist
 dist-electron
 
 # Env files & secrets
-backend/.env
-frontend/.env
 secrets/*
 !secrets/.gitkeep
