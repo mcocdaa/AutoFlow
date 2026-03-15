@@ -1,4 +1,7 @@
-import os
+# @file /backend/app/main.py
+# @brief FastAPI 应用入口，注册中间件和路由
+# @create 2026-03-15 10:00:00
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,10 +11,9 @@ from app.core.config import settings
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    version="0.1.0",
+    version=settings.APP_VERSION,
 )
 
-# Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,27 +22,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 自动注册所有API路由
 register_routers(app)
 
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
-
-# Serve Static Files (Frontend) if configured
-# This allows the backend to serve the frontend in the single-container production image
-serve_static = os.getenv("SERVE_STATIC_FILES", "false").lower() == "true"
-static_dir = os.getenv("STATIC_FILES_DIR", "/app/static")
-
-if serve_static:
-    if os.path.isdir(static_dir):
-        # Mount static files at the root
-        # html=True allows serving index.html for the root path
+if settings.SERVE_STATIC_FILES:
+    from pathlib import Path
+    static_dir = settings.STATIC_FILES_DIR
+    if Path(static_dir).is_dir():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
     else:
         print(f"Warning: Static files directory {static_dir} not found. Skipping static file serving.")
 else:
-    # Only define the root welcome message if NOT serving frontend
     @app.get("/")
     async def root():
-        return {"message": "Welcome to AutoFlow API", "version": "0.1.0", "docs": "/docs"}
+        return {"message": f"Welcome to {settings.PROJECT_NAME} API", "version": settings.APP_VERSION, "docs": "/docs"}

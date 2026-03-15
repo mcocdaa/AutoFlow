@@ -3,8 +3,8 @@
 # @create 2026-03-14
 
 import pytest
-from app.runtime.models import FlowSpec, StepSpec, ActionSpec
-from app.runtime.runner import evaluate_condition, resolve_templates
+from app.runtime.models import ActionSpec, FlowSpec, StepSpec
+from app.runtime.runner.runner import evaluate_condition, resolve_templates
 
 
 class TestEvaluateCondition:
@@ -70,7 +70,7 @@ class TestConditionWithTemplates:
         """测试条件中使用 {{vars.x}} 且条件为 true"""
         condition = "{{vars.enabled}} == true"
         context = {"steps": {}, "vars": {"enabled": "true"}, "input": None}
-        
+
         resolved = resolve_templates(condition, context)
         # 注意：resolve_templates 会将 "true" 解析为字符串 "true"，不是布尔值
         # 但我们的 evaluate_condition 支持字符串 "true"
@@ -81,7 +81,7 @@ class TestConditionWithTemplates:
         """测试条件中使用 {{vars.x}} 且条件为 false"""
         condition = "{{vars.enabled}}"
         context = {"steps": {}, "vars": {"enabled": "false"}, "input": None}
-        
+
         resolved = resolve_templates(condition, context)
         result = evaluate_condition(str(resolved))
         assert result is False
@@ -97,7 +97,7 @@ class TestStepSpecCondition:
             action=ActionSpec(type="test", params={}),
             condition="true"
         )
-        
+
         assert step.condition == "true"
 
     def test_condition_optional(self):
@@ -106,7 +106,7 @@ class TestStepSpecCondition:
             id="test_step",
             action=ActionSpec(type="test", params={})
         )
-        
+
         assert step.condition is None
 
 
@@ -134,7 +134,7 @@ steps:
         resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
         assert resp.status_code == 200
         run = resp.json()
-        
+
         assert run["status"] == "success"
         assert len(run["steps"]) == 1
         assert run["steps"][0]["status"] == "success"
@@ -160,7 +160,7 @@ steps:
         resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
         assert resp.status_code == 200
         run = resp.json()
-        
+
         assert run["status"] == "success"
         assert len(run["steps"]) == 1
         assert run["steps"][0]["status"] == "skipped"
@@ -191,7 +191,7 @@ steps:
         })
         assert resp.status_code == 200
         run = resp.json()
-        
+
         assert run["status"] == "success"
         assert len(run["steps"]) == 1
         assert run["steps"][0]["status"] == "success"
@@ -215,7 +215,7 @@ steps:
         })
         assert resp2.status_code == 200
         run2 = resp2.json()
-        
+
         assert run2["status"] == "success"
         assert len(run2["steps"]) == 1
         assert run2["steps"][0]["status"] == "skipped"

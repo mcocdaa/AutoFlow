@@ -1,0 +1,7 @@
+# @file /plugins/desktop_checkin/config.yaml
+# @brief 桌面自动打卡插件配置
+# @create 2026-03-15 00:00:00
+
+defaults:
+  timeout_seconds: 0
+  dry_run: false

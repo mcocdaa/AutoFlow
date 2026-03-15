@@ -1,0 +1,28 @@
+# @file /plugins/ai_deepseek/plugin.yaml
+# @brief DeepSeek AI 插件元信息
+# @create 2026-03-15 00:00:00
+
+name: ai-deepseek
+version: 0.1.0
+author: AutoFlow Team
+description: DeepSeek AI 插件，提供 ai.deepseek_summarize 动作
+
+entry_points:
+  actions:
+    - ai.deepseek_summarize
+  checks: []
+
+dependencies:
+  python:
+    - httpx
+
+config_schema:
+  secrets:
+    - name: DEEPSEEK_API_KEY
+      description: DeepSeek API Key
+      env_var: DEEPSEEK_API_KEY
+  defaults:
+    base_url: https://api.deepseek.com
+    model: deepseek-chat
+    timeout_seconds: 60
+    dry_run: false

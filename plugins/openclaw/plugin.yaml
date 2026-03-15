@@ -1,0 +1,30 @@
+# @file /plugins/openclaw/plugin.yaml
+# @brief OpenClaw 插件元信息
+# @create 2026-03-15 00:00:00
+
+name: openclaw
+version: 0.1.0
+author: AutoFlow Team
+description: OpenClaw 插件，提供 HTTP 请求、Shell 命令执行、KnowFlow 记录等能力
+
+entry_points:
+  actions:
+    - openclaw.http_request
+    - openclaw.exec
+    - openclaw.knowflow_record
+  checks:
+    - openclaw.status_code_ok
+    - openclaw.exit_code_zero
+
+dependencies:
+  python: []
+
+config_schema:
+  secrets:
+    - name: KNOWFLOW_BASE_URL
+      description: KnowFlow 服务地址
+      env_var: KNOWFLOW_BASE_URL
+      default: http://localhost:3000
+  defaults:
+    http_timeout: 30
+    exec_timeout: 60

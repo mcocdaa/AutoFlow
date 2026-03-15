@@ -1,4 +1,4 @@
-# @file /backend/app/runtime/output_externalizer.py
+# @file /backend/app/runtime/utils/output_externalizer.py
 # @brief 大输出落盘并返回索引，避免响应与 run.json 体积失控
 # @create 2026-02-22 00:00:00
 
@@ -34,4 +34,3 @@ def externalize_if_large(
     sha256 = hashlib.sha256(raw).hexdigest()
     rel = str(out_path.relative_to(artifacts_dir))
     return {"__artifact__": {"path": rel, "sha256": sha256, "size": len(raw)}}
-

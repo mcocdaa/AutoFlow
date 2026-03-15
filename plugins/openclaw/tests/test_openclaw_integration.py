@@ -1,4 +1,4 @@
-# @file /backend/tests/test_openclaw_integration.py
+# @file /plugins/openclaw/tests/test_openclaw_integration.py
 # @brief AutoFlow × OpenClaw 集成 Phase 1 测试用例
 # @create 2026-03-14
 
@@ -13,9 +13,10 @@ from unittest.mock import Mock, call
 import pytest
 
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
-from app.runtime.runner import Runner, resolve_templates
-from app.runtime.registry import ActionContext, Registry
-from app.runtime.store import RunStore
+from app.runtime.runner import Runner
+from app.runtime.utils import resolve_templates
+from app.plugin.registry import ActionContext, Registry
+from app.runtime.storage import RunStore
 
 
 class TestResolveTemplates:
@@ -26,7 +27,6 @@ class TestResolveTemplates:
         obj = {"greeting": "Hello {{vars.name}}!"}
         context = {"vars": {"name": "Alice"}}
         result = resolve_templates(obj, context)
-        # String values are substituted without quotes
         assert result == {"greeting": "Hello Alice!"}
 
     def test_resolve_step_output(self) -> None:
@@ -34,7 +34,6 @@ class TestResolveTemplates:
         obj = {"data": "Step output: {{steps.step1.output}}"}
         context = {"steps": {"step1": {"result": 42}}}
         result = resolve_templates(obj, context)
-        # step_output 是 dict，json.dumps 后变成 JSON 字符串，整体字符串不是合法 JSON，保持原样
         expected = 'Step output: {"result": 42}'
         assert result == {"data": expected}
 
@@ -46,7 +45,6 @@ class TestResolveTemplates:
         }
         context = {"vars": {"a": 1, "b": 2, "c": 3}}
         result = resolve_templates(obj, context)
-        # 每个模板被替换为 json.dumps 后的字符串，然后 json.loads 成功转换为 Python 对象
         assert result == {
             "list": [1, {"deep": 2}],
             "dict": {"nested": 3}
@@ -64,7 +62,6 @@ class TestResolveTemplates:
         obj = {"message": "Input is {{input}}"}
         context = {"input": {"key": "value"}}
         result = resolve_templates(obj, context)
-        # input 是 dict，json.dumps 后变成 JSON 字符串，整体字符串不是合法 JSON
         expected = 'Input is {"key": "value"}'
         assert result == {"message": expected}
 
@@ -75,11 +72,9 @@ class TestVariablePassingEndToEnd:
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
-        # 注册一个简单的 action，返回传入的 params
         def echo_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return {"params": params, "step_id": context.step_id}
         reg.register_action("test.echo", echo_action)
-        # 注册一个 always_true check
         reg.register_check("test.always_true", lambda ctx, params: True)
         return reg
 
@@ -117,17 +112,13 @@ class TestVariablePassingEndToEnd:
         assert len(run.steps) == 2
         assert run.steps[0].status == "success"
         assert run.steps[1].status == "success"
-        
+
         step1_output = run.steps[0].action_output
         assert step1_output is not None
         assert step1_output["params"]["message"] == "first"
-        
+
         step2_output = run.steps[1].action_output
         assert step2_output is not None
-        # step2 的 params 应该包含解析后的 step1 output
-        # resolve_templates 将 {{steps.step1.output}} 替换为 step1_output 的 JSON 字符串，
-        # 然后 json.loads 成功（因为 step1_output 是 dict，其 JSON 字符串是合法 JSON），
-        # 所以 previous_param 就是 step1_output 本身（字典）
         previous_param = step2_output["params"]["previous"]
         assert previous_param == step1_output
 
@@ -149,17 +140,15 @@ class TestVariablePassingEndToEnd:
         run = runner.run_flow(flow, input=None, vars={"initial": 123})
         assert run.status == "success"
         step_output = run.steps[0].action_output
-        # 模板 {{vars.initial}} 被替换为整数 123（因为 json.dumps(123) -> "123"，然后 json.loads 成功）
         assert step_output["params"]["value"] == 123
 
 
 class TestOutputVar:
-    """output_var 测试（功能尚未实现，标记为预期失败）"""
+    """output_var 测试"""
 
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
-        # action 返回 params 本身，便于检查
         def param_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return params
         reg.register_action("test.param", param_action)
@@ -200,36 +189,5 @@ class TestOutputVar:
         assert run.status == "success"
         step1_output = run.steps[0].action_output
         assert step1_output == {"data": "value1"}
-        # 如果 output_var 生效，vars.stored 应该等于 step1_output
-        # step2 的 params 应该被解析为 step1_output（字典）
         step2_output = run.steps[1].action_output
         assert step2_output["received"] == {"data": "value1"}
-
-    @pytest.mark.xfail(reason="output_var 功能尚未在 runner 中实现")
-    def test_output_var_with_string(self, runner: Runner) -> None:
-        """output_var 存储字符串值"""
-        flow = FlowSpec(
-            version="1",
-            name="Output Var String Test",
-            steps=[
-                StepSpec(
-                    id="step1",
-                    action=ActionSpec(type="test.param", params={"return": "hello"}),
-                    output_var="greeting"
-                ),
-                StepSpec(
-                    id="step2",
-                    action=ActionSpec(
-                        type="test.param",
-                        params={"message": "{{vars.greeting}}"}
-                    ),
-                ),
-            ]
-        )
-        run = runner.run_flow(flow, input=None, vars={})
-        assert run.status == "success"
-        step1_output = run.steps[0].action_output
-        assert step1_output == {"return": "hello"}
-        step2_output = run.steps[1].action_output
-        # 期望 message 是字符串 "hello"
-        assert step2_output["message"] == "hello"

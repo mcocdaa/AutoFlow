@@ -1,6 +1,6 @@
-# @file /plugins/openclaw/__init__.py
-# @brief OpenClaw 插件：集成 HTTP 请求、Shell 命令执行、KnowFlow 记录
-# @create 2026-03-14
+# @file /plugins/openclaw/backend.py
+# @brief OpenClaw 插件后端实现
+# @create 2026-03-15 00:00:00
 
 from __future__ import annotations
 
@@ -11,12 +11,10 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from app.runtime.registry import ActionContext, CheckContext
+from app.plugin.registry import ActionContext, CheckContext
 
 
 class OpenClawPlugin:
-    """OpenClaw 插件：提供 HTTP 请求、Shell 命令执行、KnowFlow 记录等能力"""
-
     def __init__(self) -> None:
         self.name = "openclaw"
         self.version = "0.1.0"
@@ -30,18 +28,7 @@ class OpenClawPlugin:
             "openclaw.exit_code_zero": self.exit_code_zero,
         }
 
-    # ==================== Actions ====================
-
     def http_request(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
-        """
-        通用 HTTP 请求
-        params:
-            - method: GET/POST/PUT/DELETE
-            - url: 请求 URL
-            - headers: 可选，请求头 dict
-            - body: 可选，请求体
-            - timeout: 可选，默认 30 秒
-        """
         method = params.get("method", "GET").upper()
         url = params.get("url")
         headers = params.get("headers", {})
@@ -66,7 +53,6 @@ class OpenClawPlugin:
 
             with urlopen(req, timeout=timeout) as response:
                 response_body = response.read().decode("utf-8")
-                # 尝试解析 JSON
                 try:
                     response_body = json.loads(response_body)
                 except (json.JSONDecodeError, UnicodeDecodeError):
@@ -100,13 +86,6 @@ class OpenClawPlugin:
             }
 
     def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
-        """
-        执行 shell 命令
-        params:
-            - command: 要执行的命令
-            - cwd: 可选，工作目录
-            - timeout: 可选，默认 60 秒
-        """
         command = params.get("command")
         cwd = params.get("cwd")
         timeout = params.get("timeout", 60)
@@ -144,17 +123,6 @@ class OpenClawPlugin:
             }
 
     def knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
-        """
-        调用 KnowFlow 记录知识项
-        params:
-            - base_url: 可选，默认 http://localhost:3000
-            - name: 知识项名称
-            - project_id: 项目 ID
-            - archive_type: 可选，默认 document
-            - summary: 摘要
-            - content: 内容
-            - agent_source: 可选，来源 agent ID
-        """
         base_url = params.get("base_url", "http://localhost:3000")
         name = params.get("name")
         project_id = params.get("project_id")
@@ -169,7 +137,6 @@ class OpenClawPlugin:
             return {"item_id": None, "name": name, "success": False, "error": "project_id is required"}
 
         try:
-            # Step 1: 创建知识项
             create_url = f"{base_url}/api/v1/item"
             payload = {
                 "name": name,
@@ -179,7 +146,6 @@ class OpenClawPlugin:
                 "content": content,
             }
 
-            # 添加 agent_source 字段（如果 KnowFlow 支持）
             if agent_source:
                 payload["agent"] = agent_source
 
@@ -193,7 +159,6 @@ class OpenClawPlugin:
                 if not item_id:
                     return {"item_id": None, "name": name, "success": False, "error": "Failed to get item_id from response"}
 
-            # Step 2: 更新 OpenClaw 来源标记
             update_url = f"{base_url}/api/v1/plugins/knowflow_openclaw/items/{item_id}/openclaw"
             update_payload = {"agent": agent_source, "source": "autoflow"}
             update_data = json.dumps(update_payload).encode("utf-8")
@@ -203,9 +168,8 @@ class OpenClawPlugin:
 
             try:
                 with urlopen(update_req, timeout=30) as response:
-                    response.read()  # 确认更新成功
+                    response.read()
             except HTTPError:
-                # 更新失败不影响整体成功
                 pass
 
             return {"item_id": item_id, "name": name, "success": True}
@@ -218,14 +182,7 @@ class OpenClawPlugin:
         except Exception as e:
             return {"item_id": None, "name": name, "success": False, "error": str(e)}
 
-    # ==================== Checks ====================
-
     def status_code_ok(self, ctx: CheckContext, params: dict[str, Any]) -> bool:
-        """
-        检查 HTTP 状态码是否符合预期
-        params:
-            - expected: 期望的状态码，默认 200
-        """
         expected = params.get("expected", 200)
         action_output = ctx.action_output
 
@@ -236,9 +193,6 @@ class OpenClawPlugin:
         return status_code == expected
 
     def exit_code_zero(self, ctx: CheckContext, params: dict[str, Any]) -> bool:
-        """
-        检查命令退出码是否为 0
-        """
         action_output = ctx.action_output
 
         if not action_output:

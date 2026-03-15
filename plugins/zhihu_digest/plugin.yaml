@@ -1,0 +1,29 @@
+# @file /plugins/zhihu_digest/plugin.yaml
+# @brief 知乎回答总结插件元信息
+# @create 2026-03-15 00:00:00
+
+name: zhihu-digest
+version: 0.1.0
+author: AutoFlow Team
+description: 知乎回答抓取与总结插件，支持抓取回答并发布草稿
+
+entry_points:
+  actions:
+    - zhihu.fetch_answer
+    - zhihu.post_answer_draft
+  checks: []
+
+dependencies:
+  python:
+    - playwright
+  environment: []
+
+config_schema:
+  secrets:
+    - name: ZHIHU_COOKIE
+      description: 知乎登录 Cookie，用于抓取和发布
+      env_var: ZHIHU_COOKIE
+  defaults:
+    timeout_seconds: 30
+    mode: auto
+    dry_run: false

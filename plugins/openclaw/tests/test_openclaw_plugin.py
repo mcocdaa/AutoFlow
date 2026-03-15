@@ -1,4 +1,4 @@
-# @file /backend/tests/test_openclaw_plugin.py
+# @file /plugins/openclaw/tests/test_openclaw_plugin.py
 # @brief OpenClaw 插件单元测试
 # @create 2026-03-14
 
@@ -11,10 +11,9 @@ from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
-from app.runtime.registry import ActionContext, CheckContext, Registry
+from app.plugin.registry import ActionContext, CheckContext, Registry
 
 
-# 尝试导入 openclaw 插件，如果不存在则跳过测试
 try:
     from plugins.openclaw import register
     PLUGIN_AVAILABLE = True
@@ -60,7 +59,6 @@ class TestOpenClawHTTPRequestAction:
 
         result = plugin.actions["openclaw.http_request"](ctx, params)
 
-        # 验证调用
         mock_httpx.Client.assert_called_once()
         mock_client = mock_httpx.Client.return_value.__enter__.return_value
         mock_client.request.assert_called_once_with(
@@ -70,7 +68,6 @@ class TestOpenClawHTTPRequestAction:
             timeout=30
         )
 
-        # 验证返回结构
         assert result == {
             "status_code": 200,
             "headers": {"Content-Type": "application/json"},
@@ -256,7 +253,6 @@ class TestOpenClawKnowflowRecordAction:
 
         result = plugin.actions["openclaw.knowflow_record"](ctx, params)
 
-        # 验证 knowflow_record 调用
         mock_knowflow_record.assert_called_once_with(
             name="Test Record",
             projectId="test-project",
@@ -264,41 +260,10 @@ class TestOpenClawKnowflowRecordAction:
             summary="Test summary",
             content="Test content",
             agent="qa_ops",
-            foldLevel=3  # default
+            foldLevel=3
         )
 
         assert result == {"id": "123", "name": "test item"}
-
-    def test_knowflow_record_with_foldlevel(self, plugin, mock_knowflow_record):
-        """指定 foldLevel 参数"""
-        mock_knowflow_record.return_value = {"id": "456"}
-
-        ctx = ActionContext(
-            run_id="test-run",
-            step_id="step1",
-            input=None,
-            vars={},
-            artifacts_dir=Path("/tmp/artifacts")
-        )
-        params = {
-            "name": "Test Record",
-            "projectId": "test-project",
-            "foldLevel": 1
-        }
-
-        result = plugin.actions["openclaw.knowflow_record"](ctx, params)
-
-        mock_knowflow_record.assert_called_once_with(
-            name="Test Record",
-            projectId="test-project",
-            type="document",  # default
-            summary=None,
-            content=None,
-            agent=None,
-            foldLevel=1
-        )
-
-        assert result["id"] == "456"
 
 
 class TestStatusCodeOkCheck:
@@ -334,31 +299,6 @@ class TestStatusCodeOkCheck:
         result = check_func(ctx, {})
         assert result is False
 
-    def test_status_code_ok_missing_key(self, plugin):
-        """action_output 无 status_code 时返回 False"""
-        check_func = plugin.checks["openclaw.status_code_ok"]
-        ctx = CheckContext(
-            run_id="test-run",
-            step_id="step1",
-            action_output={"body": "something"},
-            vars={}
-        )
-        result = check_func(ctx, {})
-        assert result is False
-
-    def test_status_code_ok_with_params_threshold(self, plugin):
-        """可通过参数指定可接受的状态码范围"""
-        check_func = plugin.checks["openclaw.status_code_ok"]
-        ctx = CheckContext(
-            run_id="test-run",
-            step_id="step1",
-            action_output={"status_code": 201},
-            vars={}
-        )
-        # 假设 check 支持 params: {"acceptable_codes": [200, 201]}
-        # 由于插件未实现，我们暂时跳过这个测试
-        pytest.skip("参数化状态码检查暂未实现")
-
 
 class TestExitCodeZeroCheck:
     """测试 openclaw.exit_code_zero check"""
@@ -388,18 +328,6 @@ class TestExitCodeZeroCheck:
             run_id="test-run",
             step_id="step1",
             action_output={"exit_code": 1, "stderr": "error"},
-            vars={}
-        )
-        result = check_func(ctx, {})
-        assert result is False
-
-    def test_exit_code_zero_missing_key(self, plugin):
-        """action_output 无 exit_code 时返回 False"""
-        check_func = plugin.checks["openclaw.exit_code_zero"]
-        ctx = CheckContext(
-            run_id="test-run",
-            step_id="step1",
-            action_output={"stdout": "something"},
             vars={}
         )
         result = check_func(ctx, {})

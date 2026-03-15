@@ -1,4 +1,4 @@
-# @file /backend/app/runtime/registry.py
+# @file /backend/app/plugin/registry.py
 # @brief Action/Check 注册表与插件清单
 # @create 2026-02-21 00:00:00
 
