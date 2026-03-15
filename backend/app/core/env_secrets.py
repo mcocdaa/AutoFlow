@@ -7,12 +7,6 @@ def apply_file_env() -> None:
         "DB_PASSWORD_FILE",
         "SECRET_KEY_FILE",
         "MYSQL_ROOT_PASSWORD_FILE",
-        "REDIS_PASSWORD_FILE",
-        "INFLUXDB_TOKEN_FILE",
-        "MINIO_SECRET_KEY_FILE",
-        "MINIO_ACCESS_KEY_FILE",
-        "DEEPSEEK_API_KEY_FILE",
-        "ZHIHU_COOKIE_FILE",
     }
     for key, file_path in list(os.environ.items()):
         if key not in allowlist or not file_path:

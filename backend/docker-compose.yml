@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   default:
     name: ${NETWORK_NAME:-autoflow_default}
@@ -24,12 +22,15 @@ services:
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379/${REDIS_DB:-0}
       - PYTHONPATH=${PYTHONPATH:-}:/app/backend
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     secrets:
       - db_password
       - secret_key
     depends_on:
       - mysql
       - redis
+    volumes:
+      - ../plugins:/app/plugins:ro
 
   mysql:
     image: mysql:8.0
@@ -41,7 +42,7 @@ services:
       MYSQL_USER: ${DB_USER:-autoflow}
       MYSQL_PASSWORD_FILE: /run/secrets/db_password
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT_OUTER:-3306}:3306"
     secrets:
       - mysql_root_password
       - db_password
@@ -53,7 +54,7 @@ services:
     container_name: ${CONTAINER_PREFIX:-autoflow}-redis
     restart: always
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT_OUTER:-6379}:6379"
     volumes:
       - redis_data:/data
 

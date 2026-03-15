@@ -1,6 +1,6 @@
-# @file /plugins/ai_deepseek/__init__.py
-# @brief DeepSeek AI 插件：提供 ai.deepseek_summarize 动作
-# @create 2026-02-22 00:00:00
+# @file /plugins/ai_deepseek/backend.py
+# @brief DeepSeek AI 插件后端实现
+# @create 2026-03-15 00:00:00
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 
-from app.runtime.registry import ActionContext
+from app.plugin.registry import ActionContext
 
 
 def _repo_root() -> Path:
@@ -180,4 +180,3 @@ class AIDeepSeekPlugin:
 
 def register() -> AIDeepSeekPlugin:
     return AIDeepSeekPlugin()
-

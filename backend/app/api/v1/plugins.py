@@ -5,29 +5,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
-from app.runtime.runtime import get_registry
+from app.plugin.models import PluginErrorItem, PluginItem, PluginsResponse
+from app.runtime import get_registry
 
 router = APIRouter()
-
-
-class PluginItem(BaseModel):
-    name: str
-    version: str
-
-
-class PluginErrorItem(BaseModel):
-    plugin_id: str
-    file_path: str
-    error: str
-
-
-class PluginsResponse(BaseModel):
-    plugins: list[PluginItem]
-    actions: list[str]
-    checks: list[str]
-    errors: list[PluginErrorItem]
 
 
 @router.get("/plugins", response_model=PluginsResponse)

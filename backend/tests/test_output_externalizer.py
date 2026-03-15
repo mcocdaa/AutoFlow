@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.runtime.output_externalizer import externalize_if_large
+from app.runtime.utils.output_externalizer import externalize_if_large
 
 
 def test_externalize_if_large_writes_artifact(tmp_path: Path) -> None:

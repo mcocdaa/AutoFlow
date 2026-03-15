@@ -1,4 +1,4 @@
-# @file /backend/tests/test_zhihu_digest_plugin.py
+# @file /plugins/zhihu_digest/tests/test_zhihu_digest_plugin.py
 # @brief 知乎回答总结插件最小闭环测试（dry_run）
 # @create 2026-02-22 00:00:00
 
@@ -48,7 +48,7 @@ steps:
     assert fetch["dry_run"] is True
     assert summ["dry_run"] is True
 
-    artifacts_dir = Path(__file__).resolve().parents[1] / "artifacts" / run["run_id"]
+    artifacts_dir = Path(__file__).resolve().parents[2] / "backend" / "artifacts" / run["run_id"]
     assert (artifacts_dir / fetch["answer_text_path"]).exists()
     assert (artifacts_dir / summ["prompt_path"]).exists()
     assert (artifacts_dir / summ["summary_path"]).exists()

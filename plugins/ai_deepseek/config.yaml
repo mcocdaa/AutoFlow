@@ -1,0 +1,12 @@
+# @file /plugins/ai_deepseek/config.yaml
+# @brief DeepSeek AI 插件配置
+# @create 2026-03-15 00:00:00
+
+defaults:
+  base_url: https://api.deepseek.com
+  model: deepseek-chat
+  timeout_seconds: 60
+  dry_run: false
+
+secrets:
+  api_key: DEEPSEEK_API_KEY

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.runtime.registry import ActionContext
+from app.plugin.registry import ActionContext
 
 
 class DummyEchoPlugin:
@@ -27,4 +27,3 @@ class DummyEchoPlugin:
 
 def register() -> DummyEchoPlugin:
     return DummyEchoPlugin()
-

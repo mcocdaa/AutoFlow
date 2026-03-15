@@ -1,4 +1,4 @@
-# @file /backend/app/runtime/builtins.py
+# @file /backend/app/runtime/actions/builtins.py
 # @brief 内置 Action/Check（最小集合）
 # @create 2026-02-21 00:00:00
 
@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from app.runtime.registry import ActionContext, CheckContext, Registry
+from app.plugin.registry import ActionContext, CheckContext, Registry
 
 
 def _action_core_log(ctx: ActionContext, params: dict[str, Any]) -> Any:
@@ -49,4 +49,3 @@ def register_builtins(registry: Registry) -> None:
 
     registry.register_check("core.always_true", _check_core_always_true)
     registry.register_check("text.contains", _check_text_contains)
-

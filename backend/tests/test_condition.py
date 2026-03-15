@@ -1,120 +1,119 @@
-# @file /backend/tests/test_condition.py
-# @brief 测试条件分支功能
+﻿# @file /backend/tests/test_condition.py
+# @brief 娴嬭瘯鏉′欢鍒嗘敮鍔熻兘
 # @create 2026-03-14
 
 import pytest
-from app.runtime.models import FlowSpec, StepSpec, ActionSpec
-from app.runtime.runner import evaluate_condition, resolve_templates
+from app.runtime.models import ActionSpec, FlowSpec, StepSpec
+from app.runtime.runner.runner import evaluate_condition, resolve_templates
 
 
 class TestEvaluateCondition:
-    """测试 evaluate_condition 函数"""
+    """娴嬭瘯 evaluate_condition 鍑芥暟"""
 
     def test_true_literal(self):
-        """测试 true 字面量"""
+        """娴嬭瘯 true 瀛楅潰閲?""
         assert evaluate_condition("true") is True
         assert evaluate_condition("True") is True
         assert evaluate_condition("TRUE") is True
 
     def test_false_literal(self):
-        """测试 false 字面量"""
+        """娴嬭瘯 false 瀛楅潰閲?""
         assert evaluate_condition("false") is False
         assert evaluate_condition("False") is False
         assert evaluate_condition("FALSE") is False
 
     def test_string_equal(self):
-        """测试字符串相等比较 =="""
+        """娴嬭瘯瀛楃涓茬浉绛夋瘮杈?=="""
         assert evaluate_condition('"hello" == "hello"') is True
         assert evaluate_condition('"hello" == "world"') is False
         assert evaluate_condition("'hello' == 'hello'") is True
 
     def test_string_not_equal(self):
-        """测试字符串不相等比较 !="""
+        """娴嬭瘯瀛楃涓蹭笉鐩哥瓑姣旇緝 !="""
         assert evaluate_condition('"hello" != "world"') is True
         assert evaluate_condition('"hello" != "hello"') is False
 
     def test_number_greater(self):
-        """测试数字大于 >"""
+        """娴嬭瘯鏁板瓧澶т簬 >"""
         assert evaluate_condition("10 > 5") is True
         assert evaluate_condition("5 > 10") is False
         assert evaluate_condition("5 > 5") is False
 
     def test_number_less(self):
-        """测试数字小于 <"""
+        """娴嬭瘯鏁板瓧灏忎簬 <"""
         assert evaluate_condition("5 < 10") is True
         assert evaluate_condition("10 < 5") is False
         assert evaluate_condition("5 < 5") is False
 
     def test_number_greater_equal(self):
-        """测试数字大于等于 >="""
+        """娴嬭瘯鏁板瓧澶т簬绛変簬 >="""
         assert evaluate_condition("10 >= 5") is True
         assert evaluate_condition("5 >= 5") is True
         assert evaluate_condition("4 >= 5") is False
 
     def test_number_less_equal(self):
-        """测试数字小于等于 <="""
+        """娴嬭瘯鏁板瓧灏忎簬绛変簬 <="""
         assert evaluate_condition("5 <= 10") is True
         assert evaluate_condition("5 <= 5") is True
         assert evaluate_condition("10 <= 5") is False
 
     def test_unrecognized_expression(self):
-        """测试无法识别的表达式返回 False"""
+        """娴嬭瘯鏃犳硶璇嗗埆鐨勮〃杈惧紡杩斿洖 False"""
         assert evaluate_condition("unknown") is False
         assert evaluate_condition("") is False
 
 
 class TestConditionWithTemplates:
-    """测试条件中的模板变量解析"""
+    """娴嬭瘯鏉′欢涓殑妯℃澘鍙橀噺瑙ｆ瀽"""
 
     def test_condition_with_vars_true(self):
-        """测试条件中使用 {{vars.x}} 且条件为 true"""
+        """娴嬭瘯鏉′欢涓娇鐢?{{vars.x}} 涓旀潯浠朵负 true"""
         condition = "{{vars.enabled}} == true"
         context = {"steps": {}, "vars": {"enabled": "true"}, "input": None}
-        
+
         resolved = resolve_templates(condition, context)
-        # 注意：resolve_templates 会将 "true" 解析为字符串 "true"，不是布尔值
-        # 但我们的 evaluate_condition 支持字符串 "true"
+        # 娉ㄦ剰锛歳esolve_templates 浼氬皢 "true" 瑙ｆ瀽涓哄瓧绗︿覆 "true"锛屼笉鏄竷灏斿€?        # 浣嗘垜浠殑 evaluate_condition 鏀寔瀛楃涓?"true"
         result = evaluate_condition(str(resolved))
         assert result is True
 
     def test_condition_with_vars_false(self):
-        """测试条件中使用 {{vars.x}} 且条件为 false"""
+        """娴嬭瘯鏉′欢涓娇鐢?{{vars.x}} 涓旀潯浠朵负 false"""
         condition = "{{vars.enabled}}"
         context = {"steps": {}, "vars": {"enabled": "false"}, "input": None}
-        
+
         resolved = resolve_templates(condition, context)
         result = evaluate_condition(str(resolved))
         assert result is False
 
 
 class TestStepSpecCondition:
-    """测试 StepSpec.condition 字段"""
+    """娴嬭瘯 StepSpec.condition 瀛楁"""
 
     def test_condition_field_exists(self):
-        """验证 StepSpec 有 condition 字段"""
+        """楠岃瘉 StepSpec 鏈?condition 瀛楁"""
         step = StepSpec(
             id="test_step",
             action=ActionSpec(type="test", params={}),
             condition="true"
         )
-        
+
         assert step.condition == "true"
 
     def test_condition_optional(self):
-        """验证 condition 是可选的"""
+        """楠岃瘉 condition 鏄彲閫夌殑"""
         step = StepSpec(
             id="test_step",
             action=ActionSpec(type="test", params={})
         )
-        
+
         assert step.condition is None
 
 
 class TestConditionIntegration:
-    """条件分支集成测试（使用 TestClient API）"""
+    """鏉′欢鍒嗘敮闆嗘垚娴嬭瘯锛堜娇鐢?TestClient API锛?""
 
     def test_condition_true_executes_step(self):
-        """条件为 true 时，step 正常执行"""
+        """鏉′欢涓?true 鏃讹紝step 姝ｅ父鎵ц"""
         from fastapi.testclient import TestClient
         from app.main import app
 
@@ -134,13 +133,13 @@ steps:
         resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
         assert resp.status_code == 200
         run = resp.json()
-        
+
         assert run["status"] == "success"
         assert len(run["steps"]) == 1
         assert run["steps"][0]["status"] == "success"
 
     def test_condition_false_skips_step(self):
-        """条件为 false 时，step 被跳过"""
+        """鏉′欢涓?false 鏃讹紝step 琚烦杩?""
         from fastapi.testclient import TestClient
         from app.main import app
 
@@ -160,19 +159,18 @@ steps:
         resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml})
         assert resp.status_code == 200
         run = resp.json()
-        
+
         assert run["status"] == "success"
         assert len(run["steps"]) == 1
         assert run["steps"][0]["status"] == "skipped"
         assert run["steps"][0]["action_output"] is None
 
     def test_condition_with_var(self):
-        """条件引用变量 {{vars.x}}"""
+        """鏉′欢寮曠敤鍙橀噺 {{vars.x}}"""
         from fastapi.testclient import TestClient
         from app.main import app
 
-        # 测试条件为 true 的情况
-        flow_yaml = """
+        # 娴嬭瘯鏉′欢涓?true 鐨勬儏鍐?        flow_yaml = """
 version: "1"
 name: "test_condition_with_var"
 steps:
@@ -191,13 +189,12 @@ steps:
         })
         assert resp.status_code == 200
         run = resp.json()
-        
+
         assert run["status"] == "success"
         assert len(run["steps"]) == 1
         assert run["steps"][0]["status"] == "success"
 
-        # 测试条件为 false 的情况
-        flow_yaml2 = """
+        # 娴嬭瘯鏉′欢涓?false 鐨勬儏鍐?        flow_yaml2 = """
 version: "1"
 name: "test_condition_with_var_false"
 steps:
@@ -215,7 +212,7 @@ steps:
         })
         assert resp2.status_code == 200
         run2 = resp2.json()
-        
+
         assert run2["status"] == "success"
         assert len(run2["steps"]) == 1
         assert run2["steps"][0]["status"] == "skipped"

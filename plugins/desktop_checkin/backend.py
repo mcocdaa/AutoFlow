@@ -1,6 +1,6 @@
-# @file /plugins/desktop_checkin/__init__.py
-# @brief 桌面自动打卡插件：提供桌面动作原语与基础校验
-# @create 2026-02-22 00:00:00
+# @file /plugins/desktop_checkin/backend.py
+# @brief 桌面自动打卡插件后端实现
+# @create 2026-03-15 00:00:00
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from app.runtime.registry import ActionContext, CheckContext
+from app.plugin.registry import ActionContext, CheckContext
 
 
 def _is_truthy(v: Any) -> bool:

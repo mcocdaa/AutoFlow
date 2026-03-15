@@ -1,0 +1,10 @@
+# @file /plugins/openclaw/config.yaml
+# @brief OpenClaw 插件配置
+# @create 2026-03-15 00:00:00
+
+defaults:
+  http_timeout: 30
+  exec_timeout: 60
+
+secrets:
+  knowflow_base_url: KNOWFLOW_BASE_URL

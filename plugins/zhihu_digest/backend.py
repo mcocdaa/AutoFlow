@@ -1,6 +1,6 @@
-# @file /plugins/zhihu_digest/__init__.py
-# @brief 知乎回答总结插件：抓取回答内容并调用 DeepSeek 生成总结
-# @create 2026-02-22 00:00:00
+# @file /plugins/zhihu_digest/backend.py
+# @brief 知乎回答总结插件后端实现
+# @create 2026-03-15 00:00:00
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.runtime.registry import ActionContext
+from app.plugin.registry import ActionContext
 
 
 def _utc_now_iso() -> str:
@@ -97,7 +97,7 @@ class ZhihuDigestPlugin:
             raise ValueError("unsupported zhihu answer url")
 
         if _dry_run(ctx, params):
-            answer_text = "点赞后弹出来的“已赞同”可以上下拖动。"
+            answer_text = "点赞后弹出来的\"已赞同\"可以上下拖动。"
             rel = _write_text(ctx, f"zhihu/answers/{answer_id}.txt", answer_text)
             return {
                 "question_id": question_id,

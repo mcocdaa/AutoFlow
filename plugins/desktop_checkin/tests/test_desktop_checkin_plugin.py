@@ -1,4 +1,4 @@
-# @file /backend/tests/test_desktop_checkin_plugin.py
+# @file /plugins/desktop_checkin/tests/test_desktop_checkin_plugin.py
 # @brief 桌面自动打卡插件最小闭环测试（dry_run）
 # @create 2026-02-22 00:00:00
 
@@ -53,6 +53,5 @@ steps:
     assert "text" not in run["steps"][0]["action_output"]
 
     rel = run["steps"][1]["action_output"]["path"]
-    artifacts_dir = Path(__file__).resolve().parents[1] / "artifacts" / run["run_id"]
+    artifacts_dir = Path(__file__).resolve().parents[2] / "backend" / "artifacts" / run["run_id"]
     assert (artifacts_dir / rel).exists()
-

@@ -1,17 +1,19 @@
-# @file /backend/app/runtime/plugin_loader.py
+# @file /backend/app/plugin/plugin_loader.py
 # @brief 从仓库 plugins 目录加载插件并注册 Action/Check
 # @create 2026-02-21 00:00:00
+# @update 2026-03-15 支持新插件格式（backend.py + plugin.yaml + config.yaml）
 
 from __future__ import annotations
 
 import importlib.util
 import os
 import sys
+import yaml
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from app.runtime.registry import ActionContext, Registry
+from .registry import ActionContext, Registry
 
 
 class PluginLoadError(RuntimeError):
@@ -19,6 +21,9 @@ class PluginLoadError(RuntimeError):
 
 
 def _repo_root() -> Path:
+    container_plugins = Path("/app/plugins")
+    if container_plugins.exists():
+        return container_plugins.parent
     return Path(__file__).resolve().parents[3]
 
 
@@ -64,13 +69,52 @@ def _register_plugin_object(registry: Registry, plugin_id: str, plugin_obj: Any)
         registry.register_action(action_type, _execute_action)
 
 
+def _load_plugin_config(plugin_dir: Path) -> dict[str, Any]:
+    config = {"meta": {}, "defaults": {}, "secrets": []}
+
+    plugin_yaml = plugin_dir / "plugin.yaml"
+    if plugin_yaml.exists():
+        try:
+            config["meta"] = yaml.safe_load(plugin_yaml.read_text(encoding="utf-8")) or {}
+        except Exception:
+            pass
+
+    config_yaml = plugin_dir / "config.yaml"
+    if config_yaml.exists():
+        try:
+            data = yaml.safe_load(config_yaml.read_text(encoding="utf-8")) or {}
+            config["defaults"] = data.get("defaults", {})
+            config["secrets"] = data.get("secrets", {})
+        except Exception:
+            pass
+
+    return config
+
+
+def _is_plugin_enabled(meta: dict[str, Any]) -> bool:
+    return meta.get("enabled", True)
+
+
+def _load_plugin_entry_file(plugin_dir: Path, plugin_id: str) -> Path | None:
+    backend_py = plugin_dir / "backend.py"
+    if backend_py.exists():
+        return backend_py
+
+    init_py = plugin_dir / "__init__.py"
+    if init_py.exists():
+        return init_py
+
+    return None
+
+
 def load_plugins_into_registry(registry: Registry, *, plugins_dir: Path | None = None) -> None:
+    from app.core.config import settings
     root_dirs: list[Path] = []
     if plugins_dir is not None:
         root_dirs.append(plugins_dir)
     else:
         root_dirs.append(_repo_root() / "plugins")
-        extra = os.getenv("AUTOFLOW_PLUGIN_DIRS", "")
+        extra = settings.AUTOFLOW_PLUGIN_DIRS
         for raw in [p.strip() for p in extra.split(os.pathsep) if p.strip()]:
             root_dirs.append(Path(raw))
 
@@ -98,15 +142,24 @@ def load_plugins_into_registry(registry: Registry, *, plugins_dir: Path | None =
                 continue
             if child.name in {"examples", "__pycache__"}:
                 continue
-            init_py = child / "__init__.py"
-            if not init_py.exists():
-                continue
+
             plugin_id = child.name.replace("-", "_")
+
+            plugin_config = _load_plugin_config(child)
+            meta = plugin_config.get("meta", {})
+
+            if not _is_plugin_enabled(meta):
+                continue
+
+            entry_file = _load_plugin_entry_file(child, plugin_id)
+            if entry_file is None:
+                continue
+
             try:
-                module = _load_module_from_file(f"autoflow_plugins.{plugin_id}", init_py, package_dir=child)
+                module = _load_module_from_file(f"autoflow_plugins.{plugin_id}", entry_file, package_dir=child)
                 register = getattr(module, "register", None)
                 if register is None or not callable(register):
                     continue
                 _register_plugin_object(registry, plugin_id, register())
             except Exception as e:
-                registry.add_plugin_error(plugin_id=plugin_id, file_path=str(init_py), error=str(e))
+                registry.add_plugin_error(plugin_id=plugin_id, file_path=str(entry_file), error=str(e))

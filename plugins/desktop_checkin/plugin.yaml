@@ -1,0 +1,34 @@
+# @file /plugins/desktop_checkin/plugin.yaml
+# @brief 桌面自动打卡插件元信息
+# @create 2026-03-15 00:00:00
+
+name: desktop-checkin
+version: 0.1.0
+author: AutoFlow Team
+description: 桌面自动打卡插件，提供桌面动作原语与基础校验
+
+entry_points:
+  actions:
+    - desktop.activate_window
+    - desktop.click
+    - desktop.double_click
+    - desktop.drag
+    - desktop.type_text
+    - desktop.hotkey
+    - desktop.wait
+    - desktop.screenshot
+  checks:
+    - desktop.image_exists
+    - desktop.window_title_contains
+
+dependencies:
+  python:
+    - pygetwindow
+    - pyautogui
+    - Pillow
+
+config_schema:
+  secrets: []
+  defaults:
+    timeout_seconds: 0
+    dry_run: false
