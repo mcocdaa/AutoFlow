@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import json
+import os
+import re
+import shlex
 import subprocess
 import sys
 from typing import Any
@@ -15,9 +18,12 @@ from app.plugin.registry import ActionContext, CheckContext
 
 
 class OpenClawPlugin:
-    def __init__(self) -> None:
+    def __init__(self, config: dict = None) -> None:
         self.name = "openclaw"
         self.version = "0.1.0"
+        self.config = config or {}
+        self.defaults = self.config.get("defaults", {})
+        self.secrets = self.config.get("secrets", {})
         self.actions = {
             "openclaw.http_request": self.http_request,
             "openclaw.exec": self.exec_command,
@@ -33,7 +39,7 @@ class OpenClawPlugin:
         url = params.get("url")
         headers = params.get("headers", {})
         body = params.get("body")
-        timeout = params.get("timeout", 30)
+        timeout = params.get("timeout") or self.defaults.get("http_timeout", 30)
 
         if not url:
             return {"error": "url is required", "status_code": None, "headers": None, "body": None}
@@ -87,16 +93,41 @@ class OpenClawPlugin:
 
     def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
         command = params.get("command")
+        args = params.get("args")  # 可选参数列表
         cwd = params.get("cwd")
-        timeout = params.get("timeout", 60)
+        timeout = params.get("timeout") or self.defaults.get("exec_timeout", 60)
+        safe_mode = params.get("safe_mode", self.defaults.get("safe_mode", False))
+        allowed_commands = self.defaults.get("allowed_commands", [])
 
         if not command:
             return {"exit_code": None, "stdout": "", "stderr": "command is required", "error": "command is required"}
 
+        # 白名单校验（若配置了 allowed_commands）
+        if allowed_commands:
+            matched = any(re.match(pattern, command) for pattern in allowed_commands)
+            if not matched:
+                return {"exit_code": -1, "stdout": "", "stderr": f"command not allowed: {command}", "error": "command_not_allowed"}
+
+        # 构建执行参数
+        # Windows 上内建命令（echo/dir等）需要 shell=True，safe_mode 下仍用 shlex 解析但保留 shell
+        _is_windows = sys.platform == "win32"
+        if args is not None:
+            # 显式传了 args，使用列表模式
+            cmd = [command] + list(args)
+            use_shell = _is_windows  # Windows 需要 shell=True 才能找到内建命令
+        elif safe_mode:
+            # safe_mode：用 shlex.split 解析参数，防止注入；Windows 下仍需 shell
+            cmd = shlex.split(command, posix=not _is_windows)
+            use_shell = _is_windows
+        else:
+            # 默认：shell=True（向后兼容）
+            cmd = command
+            use_shell = True
+
         try:
             result = subprocess.run(
-                command,
-                shell=True,
+                cmd,
+                shell=use_shell,
                 cwd=cwd,
                 capture_output=True,
                 text=True,
@@ -123,7 +154,12 @@ class OpenClawPlugin:
             }
 
     def knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
-        base_url = params.get("base_url", "http://localhost:3000")
+        default_base_url = (
+            self.secrets.get("knowflow_base_url")
+            or os.environ.get("KNOWFLOW_BASE_URL")
+            or "http://localhost:3000"
+        )
+        base_url = params.get("base_url") or default_base_url
         name = params.get("name")
         project_id = params.get("project_id")
         archive_type = params.get("archive_type", "document")
@@ -202,5 +238,5 @@ class OpenClawPlugin:
         return exit_code == 0
 
 
-def register() -> OpenClawPlugin:
-    return OpenClawPlugin()
+def register(config: dict = None) -> OpenClawPlugin:
+    return OpenClawPlugin(config=config)

@@ -28,3 +28,5 @@ config_schema:
   defaults:
     http_timeout: 30
     exec_timeout: 60
+    safe_mode: false
+    allowed_commands: []

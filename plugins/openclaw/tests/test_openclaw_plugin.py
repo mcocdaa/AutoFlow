@@ -13,6 +13,12 @@ import pytest
 
 from app.plugin.registry import ActionContext, CheckContext, Registry
 
+import sys as _sys, os as _os
+_plugins_root = _os.path.abspath(_os.path.join(_os.path.dirname(__file__), '../../..'))
+if _plugins_root not in _sys.path:
+    _sys.path.insert(0, _plugins_root)
+from plugins.openclaw.backend import OpenClawPlugin, register
+
 
 try:
     from plugins.openclaw import register
@@ -136,7 +142,7 @@ class TestOpenClawExecAction:
 
     @pytest.fixture
     def mock_subprocess(self):
-        with patch("plugins.openclaw.subprocess") as mock_subprocess:
+        with patch("plugins.openclaw.backend.subprocess") as mock_subprocess:
             yield mock_subprocess
 
     def test_exec_success(self, plugin, mock_subprocess):

@@ -160,6 +160,10 @@ def load_plugins_into_registry(registry: Registry, *, plugins_dir: Path | None =
                 register = getattr(module, "register", None)
                 if register is None or not callable(register):
                     continue
-                _register_plugin_object(registry, plugin_id, register())
+                try:
+                    plugin_obj = register(config=plugin_config)
+                except TypeError:
+                    plugin_obj = register()  # 兼容不接受 config 的旧插件
+                _register_plugin_object(registry, plugin_id, plugin_obj)
             except Exception as e:
                 registry.add_plugin_error(plugin_id=plugin_id, file_path=str(entry_file), error=str(e))

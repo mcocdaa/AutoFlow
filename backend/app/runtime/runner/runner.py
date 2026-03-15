@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.runtime.models import FlowSpec, RunResult, StepResult
+from app.runtime.models import FlowSpec, HookSpec, RunResult, StepResult
 from app.runtime.storage.store import RunStore
 from app.runtime.utils import evaluate_condition, resolve_templates
 from app.runtime.utils.output_externalizer import externalize_if_large
@@ -31,6 +31,43 @@ class Runner:
     @property
     def artifacts_dir(self) -> Path:
         return self._store.artifacts_dir
+
+    def _run_hooks(
+        self,
+        hooks: HookSpec,
+        run_id: str,
+        run_artifacts_dir: Path,
+        runtime_vars: dict[str, Any],
+        step_outputs: dict[str, Any],
+        current_input: Any,
+        status: str,
+    ) -> None:
+        """执行 flow hooks"""
+        hook_actions = []
+        if status == "success" and hooks.on_success:
+            hook_actions = hooks.on_success
+        elif status == "failed" and hooks.on_failure:
+            hook_actions = hooks.on_failure
+
+        for hook_action in hook_actions:
+            try:
+                resolved_params = resolve_templates(
+                    hook_action.params,
+                    {"steps": step_outputs, "vars": runtime_vars, "input": current_input},
+                )
+                handler = self._registry.get_action(hook_action.type)
+                if handler:
+                    ctx = ActionContext(
+                        run_id=run_id,
+                        step_id="__hook__",
+                        input=current_input,
+                        vars=runtime_vars,
+                        artifacts_dir=run_artifacts_dir,
+                    )
+                    handler(ctx, resolved_params)
+            except Exception:
+                # hook 执行失败不影响主流程状态
+                pass
 
     def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, Any] | None = None) -> RunResult:
         run_id = str(uuid.uuid4())
@@ -261,6 +298,17 @@ class Runner:
                 run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
                 run.error = step_error
                 self._store.save_run(run)
+                # 执行 on_failure hooks
+                if flow.hooks:
+                    self._run_hooks(
+                        flow.hooks,
+                        run_id,
+                        run_artifacts_dir,
+                        runtime_vars,
+                        step_outputs,
+                        current_input,
+                        "failed",
+                    )
                 return run
 
             step_outputs[step.id] = action_output
@@ -274,4 +322,15 @@ class Runner:
         run.finished_at = finished_at
         run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
         self._store.save_run(run)
+        # 执行 on_success hooks
+        if flow.hooks:
+            self._run_hooks(
+                flow.hooks,
+                run_id,
+                run_artifacts_dir,
+                runtime_vars,
+                step_outputs,
+                current_input,
+                "success",
+            )
         return run

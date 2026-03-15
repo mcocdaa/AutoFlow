@@ -1,10 +1,11 @@
 # @file /plugins/openclaw/config.yaml
-# @brief OpenClaw 插件配置
-# @create 2026-03-15 00:00:00
+# @brief OpenClaw 插件运行时配置
 
 defaults:
-  http_timeout: 30
-  exec_timeout: 60
+  http_timeout: 30      # HTTP 请求超时秒数
+  exec_timeout: 60      # Shell 命令执行超时秒数
+  safe_mode: false      # 启用时使用 shell=False + shlex.split
+  allowed_commands: []  # 命令白名单正则列表，空列表表示不限制
 
 secrets:
-  knowflow_base_url: KNOWFLOW_BASE_URL
+  knowflow_base_url: KNOWFLOW_BASE_URL  # KnowFlow 服务地址，对应环境变量 KNOWFLOW_BASE_URL
