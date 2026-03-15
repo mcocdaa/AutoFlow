@@ -340,5 +340,51 @@ class TestExitCodeZeroCheck:
         assert result is False
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+
+
+class TestExecSecurity:
+    def test_safe_mode_normal_command(self):
+        plugin = OpenClawPlugin(config={"defaults": {"safe_mode": True}})
+        result = plugin.exec_command(None, {"command": "echo hello"})
+        assert result["exit_code"] == 0
+        assert "hello" in result["stdout"]
+
+    def test_safe_mode_false_default(self):
+        plugin = OpenClawPlugin()
+        assert plugin.defaults.get("safe_mode", False) is False
+        result = plugin.exec_command(None, {"command": "echo compat"})
+        assert result["exit_code"] == 0
+
+    def test_allowed_commands_blocks_disallowed(self):
+        plugin = OpenClawPlugin(config={"defaults": {"allowed_commands": ["^echo"]}})
+        result = plugin.exec_command(None, {"command": "rm -rf /"})
+        assert result["exit_code"] == -1
+        assert result["error"] == "command_not_allowed"
+        assert "not allowed" in result["stderr"]
+
+    def test_allowed_commands_permits_matching(self):
+        plugin = OpenClawPlugin(config={"defaults": {"allowed_commands": ["^echo"]}})
+        result = plugin.exec_command(None, {"command": "echo allowed"})
+        assert result["exit_code"] == 0
+        assert "allowed" in result["stdout"]
+
+    def test_allowed_commands_empty_no_restriction(self):
+        plugin = OpenClawPlugin(config={"defaults": {"allowed_commands": []}})
+        result = plugin.exec_command(None, {"command": "echo unrestricted"})
+        assert result["exit_code"] == 0
+
+    def test_args_mode(self):
+        plugin = OpenClawPlugin()
+        result = plugin.exec_command(None, {"command": "echo", "args": ["from", "args"]})
+        assert result["exit_code"] == 0
+        assert "from" in result["stdout"]
+
+    def test_config_exec_timeout(self):
+        import sys
+        plugin = OpenClawPlugin(config={"defaults": {"exec_timeout": 1}})
+        if sys.platform == "win32":
+            result = plugin.exec_command(None, {"command": "ping -n 5 127.0.0.1"})
+        else:
+            result = plugin.exec_command(None, {"command": "sleep 5"})
+        assert result["exit_code"] == -1
+        assert result.get("error") == "timeout"

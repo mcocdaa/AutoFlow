@@ -221,6 +221,17 @@ class Runner:
                     run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
                     run.error = step_error
                     self._store.save_run(run)
+                    # 执行 on_failure hooks（for_each 分支）
+                    if flow.hooks:
+                        self._run_hooks(
+                            flow.hooks,
+                            run_id,
+                            run_artifacts_dir,
+                            runtime_vars,
+                            step_outputs,
+                            current_input,
+                            "failed",
+                        )
                     return run
 
                 step_outputs[step.id] = action_output
