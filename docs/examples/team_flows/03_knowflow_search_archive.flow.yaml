@@ -1,0 +1,50 @@
+# @file team_flows/03_knowflow_search_archive.flow.yaml
+# @brief KnowFlow 知识搜索 + 结果归档
+# @description
+#   通过 HTTP 搜索 KnowFlow 知识库，将搜索结果归档为新条目。
+#   适合定期整理知识、生成知识摘要。
+#
+# @usage
+#   autoflow_run flowYaml=<本文件内容> vars={"search_query": "AutoFlow"}
+#
+# @vars
+#   search_query: 搜索关键词
+
+version: "1.0"
+name: "team-knowflow-search-archive"
+
+steps:
+  - id: search_knowflow
+    name: 搜索 KnowFlow 知识库
+    action:
+      type: openclaw.http_request
+      params:
+        url: "http://localhost:3000/api/v1/items?query=${search_query}&page_size=5"
+        method: "GET"
+    check:
+      type: openclaw.status_code_ok
+    output_var: search_result
+
+  - id: log_search
+    name: 记录搜索结果
+    action:
+      type: core.log
+      params:
+        message: "KnowFlow 搜索完成，关键词: ${search_query}"
+
+  - id: archive_summary
+    name: 归档搜索摘要
+    action:
+      type: openclaw.knowflow_record
+      params:
+        name: "知识搜索摘要 - ${search_query}"
+        project_id: "team-memory"
+        summary: "KnowFlow 搜索: ${search_query}"
+        content: "搜索关键词: ${search_query}\n搜索已完成，结果已记录"
+
+  - id: sleep_brief
+    name: 短暂等待
+    action:
+      type: core.sleep
+      params:
+        seconds: 1

@@ -1,0 +1,62 @@
+# @file team_flows/03_docker_services_check.flow.yaml
+# @brief Docker 服务状态检查 + 归档
+# @description
+#   检查所有 Docker 容器运行状态（AutoFlow / KnowFlow），
+#   发现异常容器时记录告警，结果归档到 KnowFlow。
+#
+# @usage
+#   autoflow_run flowYaml=<本文件内容>
+#
+# @actions used
+#   - openclaw.exec          执行 docker 命令
+#   - core.log               记录状态
+#   - openclaw.knowflow_record 归档结果
+
+version: "1"
+name: "team-docker-services-check"
+description: "检查 AutoFlow / KnowFlow Docker 容器运行状态，异常时告警"
+
+defaults:
+  timeoutMs: 30000
+
+steps:
+  - id: "list-containers"
+    name: "列出所有容器状态"
+    action: "openclaw.exec"
+    params:
+      command: "docker ps -a --format \"{{.Names}}\\t{{.Status}}\\t{{.Ports}}\""
+      timeout_seconds: 15
+    output_var: "containers_status"
+
+  - id: "check-unhealthy"
+    name: "检查异常容器"
+    action: "openclaw.exec"
+    params:
+      command: "docker ps -a --filter status=exited --filter status=dead --format \"{{.Names}}\" 2>&1"
+      timeout_seconds: 10
+    output_var: "unhealthy_containers"
+
+  - id: "log-status"
+    name: "记录检查结果"
+    action: "core.log"
+    params:
+      message: "容器状态检查完成。异常容器: ${unhealthy_containers}"
+
+  - id: "archive-status"
+    name: "归档容器状态"
+    action: "openclaw.knowflow_record"
+    params:
+      name: "Docker 服务状态检查"
+      projectId: "team-memory"
+      type: "document"
+      foldLevel: 1
+      summary: "Docker 容器状态检查 | 异常: ${unhealthy_containers}"
+      content: "## Docker 服务状态\n\n### 所有容器\n```\n${containers_status}\n```\n\n### 异常容器\n```\n${unhealthy_containers}\n```"
+
+hooks:
+  on_failure:
+    - id: "log-check-error"
+      name: "记录检查错误"
+      action: "core.log"
+      params:
+        message: "Docker 状态检查失败，请确认 Docker 服务正在运行"
