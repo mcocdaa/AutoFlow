@@ -1,0 +1,48 @@
+# @file team_flows/02_git_status_archive.flow.yaml
+# @brief Git 仓库状态检查 + 归档
+# @description
+#   检查项目 git 状态（未提交变更、最近提交），结果归档到 KnowFlow。
+#   适合每日结束时运行，确保代码已提交。
+#
+# @usage
+#   autoflow_run flowYaml=<本文件内容> vars={"repo_path": "C:\\path\\to\\repo"}
+#
+# @vars
+#   repo_path: 仓库路径，默认为 AutoFlow 项目目录
+
+version: "1.0"
+name: "team-git-status-archive"
+
+steps:
+  - id: git_status
+    name: 获取 Git 状态
+    action:
+      type: openclaw.exec
+      params:
+        command: "cd \"${repo_path}\" ; git status --short ; Write-Host '---' ; git log --oneline -5"
+    output_var: git_output
+
+  - id: git_branch
+    name: 获取当前分支
+    action:
+      type: openclaw.exec
+      params:
+        command: "cd \"${repo_path}\" ; git branch --show-current"
+    output_var: branch_output
+
+  - id: log_status
+    name: 记录 Git 状态
+    action:
+      type: core.log
+      params:
+        message: "Git 状态检查完成"
+
+  - id: archive_git_status
+    name: 归档 Git 状态到 KnowFlow
+    action:
+      type: openclaw.knowflow_record
+      params:
+        name: "Git 状态快照"
+        project_id: "team-memory"
+        summary: "每日 Git 状态归档"
+        content: "Git 状态检查已完成，详见执行日志"

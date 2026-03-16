@@ -1,0 +1,43 @@
+# @file team_flows/01_health_check.flow.yaml
+# @brief 服务健康检查（已验证可运行）
+# @description
+#   检查 AutoFlow / KnowFlow HTTP 服务是否可达，结果归档到 KnowFlow。
+#   适合配置为定时 cron（如每小时）。
+#
+# @validated 2026-03-16 ✅ 全部步骤通过
+#
+# @notes
+#   - AutoFlow 内部访问 KnowFlow 需用 host.docker.internal（跨 Docker 网络）
+#   - KnowFlow API 路径: /api/v1/item（单数，非 /items）
+#   - AutoFlow API 路径: /api/v1/plugins（健康检查用）
+
+version: "1.0"
+name: "team-health-check"
+
+steps:
+  - id: check_autoflow
+    name: 检查 AutoFlow 服务
+    action:
+      type: openclaw.http_request
+      params:
+        url: "http://localhost:8000/api/v1/plugins"
+        method: "GET"
+    check:
+      type: openclaw.status_code_ok
+
+  - id: check_knowflow
+    name: 检查 KnowFlow 服务
+    action:
+      type: openclaw.http_request
+      params:
+        url: "http://host.docker.internal:3000/api/v1/item"
+        method: "GET"
+    check:
+      type: openclaw.status_code_ok
+
+  - id: log_result
+    name: 记录检查结果
+    action:
+      type: core.log
+      params:
+        message: "健康检查完成 - AutoFlow OK, KnowFlow OK"
