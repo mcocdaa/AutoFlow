@@ -10,6 +10,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -40,59 +41,98 @@ class OpenClawPlugin:
         headers = params.get("headers", {})
         body = params.get("body")
         timeout = params.get("timeout") or self.defaults.get("http_timeout", 30)
+        
+        # Retry parameters
+        max_retries = params.get("max_retries", 0)
+        backoff_ms = params.get("backoff_ms", 1000)
+        retry_on = params.get("retry_on", ["network_error", "5xx"])
 
         if not url:
             return {"error": "url is required", "status_code": None, "headers": None, "body": None}
 
-        try:
-            req = Request(url, method=method)
-            for key, value in headers.items():
-                req.add_header(key, value)
+        def _do_request() -> dict[str, Any]:
+            try:
+                req = Request(url, method=method)
+                for key, value in headers.items():
+                    req.add_header(key, value)
 
-            if body:
-                if isinstance(body, (dict, list)):
-                    body = json.dumps(body).encode("utf-8")
-                    req.add_header("Content-Type", "application/json")
-                elif isinstance(body, str):
-                    body = body.encode("utf-8")
-                req.data = body
+                req_body = body
+                if req_body:
+                    if isinstance(req_body, (dict, list)):
+                        req_body = json.dumps(req_body).encode("utf-8")
+                        req.add_header("Content-Type", "application/json")
+                    elif isinstance(req_body, str):
+                        req_body = req_body.encode("utf-8")
+                    req.data = req_body
 
-            with urlopen(req, timeout=timeout) as response:
-                response_body = response.read().decode("utf-8")
-                try:
-                    response_body = json.loads(response_body)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    pass
+                with urlopen(req, timeout=timeout) as response:
+                    response_body = response.read().decode("utf-8")
+                    try:
+                        response_body = json.loads(response_body)
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        pass
 
+                    return {
+                        "status_code": response.status,
+                        "headers": dict(response.headers),
+                        "body": response_body,
+                    }
+            except HTTPError as e:
                 return {
-                    "status_code": response.status,
-                    "headers": dict(response.headers),
-                    "body": response_body,
+                    "status_code": e.code,
+                    "headers": dict(e.headers) if e.headers else {},
+                    "body": e.read().decode("utf-8") if e.fp else None,
+                    "error": str(e),
+                    "error_type": "http_error",
                 }
-        except HTTPError as e:
-            return {
-                "status_code": e.code,
-                "headers": dict(e.headers) if e.headers else {},
-                "body": e.read().decode("utf-8") if e.fp else None,
-                "error": str(e),
-                "error_type": "http_error",
+            except URLError as e:
+                return {
+                    "status_code": None,
+                    "headers": None,
+                    "body": None,
+                    "error": str(e.reason),
+                    "error_type": "network_error",
+                }
+            except Exception as e:
+                return {
+                    "status_code": None,
+                    "headers": None,
+                    "body": None,
+                    "error": str(e),
+                    "error_type": "unknown_error",
+                }
+
+        def _should_retry(result: dict[str, Any]) -> bool:
+            error_type = result.get("error_type")
+            status_code = result.get("status_code")
+            
+            # Check network errors
+            if error_type == "network_error" and "network_error" in retry_on:
+                return True
+            # Check 5xx errors
+            if status_code and 500 <= status_code < 600 and "5xx" in retry_on:
+                return True
+            return False
+
+        # Execute with retry logic
+        last_result = _do_request()
+        attempt = 0
+        
+        while _should_retry(last_result) and attempt < max_retries:
+            attempt += 1
+            # Exponential backoff: 1x, 2x, 4x, 8x...
+            wait_ms = backoff_ms * (2 ** (attempt - 1))
+            time.sleep(wait_ms / 1000.0)
+            last_result = _do_request()
+        
+        # Add retry info to result
+        if attempt > 0:
+            last_result["_retry"] = {
+                "attempts": attempt + 1,
+                "max_retries": max_retries,
             }
-        except URLError as e:
-            return {
-                "status_code": None,
-                "headers": None,
-                "body": None,
-                "error": str(e.reason),
-                "error_type": "network_error",
-            }
-        except Exception as e:
-            return {
-                "status_code": None,
-                "headers": None,
-                "body": None,
-                "error": str(e),
-                "error_type": "unknown_error",
-            }
+        
+        return last_result
 
     def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
         command = params.get("command")
@@ -101,6 +141,11 @@ class OpenClawPlugin:
         timeout = params.get("timeout") or self.defaults.get("exec_timeout", 60)
         safe_mode = params.get("safe_mode", self.defaults.get("safe_mode", False))
         allowed_commands = self.defaults.get("allowed_commands", [])
+        
+        # Retry parameters
+        max_retries = params.get("max_retries", 0)
+        backoff_ms = params.get("backoff_ms", 1000)
+        retry_on_exit_codes = params.get("retry_on_exit_codes", [1])
 
         if not command:
             return {"exit_code": None, "stdout": "", "stderr": "command is required", "error": "command is required"}
@@ -127,36 +172,63 @@ class OpenClawPlugin:
             cmd = command
             use_shell = True
 
-        try:
-            result = subprocess.run(
-                cmd,
-                shell=use_shell,
-                cwd=cwd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-            )
-            return {
-                "exit_code": result.returncode,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
+        def _do_exec() -> dict[str, Any]:
+            try:
+                result = subprocess.run(
+                    cmd,
+                    shell=use_shell,
+                    cwd=cwd,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                )
+                return {
+                    "exit_code": result.returncode,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                }
+            except subprocess.TimeoutExpired:
+                return {
+                    "exit_code": -1,
+                    "stdout": "",
+                    "stderr": f"Command timed out after {timeout} seconds",
+                    "error": "timeout",
+                    "error_type": "timeout",
+                }
+            except Exception as e:
+                return {
+                    "exit_code": -1,
+                    "stdout": "",
+                    "stderr": str(e),
+                    "error": str(e),
+                    "error_type": "unknown_error",
+                }
+
+        def _should_retry(result: dict[str, Any]) -> bool:
+            exit_code = result.get("exit_code")
+            if exit_code is not None and exit_code in retry_on_exit_codes:
+                return True
+            return False
+
+        # Execute with retry logic
+        last_result = _do_exec()
+        attempt = 0
+        
+        while _should_retry(last_result) and attempt < max_retries:
+            attempt += 1
+            # Exponential backoff: 1x, 2x, 4x, 8x...
+            wait_ms = backoff_ms * (2 ** (attempt - 1))
+            time.sleep(wait_ms / 1000.0)
+            last_result = _do_exec()
+        
+        # Add retry info to result
+        if attempt > 0:
+            last_result["_retry"] = {
+                "attempts": attempt + 1,
+                "max_retries": max_retries,
             }
-        except subprocess.TimeoutExpired:
-            return {
-                "exit_code": -1,
-                "stdout": "",
-                "stderr": f"Command timed out after {timeout} seconds",
-                "error": "timeout",
-                "error_type": "timeout",
-            }
-        except Exception as e:
-            return {
-                "exit_code": -1,
-                "stdout": "",
-                "stderr": str(e),
-                "error": str(e),
-                "error_type": "unknown_error",
-            }
+        
+        return last_result
 
     def knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
         default_base_url = (
