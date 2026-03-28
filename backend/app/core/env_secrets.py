@@ -13,7 +13,9 @@ def apply_file_env() -> None:
             continue
         target_key = key[:-5]
         if os.environ.get(target_key):
-            raise RuntimeError(f"检测到同时设置了 {target_key} 与 {key}，请只保留一种配置方式")
+            raise RuntimeError(
+                f"检测到同时设置了 {target_key} 与 {key}，请只保留一种配置方式"
+            )
         p = Path(file_path)
         if not p.exists():
             raise RuntimeError(f"{key} 指向的文件不存在: {file_path}")

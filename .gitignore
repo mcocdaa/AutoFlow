@@ -1,10 +1,15 @@
 # IDEs
 .vscode/
 .trae/
+.idea/
+*.swp
+*.swo
 
 # Python
 __pycache__/
 .pytest_cache/
+*.pyc
+.venv/
 
 # frontend
 node_modules
@@ -12,7 +17,16 @@ dist
 dist-electron
 
 # Env files & secrets
+.env
 secrets/*
 !secrets/.gitkeep
 
+# Local docker override
+docker-compose.override.yml
+
+# Backend artifacts
 backend/app/artifacts/
+
+# OS
+.DS_Store
+Thumbs.db

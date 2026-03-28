@@ -11,7 +11,9 @@ from app.runtime.utils.output_externalizer import externalize_if_large
 
 def test_externalize_if_large_writes_artifact(tmp_path: Path) -> None:
     big = "a" * (70 * 1024)
-    out = externalize_if_large(big, artifacts_dir=tmp_path, file_stem="x", max_bytes=64 * 1024)
+    out = externalize_if_large(
+        big, artifacts_dir=tmp_path, file_stem="x", max_bytes=64 * 1024
+    )
     assert isinstance(out, dict)
     assert "__artifact__" in out
     rel = out["__artifact__"]["path"]

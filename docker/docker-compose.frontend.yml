@@ -1,0 +1,27 @@
+# ============================================
+# AutoFlow 仅前端模式
+# 使用: docker-compose -f docker-compose.frontend.yml -p autoflow up
+# 注意：需要已有后端服务运行
+# ============================================
+
+services:
+  autoflow-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: web
+    container_name: autoflow-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_EXTERNAL_PORT:-8001}:8000"
+    environment:
+      - VITE_API_PROXY_URL=http://autoflow-backend:3000
+      - DOCKER_WEB=true
+    networks:
+      - autoflow-network
+    depends_on:
+      - autoflow-backend
+
+networks:
+  autoflow-network:
+    name: autoflow-network

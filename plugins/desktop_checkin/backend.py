@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from app.plugin.registry import ActionContext, CheckContext
+from app.core.registry import ActionContext, CheckContext
 
 
 def _is_truthy(v: Any) -> bool:

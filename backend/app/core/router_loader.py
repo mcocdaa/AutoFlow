@@ -1,10 +1,11 @@
 # @file /app/core/router_loader.py
 # @brief 自动路由加载器 - 非递归版 (分层负责)
 # @create 2026-03-10
-from fastapi import APIRouter
 import importlib
 from pathlib import Path
 from typing import List, Optional
+
+from fastapi import APIRouter
 
 
 def include_routers_from_directory(
@@ -14,7 +15,7 @@ def include_routers_from_directory(
     *,
     skip_modules: Optional[List[str]] = None,
     auto_tag: bool = False,
-    auto_prefix: bool = False
+    auto_prefix: bool = False,
 ) -> None:
     """
     非递归：仅扫描当前目录下的文件和文件夹。
@@ -56,7 +57,9 @@ def include_routers_from_directory(
                     kwargs["prefix"] += f"/{module_name}"
 
                 parent_router.include_router(sub_router, **kwargs)
-                print(f"[RouterLoader] 已挂载: {package_name}.{module_name}, **{kwargs}")
+                print(
+                    f"[RouterLoader] 已挂载: {package_name}.{module_name}, **{kwargs}"
+                )
 
         except Exception as e:
             print(f"[RouterLoader] 挂载失败 {module_name}: {str(e)}")

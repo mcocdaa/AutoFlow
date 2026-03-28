@@ -1,0 +1,29 @@
+# ============================================
+# AutoFlow 全栈模式（后端 + 前端）
+# 使用: docker-compose -f docker-compose.full.yml -p autoflow up
+# ============================================
+
+services:
+  autoflow-backend:
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-3001}:3000"
+
+  autoflow-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        - BUILD_MODE=${FRONTEND_BUILD_MODE:-web}
+    container_name: autoflow-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_EXTERNAL_PORT:-8001}:8000"
+    environment:
+      - VITE_API_URL=http://autoflow-backend:3000
+      - DOCKER_WEB=true
+    depends_on:
+      - autoflow-backend
+
+networks:
+  autoflow-network:
+    name: autoflow-network

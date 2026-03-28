@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 
-from app.plugin.registry import ActionContext
+from app.core.registry import ActionContext
 
 
 def _repo_root() -> Path:

@@ -1,4 +1,6 @@
-# docker-compose.yml
+# ============================================
+# AutoFlow 默认启动: 全栈模式
+# ============================================
+
 include:
-  - backend/docker-compose.yml
-  - frontend/docker-compose.base.yml
+  - docker/docker-compose.full.yml

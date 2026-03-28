@@ -12,11 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from app.core.registry import ActionContext, CheckContext, Registry
 from app.runtime.models import FlowSpec, HookSpec, RunResult, StepResult
 from app.runtime.storage.store import RunStore
 from app.runtime.utils import evaluate_condition, resolve_templates
 from app.runtime.utils.output_externalizer import externalize_if_large
-from app.plugin.registry import ActionContext, CheckContext, Registry
 
 
 def _utc_now() -> datetime:
@@ -53,7 +53,11 @@ class Runner:
             try:
                 resolved_params = resolve_templates(
                     hook_action.params,
-                    {"steps": step_outputs, "vars": runtime_vars, "input": current_input},
+                    {
+                        "steps": step_outputs,
+                        "vars": runtime_vars,
+                        "input": current_input,
+                    },
                 )
                 handler = self._registry.get_action(hook_action.type)
                 if handler:
@@ -69,12 +73,20 @@ class Runner:
                 # hook 执行失败不影响主流程状态
                 pass
 
-    def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, Any] | None = None) -> RunResult:
+    def run_flow(
+        self,
+        flow: FlowSpec,
+        *,
+        input: Any | None = None,
+        vars: dict[str, Any] | None = None,
+    ) -> RunResult:
         run_id = str(uuid.uuid4())
         run_artifacts_dir = self._store.artifacts_dir / run_id
         run_artifacts_dir.mkdir(parents=True, exist_ok=True)
         started_at = _utc_now()
-        run = RunResult(run_id=run_id, flow_name=flow.name, status="running", started_at=started_at)
+        run = RunResult(
+            run_id=run_id, flow_name=flow.name, status="running", started_at=started_at
+        )
         self._store.save_run(run)
 
         current_input = input
@@ -84,7 +96,11 @@ class Runner:
             if step.condition is not None:
                 resolved_condition = resolve_templates(
                     step.condition,
-                    {"steps": step_outputs, "vars": runtime_vars, "input": current_input}
+                    {
+                        "steps": step_outputs,
+                        "vars": runtime_vars,
+                        "input": current_input,
+                    },
                 )
                 if not evaluate_condition(str(resolved_condition)):
                     step_started = _utc_now()
@@ -94,7 +110,9 @@ class Runner:
                         status="skipped",
                         started_at=step_started,
                         finished_at=step_finished,
-                        duration_ms=int((step_finished - step_started).total_seconds() * 1000),
+                        duration_ms=int(
+                            (step_finished - step_started).total_seconds() * 1000
+                        ),
                         action_output=None,
                         check_passed=None,
                         error=None,
@@ -106,7 +124,11 @@ class Runner:
             if step.for_each is not None:
                 loop_list = resolve_templates(
                     step.for_each,
-                    {"steps": step_outputs, "vars": runtime_vars, "input": current_input}
+                    {
+                        "steps": step_outputs,
+                        "vars": runtime_vars,
+                        "input": current_input,
+                    },
                 )
                 if not isinstance(loop_list, list):
                     loop_list = [loop_list]
@@ -131,7 +153,11 @@ class Runner:
                         try:
                             resolved_params = resolve_templates(
                                 step.action.params,
-                                {"steps": step_outputs, "vars": runtime_vars, "input": current_input}
+                                {
+                                    "steps": step_outputs,
+                                    "vars": runtime_vars,
+                                    "input": current_input,
+                                },
                             )
 
                             action = self._registry.get_action(step.action.type)
@@ -148,11 +174,18 @@ class Runner:
                             if step.check is not None:
                                 check = self._registry.get_check(step.check.type)
                                 iter_check_passed = check(
-                                    CheckContext(run_id=run_id, step_id=step.id, action_output=iter_output, vars=runtime_vars),
+                                    CheckContext(
+                                        run_id=run_id,
+                                        step_id=step.id,
+                                        action_output=iter_output,
+                                        vars=runtime_vars,
+                                    ),
                                     step.check.params,
                                 )
                                 if not iter_check_passed:
-                                    raise RuntimeError(f"check failed: {step.check.type}")
+                                    raise RuntimeError(
+                                        f"check failed: {step.check.type}"
+                                    )
                             iter_error = None
                             break
                         except Exception as e:
@@ -171,20 +204,28 @@ class Runner:
                         except Exception:
                             iter_output_copy = str(iter_output)
 
-                    runtime_vars_clean = {k: v for k, v in runtime_vars.items() if k != step.for_item_var}
+                    runtime_vars_clean = {
+                        k: v for k, v in runtime_vars.items() if k != step.for_item_var
+                    }
                     try:
                         runtime_vars_snapshot = copy.deepcopy(runtime_vars_clean)
                     except Exception:
-                        runtime_vars_snapshot = {k: str(v) for k, v in runtime_vars_clean.items()}
+                        runtime_vars_snapshot = {
+                            k: str(v) for k, v in runtime_vars_clean.items()
+                        }
 
-                    iterations.append({
-                        "item": item,
-                        "output": iter_output_copy,
-                        "error": iter_error,
-                        "check_passed": iter_check_passed,
-                        "duration_ms": int((iter_finished - iter_started).total_seconds() * 1000),
-                        "vars_snapshot": runtime_vars_snapshot,
-                    })
+                    iterations.append(
+                        {
+                            "item": item,
+                            "output": iter_output_copy,
+                            "error": iter_error,
+                            "check_passed": iter_check_passed,
+                            "duration_ms": int(
+                                (iter_finished - iter_started).total_seconds() * 1000
+                            ),
+                            "vars_snapshot": runtime_vars_snapshot,
+                        }
+                    )
 
                     if iter_error is not None:
                         step_error = f"Iteration error for item '{item}': {iter_error}"
@@ -198,14 +239,20 @@ class Runner:
                 status: str = "success" if step_error is None else "failed"
 
                 if action_output is not None:
-                    action_output = externalize_if_large(action_output, artifacts_dir=run_artifacts_dir, file_stem=f"{step.id}.action_output")
+                    action_output = externalize_if_large(
+                        action_output,
+                        artifacts_dir=run_artifacts_dir,
+                        file_stem=f"{step.id}.action_output",
+                    )
 
                 step_result = StepResult(
                     step_id=step.id,
                     status=status,
                     started_at=step_started,
                     finished_at=step_finished,
-                    duration_ms=int((step_finished - step_started).total_seconds() * 1000),
+                    duration_ms=int(
+                        (step_finished - step_started).total_seconds() * 1000
+                    ),
                     action_output=action_output,
                     check_passed=check_passed,
                     error=step_error,
@@ -218,7 +265,9 @@ class Runner:
                     finished_at = _utc_now()
                     run.status = "failed"
                     run.finished_at = finished_at
-                    run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
+                    run.duration_ms = int(
+                        (finished_at - started_at).total_seconds() * 1000
+                    )
                     run.error = step_error
                     self._store.save_run(run)
                     # 执行 on_failure hooks（for_each 分支）
@@ -239,7 +288,10 @@ class Runner:
                     # 用 json 序列化打断循环引用，避免 vars_snapshot 深拷贝失败
                     try:
                         import json as _json
-                        runtime_vars[step.output_var] = _json.loads(_json.dumps(action_output, default=str))
+
+                        runtime_vars[step.output_var] = _json.loads(
+                            _json.dumps(action_output, default=str)
+                        )
                     except Exception:
                         runtime_vars[step.output_var] = str(action_output)
 
@@ -258,7 +310,11 @@ class Runner:
                 try:
                     resolved_params = resolve_templates(
                         step.action.params,
-                        {"steps": step_outputs, "vars": runtime_vars, "input": current_input}
+                        {
+                            "steps": step_outputs,
+                            "vars": runtime_vars,
+                            "input": current_input,
+                        },
                     )
 
                     action = self._registry.get_action(step.action.type)
@@ -275,7 +331,12 @@ class Runner:
                     if step.check is not None:
                         check = self._registry.get_check(step.check.type)
                         check_passed = check(
-                            CheckContext(run_id=run_id, step_id=step.id, action_output=action_output, vars=runtime_vars),
+                            CheckContext(
+                                run_id=run_id,
+                                step_id=step.id,
+                                action_output=action_output,
+                                vars=runtime_vars,
+                            ),
                             step.check.params,
                         )
                         if not check_passed:
@@ -292,7 +353,11 @@ class Runner:
             step_finished = _utc_now()
             status: str = "success" if step_error is None else "failed"
 
-            action_output = externalize_if_large(action_output, artifacts_dir=run_artifacts_dir, file_stem=f"{step.id}.action_output")
+            action_output = externalize_if_large(
+                action_output,
+                artifacts_dir=run_artifacts_dir,
+                file_stem=f"{step.id}.action_output",
+            )
 
             step_result = StepResult(
                 step_id=step.id,
@@ -331,7 +396,10 @@ class Runner:
             if step.output_var is not None:
                 try:
                     import json as _json
-                    runtime_vars[step.output_var] = _json.loads(_json.dumps(action_output, default=str))
+
+                    runtime_vars[step.output_var] = _json.loads(
+                        _json.dumps(action_output, default=str)
+                    )
                 except Exception:
                     runtime_vars[step.output_var] = str(action_output)
 

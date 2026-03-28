@@ -1,0 +1,19 @@
+# @file /plugins/plugins.yaml
+# @brief 插件注册表
+# @create 2026-03-27
+
+plugins:
+  dummy:
+    enabled: true
+
+  openclaw:
+    enabled: true
+
+  ai_deepseek:
+    enabled: true
+
+  zhihu_digest:
+    enabled: true
+
+  desktop_checkin:
+    enabled: true

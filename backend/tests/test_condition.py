@@ -3,6 +3,7 @@
 # @create 2026-03-14
 
 import pytest
+
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
 from app.runtime.runner.runner import evaluate_condition, resolve_templates
 
@@ -93,19 +94,14 @@ class TestStepSpecCondition:
     def test_condition_field_exists(self):
         """验证 StepSpec 有 condition 字段"""
         step = StepSpec(
-            id="test_step",
-            action=ActionSpec(type="test", params={}),
-            condition="true"
+            id="test_step", action=ActionSpec(type="test", params={}), condition="true"
         )
 
         assert step.condition == "true"
 
     def test_condition_optional(self):
         """验证 condition 是可选的"""
-        step = StepSpec(
-            id="test_step",
-            action=ActionSpec(type="test", params={})
-        )
+        step = StepSpec(id="test_step", action=ActionSpec(type="test", params={}))
 
         assert step.condition is None
 
@@ -116,6 +112,7 @@ class TestConditionIntegration:
     def test_condition_true_executes_step(self):
         """条件为 true 时，step 正常执行"""
         from fastapi.testclient import TestClient
+
         from app.main import app
 
         flow_yaml = """
@@ -142,6 +139,7 @@ steps:
     def test_condition_false_skips_step(self):
         """条件为 false 时，step 被跳过"""
         from fastapi.testclient import TestClient
+
         from app.main import app
 
         flow_yaml = """
@@ -169,6 +167,7 @@ steps:
     def test_condition_with_var(self):
         """条件引用变量 {{vars.x}}"""
         from fastapi.testclient import TestClient
+
         from app.main import app
 
         # 测试条件为 true 的情况
@@ -185,10 +184,10 @@ steps:
 """.lstrip()
 
         client = TestClient(app)
-        resp = client.post("/api/v1/runs/execute", json={
-            "flow_yaml": flow_yaml,
-            "vars": {"run_mode": "enabled"}
-        })
+        resp = client.post(
+            "/api/v1/runs/execute",
+            json={"flow_yaml": flow_yaml, "vars": {"run_mode": "enabled"}},
+        )
         assert resp.status_code == 200
         run = resp.json()
 
@@ -209,10 +208,10 @@ steps:
     condition: '{{vars.run_mode}} == "enabled"'
 """.lstrip()
 
-        resp2 = client.post("/api/v1/runs/execute", json={
-            "flow_yaml": flow_yaml2,
-            "vars": {"run_mode": "disabled"}
-        })
+        resp2 = client.post(
+            "/api/v1/runs/execute",
+            json={"flow_yaml": flow_yaml2, "vars": {"run_mode": "disabled"}},
+        )
         assert resp2.status_code == 200
         run2 = resp2.json()
 

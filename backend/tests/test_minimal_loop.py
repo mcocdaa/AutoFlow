@@ -38,7 +38,9 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "input": {"foo": "bar"}})
+    resp = client.post(
+        "/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "input": {"foo": "bar"}}
+    )
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"

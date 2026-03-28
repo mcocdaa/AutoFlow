@@ -3,8 +3,10 @@
 # @create 2026-03-10
 
 import importlib
+
 from fastapi import FastAPI
-from app.core.config import settings
+
+from app.core.setting_manager import setting_manager
 
 
 def register_routers(app: FastAPI):
@@ -14,7 +16,7 @@ def register_routers(app: FastAPI):
     2. 动态导入版本包 (如 app.api.v1)
     3. 查找该包下的全局 `router` 对象并挂载
     """
-    api_version = settings.API_VERSION
+    api_version = setting_manager.API_VERSION
 
     version_package_name = f"{__name__}.{api_version}"
 
@@ -25,9 +27,7 @@ def register_routers(app: FastAPI):
 
     if hasattr(version_package, "router"):
         app.include_router(
-            version_package.router,
-            prefix=f"/api",
-            tags=[api_version.upper()]
+            version_package.router, prefix=f"/api", tags=[api_version.upper()]
         )
         print(f"[Route] 已注册 API 版本: {api_version}, 前缀: /api")
     else:

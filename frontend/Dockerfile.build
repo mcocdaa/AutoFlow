@@ -1,0 +1,26 @@
+# ============================================
+# AutoFlow 前端 CI 构建镜像
+# ============================================
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 安装基础工具
+RUN apk add --no-cache git
+
+# 复制并安装依赖
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci
+
+# 复制源码
+COPY frontend/ .
+
+# 构建（VITE_API_URL 通过构建参数传入）
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
+RUN npm run build
+
+# 将构建结果复制到卷挂载点
+CMD ["cp", "-r", "/app/dist", "/output/"]

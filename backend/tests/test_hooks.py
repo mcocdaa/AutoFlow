@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.runtime.models import ActionSpec, FlowSpec, HookSpec, StepSpec, ActionSpec
+from app.core.registry import Registry
+from app.runtime.models import ActionSpec, FlowSpec, HookSpec, StepSpec
 from app.runtime.runner.runner import Runner
-from app.plugin.registry import Registry
 from app.runtime.storage.store import RunStore
 
 
@@ -102,10 +102,12 @@ class TestHooks:
             hook_called.append(params.get("msg"))
             return {"ok": True}
 
-        registry = _make_registry(actions={
-            "test.echo": _echo_action,
-            "test.hook": hook_action,
-        })
+        registry = _make_registry(
+            actions={
+                "test.echo": _echo_action,
+                "test.hook": hook_action,
+            }
+        )
         store = _make_store(tmp_path)
         runner = Runner(registry, store)
 
@@ -125,10 +127,12 @@ class TestHooks:
             hook_called.append("should-not-be-called")
             return {}
 
-        registry = _make_registry(actions={
-            "test.fail": _fail_action,
-            "test.hook": hook_action,
-        })
+        registry = _make_registry(
+            actions={
+                "test.fail": _fail_action,
+                "test.hook": hook_action,
+            }
+        )
         store = _make_store(tmp_path)
         runner = Runner(registry, store)
 
@@ -148,10 +152,12 @@ class TestHooks:
             hook_called.append(params.get("msg"))
             return {}
 
-        registry = _make_registry(actions={
-            "test.fail": _fail_action,
-            "test.hook": hook_action,
-        })
+        registry = _make_registry(
+            actions={
+                "test.fail": _fail_action,
+                "test.hook": hook_action,
+            }
+        )
         store = _make_store(tmp_path)
         runner = Runner(registry, store)
 
@@ -171,10 +177,12 @@ class TestHooks:
             hook_called.append("should-not-be-called")
             return {}
 
-        registry = _make_registry(actions={
-            "test.echo": _echo_action,
-            "test.hook": hook_action,
-        })
+        registry = _make_registry(
+            actions={
+                "test.echo": _echo_action,
+                "test.hook": hook_action,
+            }
+        )
         store = _make_store(tmp_path)
         runner = Runner(registry, store)
 
@@ -188,13 +196,16 @@ class TestHooks:
 
     def test_hook_failure_does_not_affect_run_status(self, tmp_path):
         """hook 自身执行失败不影响主流程 status"""
+
         def bad_hook(ctx, params):
             raise RuntimeError("hook exploded!")
 
-        registry = _make_registry(actions={
-            "test.echo": _echo_action,
-            "test.bad_hook": bad_hook,
-        })
+        registry = _make_registry(
+            actions={
+                "test.echo": _echo_action,
+                "test.bad_hook": bad_hook,
+            }
+        )
         store = _make_store(tmp_path)
         runner = Runner(registry, store)
 
@@ -216,16 +227,19 @@ class TestHooks:
 
         # 创建一个会失败的 for_each flow
         call_count = [0]
+
         def fail_on_second(ctx, params):
             call_count[0] += 1
             if call_count[0] >= 2:
                 raise RuntimeError("second item fails")
             return {"ok": True}
 
-        registry = _make_registry(actions={
-            "test.fail_on_second": fail_on_second,
-            "test.hook": hook_action,
-        })
+        registry = _make_registry(
+            actions={
+                "test.fail_on_second": fail_on_second,
+                "test.hook": hook_action,
+            }
+        )
         store = _make_store(tmp_path)
         runner = Runner(registry, store)
 

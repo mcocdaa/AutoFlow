@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.plugin.registry import ActionContext
+from app.core.registry import ActionContext
 
 
 def _utc_now_iso() -> str:

@@ -18,7 +18,9 @@ def externalize_if_large(
     max_bytes: int = 64 * 1024,
 ) -> Any:
     try:
-        dumped = json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
+        dumped = json.dumps(
+            value, ensure_ascii=False, separators=(",", ":"), default=str
+        )
     except Exception:
         dumped = json.dumps(str(value), ensure_ascii=False, separators=(",", ":"))
 
