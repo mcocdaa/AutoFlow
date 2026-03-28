@@ -1,25 +1,23 @@
 # @file /backend/app/runtime/__init__.py
-# @brief 运行时核心模块 - Registry/Runner/Store 单例初始化
+# @brief 运行时核心模块 - Registry/Runner/Store 单例初始化（基于 Hook 模式）
 # @create 2026-03-15
-# @update 2026-03-15 合并 runtime/core 到 runtime 根目录
+# @update 2026-03-27 重构为基于 Hook 的插件系统
 
 from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
 
+from app.core.registry import registry
 from app.runtime.actions import register_builtins
-from app.plugin.plugin_loader import load_plugins_into_registry
-from app.plugin.registry import Registry
 from app.runtime.runner import Runner
 from app.runtime.storage import RunStore
 
 
 @lru_cache(maxsize=1)
-def get_registry() -> Registry:
-    registry = Registry()
+def get_registry():
+    """获取全局 registry（已通过 hook 注册了所有插件）"""
     register_builtins(registry)
-    load_plugins_into_registry(registry)
     return registry
 
 

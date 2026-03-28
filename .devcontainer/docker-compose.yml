@@ -1,11 +1,32 @@
-# .devcontainer/docker-compose.yml
+# ============================================
+# DevContainer 专用配置
+# 完全独立于生产环境
+# ============================================
+
+version: '3.8'
+
 services:
   dev-container:
     build:
-      context: ./.devcontainer
-      dockerfile: Dockerfile  # 构建上面的开发镜像
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    container_name: autoflow-dev
+
+    # 使用 host 网络便于开发
+    network_mode: host
+
     volumes:
-      - ./:/workspace:cached  # 挂载整个项目到容器（写代码同步）
-      - /var/run/docker.sock:/var/run/docker.sock  # 容器内操作宿主机Docker
-    command: sleep infinity  # 保持容器运行（供VS Code连接）
-    network_mode: host  # 共享宿主机网络，方便访问业务容器
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - dev-node_modules:/workspace/frontend/node_modules
+      - dev-poetry-cache:/root/.cache/pypoetry
+
+    environment:
+      - ENV_TYPE=dev
+
+    # 开发工具预装
+    command: sleep infinity
+
+volumes:
+  dev-node_modules:
+  dev-poetry-cache:

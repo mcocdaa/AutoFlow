@@ -1,0 +1,13 @@
+# ============================================
+# AutoFlow 后端模式
+# 使用: docker-compose -f docker-compose.backend.yml -p autoflow up
+# ============================================
+
+services:
+  autoflow-backend:
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-3001}:3000"
+
+networks:
+  autoflow-network:
+    external: false

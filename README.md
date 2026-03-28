@@ -119,24 +119,46 @@ AutoFlow/
 *   **Docker**: 20.10+
 *   **Docker Compose**: v2.0+
 
-### 1. 启动后端服务
-
-使用 Docker Compose 一键启动后端、MySQL、Redis（敏感变量通过 Docker secrets 注入）：
+### 1. 初始化配置
 
 ```bash
 # 生成 secrets 文件
-bash ./build.sh
+bash scripts/init-secrets.sh
 
-# 启动服务
-docker compose up -d --build
+# (可选) 复制环境变量模板并修改
+# cp .env.example .env
 ```
 
-说明：
-*   后端敏感配置不使用明文变量，通过 `secrets/` 目录下的文件注入
-*   后端服务将运行在: `http://localhost:8000`
-*   MySQL 端口: `3306`，Redis 端口: `6379`
+### 2. 启动服务（选择模式）
 
-### 2. 运行桌面端 (Frontend)
+**全栈模式**（推荐，前端 + 后端 + 数据库）：
+
+```bash
+bash scripts/start-fullstack.sh
+```
+
+**仅后端模式**（API 开发）：
+
+```bash
+bash scripts/start-backend.sh
+```
+
+**仅前端模式**（连接外部后端）：
+
+```bash
+# 编辑 .env 设置 VITE_API_URL 指向你的后端地址
+bash scripts/start-frontend.sh
+```
+
+### 3. 访问服务
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| 前端 | http://localhost:8001 | Web 演示模式 |
+| 后端 API | http://localhost:3001 | REST API |
+| API 文档 | http://localhost:3001/docs | Swagger UI |
+
+### 4. 运行桌面端 (Frontend 本地开发)
 
 ```bash
 cd frontend

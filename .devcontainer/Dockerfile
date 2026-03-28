@@ -1,23 +1,26 @@
-# .devcontainer/Dockerfile
-# 基础镜像：选通用的开发基础镜像
-FROM mcr.microsoft.com/devcontainers/python:dev-3.12-bookworm
+# ============================================
+# DevContainer Dockerfile
+# 纯开发环境，与生产无关
+# ============================================
 
-# 安装开发环境通用工具（所有开发者都需要）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    vim \
-    curl \
-    nodejs \
-    npm \
+FROM mcr.microsoft.com/devcontainers/python:3.10
+
+# 安装 Node.js 18
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# 安装开发工具
+RUN apt-get update && apt-get install -y \
     docker.io \
     docker-compose \
+    curl \
+    git \
+    vim \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装Python开发依赖（后端开发专属）
-RUN pip install --no-cache-dir pytest debugpy black
+# 安装 Python 工具
+RUN pip install poetry pre-commit
 
-# 配置环境变量（开发容器专属）
-ENV EDITOR=vim
-
-# 设置工作目录（挂载项目代码）
 WORKDIR /workspace
+
+CMD ["sleep", "infinity"]

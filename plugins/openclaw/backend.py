@@ -14,7 +14,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from app.plugin.registry import ActionContext, CheckContext
+from app.core.registry import ActionContext, CheckContext
 
 
 class OpenClawPlugin:

@@ -11,6 +11,7 @@ from typing import Any
 
 def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
     if isinstance(obj, str):
+
         def _serialize(value: Any) -> str:
             if isinstance(value, str):
                 return value
@@ -24,7 +25,7 @@ def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
         def replace_template(match):
             template = match.group(1).strip()
 
-            steps_match = re.match(r'^steps\.(\w+)\.output$', template)
+            steps_match = re.match(r"^steps\.(\w+)\.output$", template)
             if steps_match:
                 step_id = steps_match.group(1)
                 step_output = context.get("steps", {}).get(step_id)
@@ -32,7 +33,7 @@ def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
                     return _serialize(copy.deepcopy(step_output))
                 return match.group(0)
 
-            vars_match = re.match(r'^vars\.(\w+)$', template)
+            vars_match = re.match(r"^vars\.(\w+)$", template)
             if vars_match:
                 var_name = vars_match.group(1)
                 var_value = context.get("vars", {}).get(var_name)
@@ -48,15 +49,15 @@ def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
 
             return match.group(0)
 
-        single_match = re.fullmatch(r'\{\{(.+?)\}\}', obj.strip())
+        single_match = re.fullmatch(r"\{\{(.+?)\}\}", obj.strip())
         if single_match:
             template = single_match.group(1).strip()
-            steps_match = re.match(r'^steps\.(\w+)\.output$', template)
+            steps_match = re.match(r"^steps\.(\w+)\.output$", template)
             if steps_match:
                 val = context.get("steps", {}).get(steps_match.group(1))
                 if val is not None:
                     return copy.deepcopy(val)
-            vars_match = re.match(r'^vars\.(\w+)$', template)
+            vars_match = re.match(r"^vars\.(\w+)$", template)
             if vars_match:
                 val = context.get("vars", {}).get(vars_match.group(1))
                 if val is not None:
@@ -67,7 +68,7 @@ def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
                     return copy.deepcopy(val)
             return obj
 
-        return re.sub(r'\{\{(.+?)\}\}', replace_template, obj)
+        return re.sub(r"\{\{(.+?)\}\}", replace_template, obj)
 
     elif isinstance(obj, dict):
         return {k: resolve_templates(v, context) for k, v in obj.items()}

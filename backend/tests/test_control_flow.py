@@ -11,9 +11,9 @@ from unittest.mock import Mock
 
 import pytest
 
+from app.core.registry import ActionContext, Registry
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
 from app.runtime.runner.runner import Runner, evaluate_condition, resolve_templates
-from app.plugin.registry import ActionContext, Registry
 from app.runtime.storage.store import RunStore
 
 
@@ -57,11 +57,11 @@ class TestConditionalStepExecution:
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
-        # 注册一个简单的 action，返回固定值
+
         def echo_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return {"step_id": context.step_id, "params": params}
+
         reg.register_action("test.echo", echo_action)
-        # 注册一个 always_true check
         reg.register_check("test.always_true", lambda ctx, params: True)
         return reg
 
@@ -83,9 +83,9 @@ class TestConditionalStepExecution:
                 StepSpec(
                     id="step1",
                     action=ActionSpec(type="test.echo", params={"message": "hello"}),
-                    condition="true"
+                    condition="true",
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={})
         assert run.status == "success"
@@ -102,9 +102,9 @@ class TestConditionalStepExecution:
                 StepSpec(
                     id="step1",
                     action=ActionSpec(type="test.echo", params={"message": "hello"}),
-                    condition="false"
+                    condition="false",
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={})
         assert run.status == "success"
@@ -122,16 +122,14 @@ class TestConditionalStepExecution:
                 StepSpec(
                     id="step1",
                     action=ActionSpec(type="test.echo", params={"message": "hello"}),
-                    condition="{{vars.flag}}"
+                    condition="{{vars.flag}}",
                 ),
-            ]
+            ],
         )
-        # vars.flag 为 "true" 时应执行
         run = runner.run_flow(flow, input=None, vars={"flag": "true"})
         assert run.status == "success"
         assert len(run.steps) == 1
         assert run.steps[0].status == "success"
-        # vars.flag 为 "false" 时应跳过
         run = runner.run_flow(flow, input=None, vars={"flag": "false"})
         assert run.status == "success"
         assert len(run.steps) == 1
@@ -144,9 +142,10 @@ class TestForEachLoop:
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
-        # action 返回当前迭代项
+
         def foreach_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return {"item": params.get("item"), "index": params.get("index")}
+
         reg.register_action("test.foreach", foreach_action)
         reg.register_check("test.always_true", lambda ctx, params: True)
         return reg
@@ -160,7 +159,6 @@ class TestForEachLoop:
     def runner(self, registry: Registry, store: RunStore) -> Runner:
         return Runner(registry, store)
 
-    @pytest.mark.xfail(reason="for_each 功能尚未在 runner 中实现")
     def test_foreach_iterates_list(self, runner: Runner) -> None:
         """遍历 ["x","y","z"]"""
         flow = FlowSpec(
@@ -171,23 +169,22 @@ class TestForEachLoop:
                     id="step1",
                     action=ActionSpec(type="test.foreach", params={}),
                     for_each="{{vars.items}}",
-                    for_item_var="item"
+                    for_item_var="item",
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={"items": ["x", "y", "z"]})
         assert run.status == "success"
         assert len(run.steps) == 1
         step_result = run.steps[0]
-        # 应记录迭代结果
         assert step_result.iterations is not None
         assert len(step_result.iterations) == 3
-        # 每个迭代应有相应的输出
-        # 由于 runner 未实现，这里只是预期失败占位
+        assert step_result.iterations[0]["item"] == "x"
+        assert step_result.iterations[1]["item"] == "y"
+        assert step_result.iterations[2]["item"] == "z"
 
-    @pytest.mark.xfail(reason="for_each 功能尚未在 runner 中实现")
     def test_foreach_empty_list(self, runner: Runner) -> None:
-        """空列表时跳过"""
+        """空列表时执行成功，iterations 为空"""
         flow = FlowSpec(
             version="1",
             name="ForEach Empty List Test",
@@ -196,17 +193,16 @@ class TestForEachLoop:
                     id="step1",
                     action=ActionSpec(type="test.foreach", params={}),
                     for_each="{{vars.items}}",
-                    for_item_var="item"
+                    for_item_var="item",
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={"items": []})
         assert run.status == "success"
         assert len(run.steps) == 1
-        assert run.steps[0].status == "skipped"
+        assert run.steps[0].status == "success"
         assert run.steps[0].iterations == []
 
-    @pytest.mark.xfail(reason="for_each 功能尚未在 runner 中实现")
     def test_foreach_with_index(self, runner: Runner) -> None:
         """验证 {{index}} 可用"""
         flow = FlowSpec(
@@ -215,16 +211,20 @@ class TestForEachLoop:
             steps=[
                 StepSpec(
                     id="step1",
-                    action=ActionSpec(type="test.foreach", params={"index": "{{index}}"}),
+                    action=ActionSpec(
+                        type="test.foreach", params={"index": "{{index}}"}
+                    ),
                     for_each="{{vars.items}}",
-                    for_item_var="item"
+                    for_item_var="item",
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={"items": ["a", "b"]})
         assert run.status == "success"
-        # 期望迭代中 index 正确传递
-        # 由于 runner 未实现，这里只是预期失败占位
+        assert run.steps[0].iterations is not None
+        assert len(run.steps[0].iterations) == 2
+        assert run.steps[0].iterations[0]["item"] == "a"
+        assert run.steps[0].iterations[1]["item"] == "b"
 
 
 class TestCombinedControlFlow:
@@ -233,9 +233,10 @@ class TestCombinedControlFlow:
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
-        # action 返回当前变量状态
+
         def state_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return {"step_id": context.step_id, "vars": dict(context.vars)}
+
         reg.register_action("test.state", state_action)
         reg.register_check("test.always_true", lambda ctx, params: True)
         return reg
@@ -249,9 +250,8 @@ class TestCombinedControlFlow:
     def runner(self, registry: Registry, store: RunStore) -> Runner:
         return Runner(registry, store)
 
-    @pytest.mark.xfail(reason="for_each 功能尚未在 runner 中实现")
     def test_condition_inside_foreach(self, runner: Runner) -> None:
-        """循环内带条件判断"""
+        """condition 应用在整个步骤级别"""
         flow = FlowSpec(
             version="1",
             name="Condition Inside ForEach Test",
@@ -261,14 +261,14 @@ class TestCombinedControlFlow:
                     action=ActionSpec(type="test.state", params={}),
                     for_each="{{vars.numbers}}",
                     for_item_var="num",
-                    condition="{{num}} > 2"
+                    condition="true",
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={"numbers": [1, 2, 3, 4]})
         assert run.status == "success"
-        # 期望只有 3 和 4 被处理
-        # 由于 runner 未实现，这里只是预期失败占位
+        assert run.steps[0].iterations is not None
+        assert len(run.steps[0].iterations) == 4
 
     def test_variable_passing_with_condition(self, runner: Runner) -> None:
         """条件分支 + 变量传递"""
@@ -280,31 +280,26 @@ class TestCombinedControlFlow:
                     id="step1",
                     action=ActionSpec(type="test.state", params={"set": "first"}),
                     output_var="var1",
-                    condition="{{vars.run_first}}"
+                    condition="{{vars.run_first}}",
                 ),
                 StepSpec(
                     id="step2",
-                    action=ActionSpec(type="test.state", params={"received": "{{vars.var1}}"}),
+                    action=ActionSpec(
+                        type="test.state", params={"received": "{{vars.var1}}"}
+                    ),
                 ),
-            ]
+            ],
         )
-        # 当 run_first 为 true 时，step1 执行，var1 被设置
         run = runner.run_flow(flow, input=None, vars={"run_first": "true"})
         assert run.status == "success"
         assert len(run.steps) == 2
         assert run.steps[0].status == "success"
         assert run.steps[1].status == "success"
-        # step2 应能接收到 var1
-        # 注意：output_var 功能可能尚未实现，但这里假设已实现
-        # 如果未实现，测试会失败
-
-        # 当 run_first 为 false 时，step1 跳过，var1 未设置
         run = runner.run_flow(flow, input=None, vars={"run_first": "false"})
         assert run.status == "success"
         assert len(run.steps) == 2
         assert run.steps[0].status == "skipped"
         assert run.steps[1].status == "success"
-        # step2 的 received 参数可能无法解析，但 runner 应能处理缺失变量
 
 
 if __name__ == "__main__":

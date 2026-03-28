@@ -30,18 +30,21 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": ["a", "b", "c"]}})
+    resp = client.post(
+        "/api/v1/runs/execute",
+        json={"flow_yaml": flow_yaml, "vars": {"items": ["a", "b", "c"]}},
+    )
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"
     assert len(run["steps"]) == 1
-    
+
     step = run["steps"][0]
     assert step["status"] == "success"
     # 验证 iterations 记录
     assert step["iterations"] is not None
     assert len(step["iterations"]) == 3
-    
+
     # 验证每次迭代的输出
     assert step["iterations"][0]["item"] == "a"
     assert step["iterations"][0]["output"]["message"] == "a"
@@ -67,11 +70,13 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": []}})
+    resp = client.post(
+        "/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": []}}
+    )
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"
-    
+
     step = run["steps"][0]
     assert step["status"] == "success"
     # 空列表时，iterations 应该为空列表
@@ -96,11 +101,14 @@ steps:
 """.lstrip()
 
     client = _client()
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"items": ["x", "y"]}})
+    resp = client.post(
+        "/api/v1/runs/execute",
+        json={"flow_yaml": flow_yaml, "vars": {"items": ["x", "y"]}},
+    )
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"
-    
+
     step = run["steps"][0]
     assert step["status"] == "success"
     # action_output 应该是最后一次迭代的输出

@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from app.plugin.registry import ActionContext, CheckContext, Registry
+from app.core.registry import ActionContext, CheckContext, Registry
 
 
 def _action_core_log(ctx: ActionContext, params: dict[str, Any]) -> Any:

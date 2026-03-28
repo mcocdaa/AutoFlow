@@ -1,10 +1,21 @@
 {
     "name": "AutoFlow Dev",
     "dockerComposeFile": [
-        "../docker-compose.base.yml",
-        "../docker-compose.dev.yml",
         "docker-compose.yml"
     ],
     "service": "dev-container",
-    "workspaceFolder": "/workspace"
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "stopCompose",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "Vue.volar"
+            ]
+        }
+    },
+    "postCreateCommand": "bash scripts/init-secrets.sh"
 }

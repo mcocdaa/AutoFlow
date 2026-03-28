@@ -3,6 +3,7 @@
 # @create 2026-03-14
 
 import pytest
+
 from app.runtime.runner.runner import resolve_templates
 
 
@@ -25,7 +26,7 @@ class TestResolveTemplates:
         context = {
             "steps": {"step1": {"data": "hello"}, "step2": "world"},
             "vars": {},
-            "input": None
+            "input": None,
         }
 
         result = resolve_templates("{{steps.step1.output}}", context)
@@ -72,7 +73,7 @@ class TestResolveTemplates:
                 "b": [
                     {"c": "{{steps.s1.output}}"},
                     {"d": "{{vars.v1}}"},
-                    {"e": "{{input}}"}
+                    {"e": "{{input}}"},
                 ]
             }
         }
@@ -116,19 +117,16 @@ class TestStepSpecOutputVar:
         step = StepSpec(
             id="test_step",
             action=ActionSpec(type="test", params={}),
-            output_var="my_result"
+            output_var="my_result",
         )
 
         assert step.output_var == "my_result"
 
     def test_output_var_optional(self):
         """验证 output_var 是可选的"""
-        from app.runtime.models import StepSpec, ActionSpec
+        from app.runtime.models import ActionSpec, StepSpec
 
-        step = StepSpec(
-            id="test_step",
-            action=ActionSpec(type="test", params={})
-        )
+        step = StepSpec(id="test_step", action=ActionSpec(type="test", params={}))
 
         assert step.output_var is None
 

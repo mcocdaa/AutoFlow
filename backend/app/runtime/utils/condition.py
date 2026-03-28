@@ -18,9 +18,13 @@ def evaluate_condition(expr: str) -> bool:
         op = str_compare_match.group(2)
         right = str_compare_match.group(3).strip()
 
-        if (left.startswith('"') and left.endswith('"')) or (left.startswith("'") and left.endswith("'")):
+        if (left.startswith('"') and left.endswith('"')) or (
+            left.startswith("'") and left.endswith("'")
+        ):
             left = left[1:-1]
-        if (right.startswith('"') and right.endswith('"')) or (right.startswith("'") and right.endswith("'")):
+        if (right.startswith('"') and right.endswith('"')) or (
+            right.startswith("'") and right.endswith("'")
+        ):
             right = right[1:-1]
 
         if op == "==":

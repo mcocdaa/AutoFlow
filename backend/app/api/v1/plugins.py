@@ -15,6 +15,16 @@ router = APIRouter()
 @router.get("/plugins", response_model=PluginsResponse)
 def list_plugins() -> PluginsResponse:
     registry = get_registry()
-    plugins = [PluginItem(name=p.name, version=p.version) for p in registry.list_plugins()]
-    errors = [PluginErrorItem(plugin_id=e.plugin_id, file_path=e.file_path, error=e.error) for e in registry.list_plugin_errors()]
-    return PluginsResponse(plugins=plugins, actions=registry.list_actions(), checks=registry.list_checks(), errors=errors)
+    plugins = [
+        PluginItem(name=p.name, version=p.version) for p in registry.list_plugins()
+    ]
+    errors = [
+        PluginErrorItem(plugin_id=e.plugin_id, file_path=e.file_path, error=e.error)
+        for e in registry.list_plugin_errors()
+    ]
+    return PluginsResponse(
+        plugins=plugins,
+        actions=registry.list_actions(),
+        checks=registry.list_checks(),
+        errors=errors,
+    )
