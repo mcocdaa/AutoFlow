@@ -108,7 +108,7 @@ start_frontend_local() {
         cd "$FRONTEND_DIR" && npm install
     fi
     echo "启动本地前端服务..."
-    echo "✓ 本地前端已启动 (http://localhost:5180)"
+    echo "✓ 本地前端已启动"
     cd "$FRONTEND_DIR" && DOCKER_WEB=true npm run dev
 }
 
