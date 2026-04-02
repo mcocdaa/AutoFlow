@@ -184,17 +184,17 @@ async def get_list():
 
 ## 参数说明
 
-| 参数 | 说明 |
-|------|------|
-| skip_modules | 跳过加载的模块名列表 |
-| auto_tag | 为路由添加模块名作为标签 |
-| auto_prefix | 自动追加模块名前缀 |
+| 参数         | 说明                     |
+| ------------ | ------------------------ |
+| skip_modules | 跳过加载的模块名列表     |
+| auto_tag     | 为路由添加模块名作为标签 |
+| auto_prefix  | 自动追加模块名前缀       |
 
-| auto_tag | auto_prefix | 路由前缀 |
-|----------|-------------|---------|
-| False | False | /v1 |
-| True | False | /v1 (带标签) |
-| True | True | /v1/C (带标签) |
+| auto_tag | auto_prefix | 路由前缀       |
+| -------- | ----------- | -------------- |
+| False    | False       | /v1            |
+| True     | False       | /v1 (带标签)   |
+| True     | True        | /v1/C (带标签) |
 
 ---
 

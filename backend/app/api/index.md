@@ -24,16 +24,19 @@ api/
 ## 🔌 API 端点
 
 ### 通用 API (common.py)
+
 - `GET /health` - 健康检查
 - `GET /version` - 版本信息
 
 ### 运行流 API (runs.py)
+
 - `POST /api/v1/runs` - 创建新的运行
 - `GET /api/v1/runs/{run_id}` - 获取运行详情
 - `GET /api/v1/runs` - 获取运行列表
 - `POST /api/v1/runs/{run_id}/cancel` - 取消运行
 
 ### 插件 API (plugins.py)
+
 - `GET /api/v1/plugins` - 获取插件列表
 - `GET /api/v1/plugins/{plugin_id}` - 获取插件详情
 - `POST /api/v1/plugins/{plugin_id}/enable` - 启用插件

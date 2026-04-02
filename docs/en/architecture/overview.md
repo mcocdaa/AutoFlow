@@ -5,4 +5,3 @@ This document describes the framework-level architecture of AutoFlow (concepts, 
 The English docs are currently a skeleton. For the complete content, refer to:
 
 - Chinese overview: [`docs/zh/architecture/overview.md`](../../zh/architecture/overview.md)
-

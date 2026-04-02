@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Union
 
+
 @dataclass
 class SetupConfig:
     name: str = "unknown"
@@ -24,15 +25,15 @@ class SetupConfig:
         scripts_raw = data.get("scripts", {})
         scripts_processed = {}
         if isinstance(scripts_raw, list):
-             # Legacy support or simple list -> treat as 'install'
-             scripts_processed["install"] = scripts_raw
+            # Legacy support or simple list -> treat as 'install'
+            scripts_processed["install"] = scripts_raw
         elif isinstance(scripts_raw, dict):
-             scripts_processed = scripts_raw
+            scripts_processed = scripts_raw
 
         return cls(
             name=data.get("name", "unknown"),
             scan_subdirs=data.get("scan_subdirs", True),
             strategies=data.get("strategies", {}),
             scripts=scripts_processed,
-            system=system_processed
+            system=system_processed,
         )

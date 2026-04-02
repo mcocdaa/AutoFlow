@@ -66,7 +66,7 @@ npm run build
 </template>
 
 <script setup lang="ts">
-import { SomeOutlined } from '@ant-design/icons-vue'
+import { SomeOutlined } from "@ant-design/icons-vue";
 </script>
 
 <style scoped>
@@ -104,16 +104,16 @@ import { SomeOutlined } from '@ant-design/icons-vue'
 2. 在 `src/router/index.ts` 添加路由
 
 ```typescript
-import NewPage from '../views/NewPage.vue'
+import NewPage from "../views/NewPage.vue";
 
 const routes = [
   // ... 现有路由
   {
-    path: '/new-page',
-    name: 'newPage',
+    path: "/new-page",
+    name: "newPage",
     component: NewPage,
   },
-]
+];
 ```
 
 3. 在 `src/App.vue` 添加菜单项
@@ -133,15 +133,15 @@ const routes = [
 
 ```vue
 <script setup lang="ts">
-import { usePluginsStore } from '../stores/plugins'
+import { usePluginsStore } from "../stores/plugins";
 
-const store = usePluginsStore()
+const store = usePluginsStore();
 
 // 访问状态
-console.log(store.plugins)
+console.log(store.plugins);
 
 // 调用 action
-store.fetchPlugins()
+store.fetchPlugins();
 </script>
 ```
 
@@ -150,9 +150,9 @@ store.fetchPlugins()
 ### 任务 3：使用 API
 
 ```typescript
-import { fetchPlugins } from '../api'
+import { fetchPlugins } from "../api";
 
-const plugins = await fetchPlugins()
+const plugins = await fetchPlugins();
 ```
 
 ---
@@ -160,11 +160,11 @@ const plugins = await fetchPlugins()
 ### 任务 4：使用工具函数
 
 ```typescript
-import { formatDate, getStorage, setStorage } from '../utils'
+import { formatDate, getStorage, setStorage } from "../utils";
 
-const formattedDate = formatDate(new Date())
-setStorage('key', 'value')
-const value = getStorage('key', 'default')
+const formattedDate = formatDate(new Date());
+setStorage("key", "value");
+const value = getStorage("key", "default");
 ```
 
 ---
@@ -173,20 +173,20 @@ const value = getStorage('key', 'default')
 
 ### 使用 CSS 变量（不要硬编码颜色！）
 
-| 用途 | CSS 变量 | 值 |
-|------|----------|-----|
-| 主色 | `--flow-color-primary` | #2563EB |
-| 成功色 | `--flow-color-success` | #10B981 |
-| 警告色 | `--flow-color-warning` | #F59E0B |
-| 错误色 | `--flow-color-danger` | #EF4444 |
-| 页面背景 | `--flow-bg-page` | #F8FAFC |
-| 卡片背景 | `--flow-bg-card` | #FFFFFF |
-| 标题文字 | `--flow-text-title` | #0F172A |
-| 主要文字 | `--flow-text-primary` | #334155 |
-| 辅助文字 | `--flow-text-secondary` | #64748B |
-| 小圆角 | `--flow-border-radius-sm` | 6px |
-| 中圆角 | `--flow-border-radius-md` | 8px |
-| 大圆角 | `--flow-border-radius-lg` | 12px |
+| 用途     | CSS 变量                  | 值      |
+| -------- | ------------------------- | ------- |
+| 主色     | `--flow-color-primary`    | #2563EB |
+| 成功色   | `--flow-color-success`    | #10B981 |
+| 警告色   | `--flow-color-warning`    | #F59E0B |
+| 错误色   | `--flow-color-danger`     | #EF4444 |
+| 页面背景 | `--flow-bg-page`          | #F8FAFC |
+| 卡片背景 | `--flow-bg-card`          | #FFFFFF |
+| 标题文字 | `--flow-text-title`       | #0F172A |
+| 主要文字 | `--flow-text-primary`     | #334155 |
+| 辅助文字 | `--flow-text-secondary`   | #64748B |
+| 小圆角   | `--flow-border-radius-sm` | 6px     |
+| 中圆角   | `--flow-border-radius-md` | 8px     |
+| 大圆角   | `--flow-border-radius-lg` | 12px    |
 
 **示例：**
 
@@ -197,7 +197,7 @@ background: var(--flow-bg-card);
 border-radius: var(--flow-border-radius-lg);
 
 /* ❌ 错误 */
-color: #2563EB;
+color: #2563eb;
 background: white;
 border-radius: 12px;
 ```

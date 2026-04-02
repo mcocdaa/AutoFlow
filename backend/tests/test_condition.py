@@ -5,7 +5,7 @@
 import pytest
 
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
-from app.runtime.runner.runner import evaluate_condition, resolve_templates
+from app.runtime.utils import evaluate_condition, resolve_templates
 
 
 class TestEvaluateCondition:

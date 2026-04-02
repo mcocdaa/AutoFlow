@@ -15,12 +15,12 @@
 </template>
 
 <script setup lang="ts">
-import { WarningOutlined } from '@ant-design/icons-vue'
-import type { PluginError } from '../../types/plugins'
+import { WarningOutlined } from "@ant-design/icons-vue";
+import type { PluginError } from "../../types/plugins";
 
 defineProps<{
-  errors: PluginError[]
-}>()
+  errors: PluginError[];
+}>();
 </script>
 
 <style scoped>

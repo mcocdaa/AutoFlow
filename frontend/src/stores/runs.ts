@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia'
-import apiClient from '../api'
+import { defineStore } from "pinia";
+import apiClient from "../api";
 
-export const useRunsStore = defineStore('runs', {
+export const useRunsStore = defineStore("runs", {
   state: () => ({
     currentRun: null as any,
     loading: false,
@@ -9,34 +9,34 @@ export const useRunsStore = defineStore('runs', {
   }),
   actions: {
     async executeFlow(flowYaml: string, input: any = {}, vars: any = {}) {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
       try {
-        const response = await apiClient.post('/runs/execute', {
+        const response = await apiClient.post("/runs/execute", {
           flow_yaml: flowYaml,
           input,
-          vars
-        })
-        this.currentRun = response.data
-        return response.data
+          vars,
+        });
+        this.currentRun = response.data;
+        return response.data;
       } catch (error: any) {
-        this.error = error.response?.data?.detail || error.message
-        throw error
+        this.error = error.response?.data?.detail || error.message;
+        throw error;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     async fetchRun(runId: string) {
-      this.loading = true
+      this.loading = true;
       try {
-        const response = await apiClient.get(`/runs/${runId}`)
-        this.currentRun = response.data
-        return response.data
+        const response = await apiClient.get(`/runs/${runId}`);
+        this.currentRun = response.data;
+        return response.data;
       } catch (error: any) {
-        this.error = error.message
+        this.error = error.message;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
-    }
-  }
-})
+    },
+  },
+});

@@ -73,7 +73,9 @@ class SettingManager:
         self.config["ROOT_DIR"] = str(ROOT_DIR)
         self.config["BACKEND_DIR"] = str(BACKEND_DIR)
         self.config["PLUGINS_DIR"] = str(ROOT_DIR / "plugins")
-        self.config["API_V1_STR"] = f"/api/{self.config['API_VERSION']}"
+        self.config["API_V1_STR"] = "/api/v1"
+        self.config["API_V2_STR"] = "/api/v2"
+        self.config["API_STR"] = f"/api/{self.config['API_VERSION']}"
         self.config["REDIS_URL"] = (
             f"redis://{self.config['REDIS_HOST']}:{self.config['REDIS_PORT']}/{self.config['REDIS_DB']}"
         )

@@ -11,8 +11,8 @@ import pytest
 
 from app.core.registry import Registry
 from app.runtime.models import ActionSpec, FlowSpec, HookSpec, StepSpec
-from app.runtime.runner.runner import Runner
-from app.runtime.storage.store import RunStore
+from app.runtime.runner import Runner
+from app.runtime.store import RunStore
 
 
 def _make_registry(actions: dict = None, checks: dict = None) -> Registry:

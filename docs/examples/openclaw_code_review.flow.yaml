@@ -6,7 +6,7 @@
 #   2. 运行代码检查（lint、静态分析等）
 #   3. 收集检查结果
 #   4. 生成结构化的审查报告
-#   
+#
 #   触发方式：建议配置为 PR webhook 触发
 #   参数：repo, pr_number, base_branch
 # @create 2026-03-14

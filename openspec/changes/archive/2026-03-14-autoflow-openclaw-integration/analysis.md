@@ -6,25 +6,28 @@
 ## 1. 内置 action/check 清单
 
 ### builtins.py 注册的 actions
-| Action | 功能 |
-|--------|------|
-| core.log | 日志输出 |
+
+| Action     | 功能     |
+| ---------- | -------- |
+| core.log   | 日志输出 |
 | core.sleep | 延时等待 |
 
 ### builtins.py 注册的 checks
-| Check | 功能 |
-|-------|------|
-| core.always_true | 永远通过 |
-| text.contains | 文本包含检查 |
+
+| Check            | 功能         |
+| ---------------- | ------------ |
+| core.always_true | 永远通过     |
+| text.contains    | 文本包含检查 |
 
 ### 插件注册的 actions（通过 plugin_loader）
-| 插件 | Actions |
-|------|---------|
+
+| 插件            | Actions                                                                          |
+| --------------- | -------------------------------------------------------------------------------- |
 | desktop-checkin | desktop.activate_window, desktop.click, desktop.type_text, desktop.screenshot 等 |
-| zhihu-digest | zhihu.fetch_answer, zhihu.post_answer_draft |
-| ai-deepseek | ai.deepseek_summarize |
-| dummy-echo | dummy.echo |
-| hello-world | hello_world.execute |
+| zhihu-digest    | zhihu.fetch_answer, zhihu.post_answer_draft                                      |
+| ai-deepseek     | ai.deepseek_summarize                                                            |
+| dummy-echo      | dummy.echo                                                                       |
+| hello-world     | hello_world.execute                                                              |
 
 ## 2. Store 机制
 
@@ -36,6 +39,7 @@
 ## 3. 插件注册模式
 
 插件需要在 `__init__.py` 中暴露 `register(registry)` 函数：
+
 ```python
 def register(registry):
     registry.register_action("my.action", MyActionHandler())
@@ -44,12 +48,12 @@ def register(registry):
 
 ## 4. 风险评估
 
-| 风险 | 等级 | 说明 |
-|------|------|------|
-| 内存 store 数据丢失 | 🔴 | 重启即丢，需要后续加持久化 |
-| 插件加载失败 | 🟡 | 有 try/catch 容错，会记录错误但不阻塞启动 |
-| 并发执行 | 🟡 | runner.run_flow 是同步的，多个并发请求会串行 |
-| 变量注入安全 | 🟡 | 模板表达式如果不做沙箱，可能有注入风险 |
+| 风险                | 等级 | 说明                                         |
+| ------------------- | ---- | -------------------------------------------- |
+| 内存 store 数据丢失 | 🔴   | 重启即丢，需要后续加持久化                   |
+| 插件加载失败        | 🟡   | 有 try/catch 容错，会记录错误但不阻塞启动    |
+| 并发执行            | 🟡   | runner.run_flow 是同步的，多个并发请求会串行 |
+| 变量注入安全        | 🟡   | 模板表达式如果不做沙箱，可能有注入风险       |
 
 ## 5. 控制流对 store/runtime 的影响
 

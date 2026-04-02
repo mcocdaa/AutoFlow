@@ -12,4 +12,4 @@ description: 插件系统模块
 ## 📁 文件列表
 
 - [models.py](models.py)：插件模型
-- [__init__.py](__init__.py)：模块初始化
+- [**init**.py](__init__.py)：模块初始化

@@ -3,16 +3,18 @@ import sys
 import os
 import shutil
 
+
 class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    GREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
 
 class Executor:
     @staticmethod
@@ -29,7 +31,9 @@ class Executor:
             print(f"\n{Colors.HEADER}{Colors.BOLD}=== {message} ==={Colors.ENDC}")
 
     @staticmethod
-    def run_command(command: str, cwd: str = None, env: dict = None, ignore_errors: bool = False) -> bool:
+    def run_command(
+        command: str, cwd: str = None, env: dict = None, ignore_errors: bool = False
+    ) -> bool:
         """
         Runs a shell command with real-time output.
         """
@@ -48,21 +52,24 @@ class Executor:
                 env=full_env,
                 shell=True,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, # Merge stderr to stdout for sequential logging
+                stderr=subprocess.STDOUT,  # Merge stderr to stdout for sequential logging
                 text=True,
-                encoding='utf-8',
-                errors='replace' # Handle potential encoding issues
+                encoding="utf-8",
+                errors="replace",  # Handle potential encoding issues
             )
 
             # Stream output
             for line in process.stdout:
-                print(f"  {line}", end='')
+                print(f"  {line}", end="")
 
             process.wait()
 
             if process.returncode != 0:
                 if not ignore_errors:
-                    Executor.log(f"Command failed with exit code {process.returncode}", level="ERROR")
+                    Executor.log(
+                        f"Command failed with exit code {process.returncode}",
+                        level="ERROR",
+                    )
                     return False
                 else:
                     Executor.log(f"Command failed (ignored)", level="WARN")

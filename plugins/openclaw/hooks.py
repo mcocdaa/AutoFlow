@@ -3,6 +3,7 @@
 # @create 2026-03-27
 
 from app.core.hook_manager import hook_manager
+
 from plugins.openclaw.backend import OpenClawPlugin
 
 

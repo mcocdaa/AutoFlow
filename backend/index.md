@@ -100,9 +100,11 @@ docker-compose up -d
 ## 📋 核心模块说明
 
 ### API 层 (api/)
+
 REST API 接口，分为 v1 版本。
 
 ### 核心层 (core/)
+
 - **registry**: 动作、触发器、校验器的注册中心
 - **plugin_manager**: 插件加载和管理
 - **hook_manager**: 钩子函数管理
@@ -111,6 +113,7 @@ REST API 接口，分为 v1 版本。
 - **router_loader**: 自动加载 API 路由
 
 ### 运行时 (runtime/)
+
 - **runner**: Flow 运行器，负责执行整个流程
 - **actions**: 内置动作实现
 - **loaders**: Flow 配置加载器
@@ -119,6 +122,7 @@ REST API 接口，分为 v1 版本。
 - **utils**: 工具函数（模板渲染、条件判断、输出处理等）
 
 ### 插件系统 (plugin/)
+
 插件模型定义和插件接口。
 
 ## 🧪 运行测试

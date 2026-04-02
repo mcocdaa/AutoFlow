@@ -1,5 +1,5 @@
 # frontend/docker-compose.dev.yml
-version: '3.8'
+version: "3.8"
 
 services:
   frontend:
@@ -7,12 +7,12 @@ services:
     restart: "no"
     # 前端调试端口（可选，比如Chrome调试Node.js进程）
     ports:
-      - "9229:9229"  # Node.js调试端口（开发专属）
+      - "9229:9229" # Node.js调试端口（开发专属）
     # 保留基础配置的volumes（热重载），无需重复写
     # 开发环境环境变量覆盖（比如API地址指向开发后端）
     environment:
-      - VITE_API_URL=http://localhost:8000  # 浏览器访问后端的地址
-      - NODE_ENV=development  # 显式声明开发环境（部分前端库依赖）
+      - VITE_API_URL=http://localhost:8000 # 浏览器访问后端的地址
+      - NODE_ENV=development # 显式声明开发环境（部分前端库依赖）
 
 # 开发专属卷（可选，比如缓存node_modules）
 volumes:

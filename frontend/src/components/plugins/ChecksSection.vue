@@ -39,35 +39,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import {
-  CheckCircleOutlined,
-  SearchOutlined,
-} from '@ant-design/icons-vue'
+import { ref, computed } from "vue";
+import { CheckCircleOutlined, SearchOutlined } from "@ant-design/icons-vue";
 
 const props = defineProps<{
-  checks: string[]
-}>()
+  checks: string[];
+}>();
 
 defineEmits<{
-  copy: [text: string]
-}>()
+  copy: [text: string];
+}>();
 
-const searchValue = ref('')
+const searchValue = ref("");
 
 const groupedChecks = computed(() => {
-  const groups: Record<string, string[]> = {}
-  props.checks.forEach(check => {
-    const pluginName = check.split('.')[0]
+  const groups: Record<string, string[]> = {};
+  props.checks.forEach((check) => {
+    const pluginName = check.split(".")[0];
     if (!groups[pluginName]) {
-      groups[pluginName] = []
+      groups[pluginName] = [];
     }
     if (check.toLowerCase().includes(searchValue.value.toLowerCase())) {
-      groups[pluginName].push(check)
+      groups[pluginName].push(check);
     }
-  })
-  return groups
-})
+  });
+  return groups;
+});
 </script>
 
 <style scoped>

@@ -2,6 +2,7 @@
 # @brief FastAPI 应用入口，注册中间件和路由
 # @create 2026-03-15 10:00:00
 # @update 2026-03-27 集成新的插件管理器系统
+# @update 2026-03-30 添加数据库初始化
 
 import argparse
 import logging
@@ -12,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api import register_routers
+from app.core.database_manager import database_manager
 from app.core.plugin_manager import plugin_manager
 from app.core.setting_manager import setting_manager
 
@@ -20,30 +22,24 @@ logger = logging.getLogger(__name__)
 _services_initialized = False
 
 
-def parse_args():
-    """解析命令行参数"""
-    import sys
-
-    # 检查是否是 pytest 或其他不是 uvicorn 的场景
-    if "pytest" in sys.modules or "uvicorn" not in sys.argv[0]:
-        return argparse.Namespace()
-    # 正常 uvicorn 启动，尝试解析参数
-    if len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1].startswith("-")):
-        return argparse.Namespace()
-    parser = argparse.ArgumentParser(description="AutoFlow Backend")
-    setting_manager.register_arguments(parser)
-    plugin_manager.register_arguments(parser)
-    return parser.parse_args()
-
-
 def init_services():
     """初始化所有服务"""
     global _services_initialized
     if _services_initialized:
         return
-    args = parse_args()
+    # 使用空的 Namespace，配置通过环境变量和 .env 文件处理
+    args = argparse.Namespace()
     setting_manager.init(args)
     plugin_manager.init(args)
+    # 在测试环境下不初始化数据库
+    import sys
+
+    if "pytest" not in sys.modules:
+        try:
+            database_manager.init_db()
+            logger.info("数据库初始化完成")
+        except Exception as e:
+            logger.warning(f"数据库初始化失败: {e}")
     _services_initialized = True
 
 
@@ -56,18 +52,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=setting_manager.PROJECT_NAME,
-    openapi_url=f"{setting_manager.API_V1_STR}/openapi.json",
+    openapi_url=f"{setting_manager.API_STR}/openapi.json",
     version=setting_manager.APP_VERSION,
     lifespan=lifespan,
 )
 
-# 确保在导入模块时也初始化（用于 TestClient 场景）
-try:
-    import pytest
+# 初始化服务（在所有环境下都初始化 setting_manager 和 plugin_manager，但在测试环境下不初始化数据库）
+import sys
 
-    init_services()
-except ImportError:
-    pass
+init_services()
 
 app.add_middleware(
     CORSMiddleware,
@@ -77,9 +70,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
 
 register_routers(app)
 

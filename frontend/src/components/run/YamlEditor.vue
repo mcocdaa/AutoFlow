@@ -43,35 +43,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
 import {
   FileTextOutlined,
   CloudOutlined,
   ArrowRightOutlined,
-} from '@ant-design/icons-vue'
-import { FLOW_EXAMPLES, DEFAULT_FLOW_YAML } from '../../constants/flow-examples'
+} from "@ant-design/icons-vue";
+import {
+  FLOW_EXAMPLES,
+  DEFAULT_FLOW_YAML,
+} from "../../constants/flow-examples";
 
 const props = defineProps<{
-  loading: boolean
-}>()
+  loading: boolean;
+}>();
 
 const emit = defineEmits<{
-  execute: [yaml: string, isDryRun: boolean]
-}>()
+  execute: [yaml: string, isDryRun: boolean];
+}>();
 
-const yamlContent = ref(DEFAULT_FLOW_YAML)
-const selectedExample = ref<string>()
-const isDryRun = ref(false)
+const yamlContent = ref(DEFAULT_FLOW_YAML);
+const selectedExample = ref<string>();
+const isDryRun = ref(false);
 
 const handleLoadExample = (val: string) => {
   if (val && FLOW_EXAMPLES[val as keyof typeof FLOW_EXAMPLES]) {
-    yamlContent.value = FLOW_EXAMPLES[val as keyof typeof FLOW_EXAMPLES]
+    yamlContent.value = FLOW_EXAMPLES[val as keyof typeof FLOW_EXAMPLES];
   }
-}
+};
 
 defineExpose({
-  yamlContent
-})
+  yamlContent,
+});
 </script>
 
 <style scoped>
@@ -106,7 +109,7 @@ defineExpose({
 }
 
 .yaml-input {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 13px;
   line-height: 1.5;
   resize: vertical;

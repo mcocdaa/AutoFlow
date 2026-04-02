@@ -14,6 +14,7 @@ bash tools/secrets/sync.sh
 ```
 
 也可以使用仓库根目录脚本：
+
 ```bash
 bash ./build.sh dev
 ```
@@ -25,6 +26,7 @@ bash tools/secrets/sync.sh --clean-key
 ```
 
 或：
+
 ```bash
 bash ./build.sh prod
 ```

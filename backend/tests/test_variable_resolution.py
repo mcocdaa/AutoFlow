@@ -4,7 +4,7 @@
 
 import pytest
 
-from app.runtime.runner.runner import resolve_templates
+from app.runtime.utils import resolve_templates
 
 
 class TestResolveTemplates:

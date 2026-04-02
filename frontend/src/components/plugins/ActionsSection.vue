@@ -39,35 +39,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import {
-  ThunderboltOutlined,
-  SearchOutlined,
-} from '@ant-design/icons-vue'
+import { ref, computed } from "vue";
+import { ThunderboltOutlined, SearchOutlined } from "@ant-design/icons-vue";
 
 const props = defineProps<{
-  actions: string[]
-}>()
+  actions: string[];
+}>();
 
 defineEmits<{
-  copy: [text: string]
-}>()
+  copy: [text: string];
+}>();
 
-const searchValue = ref('')
+const searchValue = ref("");
 
 const groupedActions = computed(() => {
-  const groups: Record<string, string[]> = {}
-  props.actions.forEach(action => {
-    const pluginName = action.split('.')[0]
+  const groups: Record<string, string[]> = {};
+  props.actions.forEach((action) => {
+    const pluginName = action.split(".")[0];
     if (!groups[pluginName]) {
-      groups[pluginName] = []
+      groups[pluginName] = [];
     }
     if (action.toLowerCase().includes(searchValue.value.toLowerCase())) {
-      groups[pluginName].push(action)
+      groups[pluginName].push(action);
     }
-  })
-  return groups
-})
+  });
+  return groups;
+});
 </script>
 
 <style scoped>

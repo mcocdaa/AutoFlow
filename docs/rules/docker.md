@@ -36,12 +36,12 @@ project-root/
 
 采用分层 Compose 设计，支持灵活部署：
 
-| 配置文件 | 用途 | 继承关系 |
-|---------|------|---------|
-| `docker-compose.base.yml` | 通用网络、卷定义 | 基础层 |
-| `docker-compose.backend.yml` | 后端服务 | 继承 base |
-| `docker-compose.frontend.yml` | 前端服务 | 继承 base |
-| `docker-compose.full.yml` | 完整部署 | 继承 base + backend + frontend |
+| 配置文件                      | 用途             | 继承关系                       |
+| ----------------------------- | ---------------- | ------------------------------ |
+| `docker-compose.base.yml`     | 通用网络、卷定义 | 基础层                         |
+| `docker-compose.backend.yml`  | 后端服务         | 继承 base                      |
+| `docker-compose.frontend.yml` | 前端服务         | 继承 base                      |
+| `docker-compose.full.yml`     | 完整部署         | 继承 base + backend + frontend |
 
 ### 2.1 基础文件示例
 
@@ -94,11 +94,11 @@ secrets:
 
 ### 3.1 分层管理原则
 
-| 层级 | 存储位置 | 内容 | 敏感数据 |
-|-----|---------|------|---------|
-| 构建时 | Dockerfile ARG | 构建参数 | ❌ 禁止 |
-| 运行时公开 | `.env` 文件 | 端口、日志级别等 | ❌ 禁止 |
-| 运行时敏感 | Docker Secrets | 密码、密钥、Token | ✅ 必须 |
+| 层级       | 存储位置       | 内容              | 敏感数据 |
+| ---------- | -------------- | ----------------- | -------- |
+| 构建时     | Dockerfile ARG | 构建参数          | ❌ 禁止  |
+| 运行时公开 | `.env` 文件    | 端口、日志级别等  | ❌ 禁止  |
+| 运行时敏感 | Docker Secrets | 密码、密钥、Token | ✅ 必须  |
 
 ### 3.2 .env 文件规范
 
@@ -124,6 +124,7 @@ DATA_DIR=./data
 ```
 
 **规则：**
+
 - ✅ `.env.example` 提交到 Git（作为模板）
 - ❌ `.env` 不提交到 Git（已在 .gitignore 中）
 - ❌ 禁止在 `.env` 中存储密码、密钥等敏感信息
@@ -155,21 +156,22 @@ secrets:
 
 ```javascript
 // 从文件读取 secret
-const fs = require('fs');
+const fs = require("fs");
 
 function getSecret(envName) {
   const filePath = process.env[`${envName}_FILE`];
   if (filePath && fs.existsSync(filePath)) {
-    return fs.readFileSync(filePath, 'utf8').trim();
+    return fs.readFileSync(filePath, "utf8").trim();
   }
   // 降级：直接从 env 读取（开发环境）
   return process.env[envName];
 }
 
-const dbPassword = getSecret('DB_PASSWORD');
+const dbPassword = getSecret("DB_PASSWORD");
 ```
 
 **规则：**
+
 - ✅ Secrets 文件存放在 `secrets/` 目录
 - ❌ `secrets/` 目录不提交到 Git
 - ✅ 生产环境使用 Docker Swarm Secrets 或外部 Secret 管理工具
@@ -300,13 +302,13 @@ echo "✅ 服务已停止"
 
 ### 4.4 脚本使用规范
 
-| 命令 | 说明 |
-|-----|------|
-| `./scripts/start.sh dev backend` | 开发模式启动后端 |
+| 命令                              | 说明             |
+| --------------------------------- | ---------------- |
+| `./scripts/start.sh dev backend`  | 开发模式启动后端 |
 | `./scripts/start.sh dev frontend` | 开发模式启动前端 |
-| `./scripts/start.sh dev full` | 开发模式启动全部 |
-| `./scripts/start.sh prod full` | 生产模式启动 |
-| `./scripts/stop.sh` | 停止所有服务 |
+| `./scripts/start.sh dev full`     | 开发模式启动全部 |
+| `./scripts/start.sh prod full`    | 生产模式启动     |
+| `./scripts/stop.sh`               | 停止所有服务     |
 
 ## 5. Dockerfile 规范
 
@@ -373,11 +375,11 @@ EXPOSE 80
 
 ### 6.1 端口分配
 
-| 服务 | 容器内端口 | 默认外部端口 | 配置项 |
-|-----|-----------|-------------|-------|
-| 后端 | 3000 | 3000 | `BACKEND_PORT` |
-| 前端 | 80 | 8080 | `FRONTEND_PORT` |
-| 数据库 | 5432 | 5432 | `DB_PORT` |
+| 服务   | 容器内端口 | 默认外部端口 | 配置项          |
+| ------ | ---------- | ------------ | --------------- |
+| 后端   | 3000       | 3000         | `BACKEND_PORT`  |
+| 前端   | 80         | 8080         | `FRONTEND_PORT` |
+| 数据库 | 5432       | 5432         | `DB_PORT`       |
 
 ### 6.2 网络配置
 
@@ -387,7 +389,7 @@ networks:
     driver: bridge
   backend-network:
     driver: bridge
-    internal: true  # 不暴露到外部
+    internal: true # 不暴露到外部
 ```
 
 ## 7. 数据卷规范
@@ -460,9 +462,9 @@ echo "your-jwt-secret" > secrets/jwt_secret.txt
 
 ## 10. 故障排查
 
-| 问题 | 解决方案 |
-|-----|---------|
-| 端口被占用 | 修改 `.env` 中的端口配置 |
-| 权限不足 | 检查 secrets 文件权限 `chmod 600 secrets/*` |
+| 问题         | 解决方案                                    |
+| ------------ | ------------------------------------------- |
+| 端口被占用   | 修改 `.env` 中的端口配置                    |
+| 权限不足     | 检查 secrets 文件权限 `chmod 600 secrets/*` |
 | 服务启动失败 | 查看日志 `docker compose logs -f [service]` |
 | 密钥读取失败 | 确认 secret 文件存在且应用支持 `_FILE` 模式 |

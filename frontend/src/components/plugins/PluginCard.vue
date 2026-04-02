@@ -13,31 +13,35 @@
         <span>Active</span>
       </div>
       <div class="plugin-actions">
-        <a-button size="small" @click="$emit('configure', plugin)">配置</a-button>
+        <a-button size="small" @click="$emit('configure', plugin)"
+          >配置</a-button
+        >
         <a-button size="small" @click="$emit('disable', plugin)">禁用</a-button>
-        <a-button size="small" type="primary" @click="$emit('viewDocs', plugin)">文档</a-button>
+        <a-button size="small" type="primary" @click="$emit('viewDocs', plugin)"
+          >文档</a-button
+        >
       </div>
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CheckCircleOutlined } from '@ant-design/icons-vue'
-import { getPluginDescription } from '../../constants/plugins'
-import type { Plugin } from '../../types/plugins'
+import { computed } from "vue";
+import { CheckCircleOutlined } from "@ant-design/icons-vue";
+import { getPluginDescription } from "../../constants/plugins";
+import type { Plugin } from "../../types/plugins";
 
 const props = defineProps<{
-  plugin: Plugin
-}>()
+  plugin: Plugin;
+}>();
 
 defineEmits<{
-  configure: [plugin: Plugin]
-  disable: [plugin: Plugin]
-  viewDocs: [plugin: Plugin]
-}>()
+  configure: [plugin: Plugin];
+  disable: [plugin: Plugin];
+  viewDocs: [plugin: Plugin];
+}>();
 
-const description = computed(() => getPluginDescription(props.plugin.name))
+const description = computed(() => getPluginDescription(props.plugin.name));
 </script>
 
 <style scoped>

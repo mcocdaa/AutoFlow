@@ -17,7 +17,13 @@
       </div>
     </div>
 
-    <a-alert v-if="error" :message="error" type="error" style="margin-bottom: 20px" show-icon />
+    <a-alert
+      v-if="error"
+      :message="error"
+      type="error"
+      style="margin-bottom: 20px"
+      show-icon
+    />
 
     <StatsCard
       v-if="store.plugins.length > 0"
@@ -28,7 +34,15 @@
 
     <h3 class="section-title">Plugin List</h3>
     <a-row :gutter="24" class="plugins-grid">
-      <a-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8" v-for="plugin in store.plugins" :key="plugin.name">
+      <a-col
+        :xs="24"
+        :sm="12"
+        :md="8"
+        :lg="8"
+        :xl="8"
+        v-for="plugin in store.plugins"
+        :key="plugin.name"
+      >
         <PluginCard
           :plugin="plugin"
           @configure="showPluginConfig"
@@ -38,7 +52,10 @@
       </a-col>
     </a-row>
 
-    <ErrorsSection v-if="store.errors && store.errors.length > 0" :errors="store.errors" />
+    <ErrorsSection
+      v-if="store.errors && store.errors.length > 0"
+      :errors="store.errors"
+    />
 
     <ActionsSection :actions="store.actions" @copy="copyToClipboard" />
 
@@ -47,47 +64,47 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { usePluginsStore } from '../stores/plugins'
+import { onMounted, computed } from "vue";
+import { useRouter } from "vue-router";
+import { usePluginsStore } from "../stores/plugins";
 import {
   AppstoreOutlined,
   ReloadOutlined,
   RightOutlined,
-} from '@ant-design/icons-vue'
-import { useClipboard } from '../composables/useClipboard'
-import StatsCard from '../components/plugins/StatsCard.vue'
-import PluginCard from '../components/plugins/PluginCard.vue'
-import ActionsSection from '../components/plugins/ActionsSection.vue'
-import ChecksSection from '../components/plugins/ChecksSection.vue'
-import ErrorsSection from '../components/plugins/ErrorsSection.vue'
-import type { Plugin } from '../types/plugins'
+} from "@ant-design/icons-vue";
+import { useClipboard } from "../composables/useClipboard";
+import StatsCard from "../components/plugins/StatsCard.vue";
+import PluginCard from "../components/plugins/PluginCard.vue";
+import ActionsSection from "../components/plugins/ActionsSection.vue";
+import ChecksSection from "../components/plugins/ChecksSection.vue";
+import ErrorsSection from "../components/plugins/ErrorsSection.vue";
+import type { Plugin } from "../types/plugins";
 
-const store = usePluginsStore()
-const router = useRouter()
-const { copyToClipboard } = useClipboard()
+const store = usePluginsStore();
+const router = useRouter();
+const { copyToClipboard } = useClipboard();
 
-const error = computed(() => store.error)
+const error = computed(() => store.error);
 
 const navigateToRunFlow = () => {
-  router.push('/run')
-}
+  router.push("/run");
+};
 
 const showPluginConfig = (plugin: Plugin) => {
-  console.log('Show config for plugin:', plugin.name)
-}
+  console.log("Show config for plugin:", plugin.name);
+};
 
 const disablePlugin = (plugin: Plugin) => {
-  console.log('Disable plugin:', plugin.name)
-}
+  console.log("Disable plugin:", plugin.name);
+};
 
 const viewPluginDocs = (plugin: Plugin) => {
-  console.log('View docs for plugin:', plugin.name)
-}
+  console.log("View docs for plugin:", plugin.name);
+};
 
 onMounted(() => {
-  store.fetchPlugins()
-})
+  store.fetchPlugins();
+});
 </script>
 
 <style scoped>

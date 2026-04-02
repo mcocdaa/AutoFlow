@@ -12,9 +12,9 @@ name: zhihu-digest
 
 trigger:
   type: zhihu.question
-  mode: link            # link | cron-random
+  mode: link # link | cron-random
   link: https://www.zhihu.com/question/xxxx
-  cron: "0 9 * * *"     # mode=cron-random 时生效
+  cron: "0 9 * * *" # mode=cron-random 时生效
 
 flow:
   ref: flows/zhihu-digest.flow.yaml
@@ -62,4 +62,3 @@ policy:
 
 - `version` 递增时保持旧版本可读；新增字段必须可选且有合理默认值。
 - 插件扩展的 Trigger 必须保证“未知字段可忽略、未知 type 可报错可提示”的可诊断性。
-

@@ -11,12 +11,11 @@ from typing import Any
 from unittest.mock import Mock, call
 
 import pytest
-
+from app.plugin.registry import ActionContext, Registry
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
 from app.runtime.runner import Runner
-from app.runtime.utils import resolve_templates
-from app.plugin.registry import ActionContext, Registry
 from app.runtime.storage import RunStore
+from app.runtime.utils import resolve_templates
 
 
 class TestResolveTemplates:
@@ -41,14 +40,11 @@ class TestResolveTemplates:
         """嵌套 dict/list 中的模板也能替换"""
         obj = {
             "list": ["{{vars.a}}", {"deep": "{{vars.b}}"}],
-            "dict": {"nested": "{{vars.c}}"}
+            "dict": {"nested": "{{vars.c}}"},
         }
         context = {"vars": {"a": 1, "b": 2, "c": 3}}
         result = resolve_templates(obj, context)
-        assert result == {
-            "list": [1, {"deep": 2}],
-            "dict": {"nested": 3}
-        }
+        assert result == {"list": [1, {"deep": 2}], "dict": {"nested": 3}}
 
     def test_resolve_no_match(self) -> None:
         """无匹配的模板保持原样不报错"""
@@ -72,8 +68,10 @@ class TestVariablePassingEndToEnd:
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
+
         def echo_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return {"params": params, "step_id": context.step_id}
+
         reg.register_action("test.echo", echo_action)
         reg.register_check("test.always_true", lambda ctx, params: True)
         return reg
@@ -96,16 +94,15 @@ class TestVariablePassingEndToEnd:
                 StepSpec(
                     id="step1",
                     action=ActionSpec(type="test.echo", params={"message": "first"}),
-                    output_var="first_output"
+                    output_var="first_output",
                 ),
                 StepSpec(
                     id="step2",
                     action=ActionSpec(
-                        type="test.echo",
-                        params={"previous": "{{steps.step1.output}}"}
+                        type="test.echo", params={"previous": "{{steps.step1.output}}"}
                     ),
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={})
         assert run.status == "success"
@@ -131,11 +128,10 @@ class TestVariablePassingEndToEnd:
                 StepSpec(
                     id="step1",
                     action=ActionSpec(
-                        type="test.echo",
-                        params={"value": "{{vars.initial}}"}
+                        type="test.echo", params={"value": "{{vars.initial}}"}
                     ),
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={"initial": 123})
         assert run.status == "success"
@@ -149,8 +145,10 @@ class TestOutputVar:
     @pytest.fixture
     def registry(self) -> Registry:
         reg = Registry()
+
         def param_action(context: ActionContext, params: dict[str, Any]) -> Any:
             return params
+
         reg.register_action("test.param", param_action)
         reg.register_check("test.always_true", lambda ctx, params: True)
         return reg
@@ -174,16 +172,15 @@ class TestOutputVar:
                 StepSpec(
                     id="step1",
                     action=ActionSpec(type="test.param", params={"data": "value1"}),
-                    output_var="stored"
+                    output_var="stored",
                 ),
                 StepSpec(
                     id="step2",
                     action=ActionSpec(
-                        type="test.param",
-                        params={"received": "{{vars.stored}}"}
+                        type="test.param", params={"received": "{{vars.stored}}"}
                     ),
                 ),
-            ]
+            ],
         )
         run = runner.run_flow(flow, input=None, vars={})
         assert run.status == "success"

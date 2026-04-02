@@ -7,9 +7,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 def test_desktop_checkin_actions_listed() -> None:
@@ -40,7 +39,9 @@ steps:
 """.lstrip()
 
     client = TestClient(app)
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"dry_run": True}})
+    resp = client.post(
+        "/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"dry_run": True}}
+    )
     assert resp.status_code == 200
     run = resp.json()
 
@@ -53,5 +54,7 @@ steps:
     assert "text" not in run["steps"][0]["action_output"]
 
     rel = run["steps"][1]["action_output"]["path"]
-    artifacts_dir = Path(__file__).resolve().parents[2] / "backend" / "artifacts" / run["run_id"]
+    artifacts_dir = (
+        Path(__file__).resolve().parents[2] / "backend" / "artifacts" / run["run_id"]
+    )
     assert (artifacts_dir / rel).exists()

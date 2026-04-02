@@ -14,6 +14,7 @@
 ### 1. Flow YAML 支持顶层 hooks 字段
 
 修改 `backend/app/runtime/models/models.py` 中的 `FlowSpec` 模型：
+
 - 新增 `hooks` 字段，支持 `on_success` 和 `on_failure` 两个钩子
 - 钩子可以定义要执行的 action 列表
 
@@ -39,6 +40,7 @@ steps:
 ### 2. Runner 自动执行钩子
 
 修改 `runner.py`：
+
 - 在 flow 执行成功后，自动触发 `on_success` 钩子
 - 在 flow 执行失败后，自动触发 `on_failure` 钩子
 - 钩子执行失败不影响主流程结果（仅记录警告日志）
@@ -46,6 +48,7 @@ steps:
 ### 3. 支持自动归档配置
 
 在 `config.yaml` 中配置全局归档规则：
+
 ```yaml
 autoflow:
   auto_archive:
@@ -64,7 +67,7 @@ autoflow:
     # 可以按 flow 名称覆盖
     flow_overrides:
       sensitive_flow:
-        on_success: []  # 不记录敏感 flow
+        on_success: [] # 不记录敏感 flow
 ```
 
 ### 4. 钩子执行上下文
@@ -75,6 +78,7 @@ autoflow:
 ## Scope
 
 涉及文件：
+
 - `backend/app/runtime/models/models.py` - `FlowSpec` 新增 `hooks` 字段
 - `runner.py` - 流程结束后自动执行钩子逻辑
 

@@ -13,6 +13,7 @@
 ### 1. 插件初始化时读取 config.yaml
 
 修改 `plugins/openclaw/backend.py` 的 `__init__` 方法：
+
 - 在初始化时加载 `config.yaml` 文件
 - 解析 `plugins.openclaw` 部分的配置项
 - 支持环境变量覆盖配置值（优先级：环境变量 > 配置文件 > 硬编码默认值）
@@ -20,6 +21,7 @@
 ### 2. Action 方法优先使用配置值
 
 修改各 action 方法（如 `call_api`、`execute` 等）：
+
 - 从配置中读取 `base_url`、`timeout`、`retry_count` 等参数
 - 如果配置不存在，使用硬编码默认值作为兜底
 - 支持运行时通过参数覆盖配置值
@@ -38,6 +40,7 @@ plugins:
 ## Scope
 
 涉及文件：
+
 - `plugins/openclaw/backend.py` - `__init__` 方法和各 action 方法
 - `config.yaml` - 配置结构定义（已存在，需确保格式兼容）
 

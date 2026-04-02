@@ -13,8 +13,9 @@ import pytest
 
 from app.core.registry import ActionContext, Registry
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
-from app.runtime.runner.runner import Runner, evaluate_condition, resolve_templates
-from app.runtime.storage.store import RunStore
+from app.runtime.runner import Runner
+from app.runtime.store import RunStore
+from app.runtime.utils import evaluate_condition, resolve_templates
 
 
 class TestConditionEvaluation:

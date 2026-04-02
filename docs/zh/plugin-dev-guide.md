@@ -68,6 +68,7 @@ ActionHandler = Callable[[ActionContext, dict[str, Any]], Any]
 ```
 
 其中：
+
 - `ActionContext`: 上下文信息
 - `dict[str, Any]`: 参数字典
 - 返回值: 任意数据结构
@@ -85,6 +86,7 @@ class ActionContext:
 ```
 
 常用的内容包括：
+
 - `input`: 上一步的输入数据
 - `vars`: 全局变量，可以从中读取配置信息
 - `artifacts_dir`: 存储产品的目录，一般建议在此目录下创建子目录
@@ -114,6 +116,7 @@ CheckHandler = Callable[[CheckContext, dict[str, Any]], bool]
 ```
 
 其中：
+
 - `CheckContext`: 上下文信息
 - `dict[str, Any]`: 检查参数
 - 返回值: `True`/“False“标识检查结果
@@ -130,6 +133,7 @@ class CheckContext:
 ```
 
 常用的内容包括：
+
 - `action_output`: 上一步 Action 的返回值，可以根据这些数据进行检查
 - `vars`: 全局变量
 
@@ -169,6 +173,7 @@ class DummyEchoPlugin:
 ```
 
 **特点分析**：
+
 - 最简单的插件结构
 - 直接返回上下文信息
 - 不需要外部依赖
@@ -189,6 +194,7 @@ class HelloWorldPlugin:
 ```
 
 **特点分析**：
+
 - 使用 `execute` 方法而不是 `actions` 字典
 - 简单的函数调用
 - 不需要 ActionContext
@@ -212,6 +218,7 @@ class DesktopCheckinPlugin:
 ```
 
 **特点分析**：
+
 - 注册多个 action 和 check
 - 实现高级功能：桌面自动化
 - 包含安全功能：模拟模式支持
@@ -230,6 +237,7 @@ class ZhihuDigestPlugin:
 ```
 
 **特点分析**：
+
 - 调用外部 API：知乎简介
 - 实现数据处理和存储
 - 支持模拟模式

@@ -6,7 +6,7 @@
 #   2. 检查系统配置安全
 #   3. 检查依赖项漏洞
 #   4. 生成安全审计报告
-#   
+#
 #   触发方式：建议配置为每周日凌晨 2:00 执行 (cron: "0 2 * * 0")
 # @create 2026-03-14
 
@@ -66,10 +66,10 @@ steps:
       type: "openclaw.exec"
       params:
         command: |
-          cd {{vars.project_path | default('.')}} && 
-          if [ -f package-lock.json ]; then npm audit --json; 
-          elif [ -f Pipfile.lock ]; then pipenv check --json; 
-          elif [ -f requirements.txt ]; then safety check --json; 
+          cd {{vars.project_path | default('.')}} &&
+          if [ -f package-lock.json ]; then npm audit --json;
+          elif [ -f Pipfile.lock ]; then pipenv check --json;
+          elif [ -f requirements.txt ]; then safety check --json;
           else echo "No supported dependency file found"; fi
         timeout_seconds: 180
 

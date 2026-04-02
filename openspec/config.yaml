@@ -4,23 +4,23 @@ context: |
   - 后端: Python FastAPI
   - 前端: Vue3 + Electron + UniApp
   - 流程格式: YAML Flow (version/name/defaults/steps/action/check)
-  
+
   当前目标：开发 AutoFlow 与 OpenClaw 的桥接能力，并总结 AutoFlow 的使用方法。
-  
+
   本次工作分为两部分：
   1. OpenClaw 桥接工具/技能：让 Agent 能方便调用 AutoFlow API
   2. AutoFlow 用法设计：把复杂流程沉淀为可复用 Flow
-  
+
   已知 AutoFlow API：
   - POST /api/v1/runs/execute — 直接执行 flow_yaml
   - GET /api/v1/runs — 列出运行记录
   - GET /api/v1/runs/{run_id} — 获取运行详情
   - GET /api/v1/plugins — 获取可用插件、actions、checks
-  
+
   已知方向：
   - 优先先做 OpenClaw 侧桥接技能，不急着改 AutoFlow 核心架构
   - 后续如有必要，再为 AutoFlow 增加 openclaw.event TriggerType、webhook 回调、ai.decide ActionType
-  
+
   工作分支：openclaw
 rules:
   proposal:

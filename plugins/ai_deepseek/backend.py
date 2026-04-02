@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-
 from app.core.registry import ActionContext
 
 
@@ -72,7 +71,12 @@ class DeepSeekResult:
 
 
 class DeepSeekClient:
-    def __init__(self, *, base_url: str = "https://api.deepseek.com", timeout_seconds: float = 60.0) -> None:
+    def __init__(
+        self,
+        *,
+        base_url: str = "https://api.deepseek.com",
+        timeout_seconds: float = 60.0,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout_seconds
 
@@ -158,7 +162,12 @@ class AIDeepSeekPlugin:
         if _dry_run(ctx, params):
             summary = "（dry_run）示例总结：要点已整理。"
             out_rel = _write_text(ctx, "ai/summary.md", summary)
-            return {"summary_path": out_rel, "prompt_path": prompt_rel, "dry_run": True, "provider": "deepseek"}
+            return {
+                "summary_path": out_rel,
+                "prompt_path": prompt_rel,
+                "dry_run": True,
+                "provider": "deepseek",
+            }
 
         api_key = _get_deepseek_api_key(params)
         client = DeepSeekClient(
@@ -175,7 +184,13 @@ class AIDeepSeekPlugin:
         )
 
         out_rel = _write_text(ctx, "ai/summary.md", result.content)
-        return {"summary_path": out_rel, "prompt_path": prompt_rel, "model": model, "dry_run": False, "provider": "deepseek"}
+        return {
+            "summary_path": out_rel,
+            "prompt_path": prompt_rel,
+            "model": model,
+            "dry_run": False,
+            "provider": "deepseek",
+        }
 
 
 def register() -> AIDeepSeekPlugin:

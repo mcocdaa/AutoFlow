@@ -17,4 +17,4 @@ description: 后端核心功能模块
 - [setting_manager.py](setting_manager.py)：配置管理器
 - [env_secrets.py](env_secrets.py)：环境变量和密钥
 - [router_loader.py](router_loader.py)：路由加载器
-- [__init__.py](__init__.py)：模块初始化
+- [**init**.py](__init__.py)：模块初始化

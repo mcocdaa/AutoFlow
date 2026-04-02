@@ -1,17 +1,15 @@
-import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context'
-
-export const FDS_THEME: ThemeConfig = {
+export const FDS_THEME = {
   token: {
-    colorPrimary: '#2563EB',
-    colorSuccess: '#10B981',
-    colorWarning: '#F59E0B',
-    colorError: '#EF4444',
-    colorInfo: '#3B82F6',
-    colorTextBase: '#334155',
-    colorBgBase: '#FFFFFF',
-    colorBgContainer: '#FFFFFF',
-    colorBgElevated: '#FFFFFF',
-    colorBgLayout: '#F8FAFC',
+    colorPrimary: "#2563EB",
+    colorSuccess: "#10B981",
+    colorWarning: "#F59E0B",
+    colorError: "#EF4444",
+    colorInfo: "#3B82F6",
+    colorTextBase: "#334155",
+    colorBgBase: "#FFFFFF",
+    colorBgContainer: "#FFFFFF",
+    colorBgElevated: "#FFFFFF",
+    colorBgLayout: "#F8FAFC",
     borderRadius: 6,
     borderRadiusSM: 6,
     borderRadiusLG: 12,
@@ -21,22 +19,23 @@ export const FDS_THEME: ThemeConfig = {
     fontSizeHeading3: 24,
     fontSizeHeading4: 20,
     fontSizeHeading5: 18,
-    fontFamily: 'Inter, PingFang SC, Microsoft YaHei, sans-serif',
+    fontFamily: "Inter, PingFang SC, Microsoft YaHei, sans-serif",
     controlHeight: 40,
     controlHeightSM: 32,
     controlHeightLG: 48,
-    colorText: '#334155',
-    colorTextSecondary: '#64748B',
-    colorTextTertiary: '#94A3B8',
-    colorTextQuaternary: '#CBD5E1',
-    colorFill: '#F1F5F9',
-    colorFillSecondary: '#E2E8F0',
-    colorFillTertiary: '#F8FAFC',
-    colorBorder: '#E2E8F0',
-    colorBorderSecondary: '#F1F5F9',
-    boxShadowTertiary: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
-    boxShadowSecondary: '0 4px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)',
+    colorText: "#334155",
+    colorTextSecondary: "#64748B",
+    colorTextTertiary: "#94A3B8",
+    colorTextQuaternary: "#CBD5E1",
+    colorFill: "#F1F5F9",
+    colorFillSecondary: "#E2E8F0",
+    colorFillTertiary: "#F8FAFC",
+    colorBorder: "#E2E8F0",
+    colorBorderSecondary: "#F1F5F9",
+    boxShadowTertiary: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+    boxShadowSecondary:
+      "0 4px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
+    boxShadow: "0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)",
     wireframe: false,
   },
   components: {
@@ -47,7 +46,7 @@ export const FDS_THEME: ThemeConfig = {
       controlHeight: 40,
       controlHeightSM: 32,
       controlHeightLG: 48,
-      primaryColor: '#FFFFFF',
+      primaryColor: "#FFFFFF",
       fontWeight: 500,
       paddingInline: 16,
       paddingInlineSM: 12,
@@ -56,25 +55,26 @@ export const FDS_THEME: ThemeConfig = {
     Card: {
       borderRadiusLG: 12,
       borderRadiusSM: 12,
-      boxShadowTertiary: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+      boxShadowTertiary:
+        "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
       paddingLG: 24,
       padding: 24,
       paddingSM: 16,
     },
     Layout: {
-      colorBgHeader: '#FFFFFF',
-      colorBgBody: '#F8FAFC',
-      colorBgSider: '#1E293B',
-      headerHeight: 64,
-      headerPadding: '0 24px',
-      siderWidth: 240,
+      colorBgHeader: "transparent",
+      colorBgBody: "#F8FAFC",
+      colorBgSider: "#1E293B",
+      headerHeight: 68,
+      headerPadding: "0 32px",
+      siderWidth: 260,
     },
     Menu: {
-      colorItemBgSelected: '#2563EB',
-      colorItemTextSelected: '#FFFFFF',
-      colorItemText: '#94A3B8',
-      colorItemTextHover: '#FFFFFF',
-      colorItemBgHover: '#334155',
+      colorItemBgSelected: "#2563EB",
+      colorItemTextSelected: "#FFFFFF",
+      colorItemText: "#94A3B8",
+      colorItemTextHover: "#FFFFFF",
+      colorItemBgHover: "#334155",
       itemHeight: 48,
       itemMarginInline: 8,
       borderRadius: 6,
@@ -98,11 +98,11 @@ export const FDS_THEME: ThemeConfig = {
       controlHeightLG: 48,
     },
     Table: {
-      headerBg: '#F8FAFC',
+      headerBg: "#F8FAFC",
       borderRadiusLG: 12,
       cellPaddingBlock: 16,
       cellPaddingInline: 16,
-      headerSplitColor: 'transparent',
+      headerSplitColor: "transparent",
     },
     Tag: {
       borderRadiusSM: 9999,
@@ -136,7 +136,7 @@ export const FDS_THEME: ThemeConfig = {
       borderRadius: 9999,
     },
   },
-}
+};
 
 export const FDS_CSS_VARS = `
   :root {
@@ -174,4 +174,4 @@ export const FDS_CSS_VARS = `
     --flow-gradient-knowflow: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
     --flow-gradient-harvestflow: linear-gradient(135deg, #2563EB 0%, #F59E0B 100%);
   }
-`
+`;

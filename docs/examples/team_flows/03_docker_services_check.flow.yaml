@@ -32,7 +32,7 @@ steps:
     name: "检查异常容器"
     action: "openclaw.exec"
     params:
-      command: "docker ps -a --filter status=exited --filter status=dead --format \"{{.Names}}\" 2>&1"
+      command: 'docker ps -a --filter status=exited --filter status=dead --format "{{.Names}}" 2>&1'
       timeout_seconds: 10
     output_var: "unhealthy_containers"
 

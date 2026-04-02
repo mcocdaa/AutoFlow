@@ -10,6 +10,7 @@ version: "2.0"
 本规范适用于任何软件项目的代码编写。
 
 ## 目录
+
 - [1. 导入规范](#1-导入规范)
 - [2. 命名规范](#2-命名规范)
 - [3. 类型注解](#3-类型注解)
@@ -25,7 +26,9 @@ version: "2.0"
 ## 1. 导入规范
 
 ### 1.1 移除未使用的导入
+
 **✗ 错误示例:**
+
 ```python
 import os
 import sys
@@ -34,13 +37,16 @@ import asyncio  # 未使用
 ```
 
 **✓ 正确示例:**
+
 ```python
 import os
 import sys
 ```
 
 ### 1.2 导入顺序
+
 按以下顺序分组导入：
+
 1. 标准库
 2. 第三方库
 3. 本地模块
@@ -48,6 +54,7 @@ import sys
 每组之间空一行。
 
 **✓ 正确示例:**
+
 ```python
 import os
 import sys
@@ -65,15 +72,18 @@ from managers import session_manager
 ## 2. 命名规范
 
 ### 2.1 常量命名
+
 使用全大写下划线分隔。
 
 **✗ 错误示例:**
+
 ```python
 secret_bytes = 24
 max_wait = 50
 ```
 
 **✓ 正确示例:**
+
 ```python
 SECRET_TOKEN_BYTES = 24
 REFRESH_WAIT_MAX_ITERATIONS = 50
@@ -81,9 +91,11 @@ DEFAULT_LOG_LEVEL = "INFO"
 ```
 
 ### 2.2 枚举类型
+
 对于状态值、类型等，使用 `Enum`。
 
 **✗ 错误示例:**
+
 ```python
 if status == "raw":
     ...
@@ -92,6 +104,7 @@ elif status == "approved":
 ```
 
 **✓ 正确示例:**
+
 ```python
 from enum import Enum
 
@@ -109,15 +122,18 @@ if status == SessionStatus.RAW:
 ## 3. 类型注解
 
 ### 3.1 公共方法必须有类型注解
+
 所有公共方法的参数和返回值都必须添加类型注解。
 
 **✗ 错误示例:**
+
 ```python
 def get_session(self, session_id):
     ...
 ```
 
 **✓ 正确示例:**
+
 ```python
 def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
     ...
@@ -128,9 +144,11 @@ def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
 ## 4. 文档字符串
 
 ### 4.1 Google 风格文档字符串
+
 所有公共方法必须有文档字符串，使用 Google 风格。
 
 **✓ 正确示例:**
+
 ```python
 def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
     """获取单个会话
@@ -149,9 +167,11 @@ def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
 ## 5. 异常处理
 
 ### 5.1 避免捕获所有异常
+
 尽可能捕获具体的异常类型。
 
 **✗ 错误示例:**
+
 ```python
 try:
     data = json.load(f)
@@ -160,6 +180,7 @@ except Exception:
 ```
 
 **✓ 正确示例:**
+
 ```python
 try:
     data = json.load(f)
@@ -170,9 +191,11 @@ except IOError as e:
 ```
 
 ### 5.2 记录异常堆栈
+
 使用 `exc_info=True` 记录完整堆栈。
 
 **✓ 正确示例:**
+
 ```python
 try:
     ...
@@ -185,9 +208,11 @@ except Exception as e:
 ## 6. 常量定义
 
 ### 6.1 避免魔法数字
+
 所有字面量数值都应该定义为常量。
 
 **✗ 错误示例:**
+
 ```python
 token = secrets.token_bytes(24)
 for _ in range(50):
@@ -195,6 +220,7 @@ for _ in range(50):
 ```
 
 **✓ 正确示例:**
+
 ```python
 SECRET_TOKEN_BYTES = 24
 REFRESH_WAIT_MAX_ITERATIONS = 50
@@ -209,19 +235,23 @@ for _ in range(REFRESH_WAIT_MAX_ITERATIONS):
 ## 7. 日志规范
 
 ### 7.1 统一使用 logging
+
 禁止使用 `print`，统一使用 `logging` 模块。
 
 **✗ 错误示例:**
+
 ```python
 print("[Route] 已注册 API")
 ```
 
 **✓ 正确示例:**
+
 ```python
 logger.info("[Route] 已注册 API")
 ```
 
 ### 7.2 日志级别
+
 - `DEBUG`: 调试信息
 - `INFO`: 一般信息
 - `WARNING`: 警告信息
@@ -232,18 +262,21 @@ logger.info("[Route] 已注册 API")
 ## 8. 文件组织
 
 ### 8.1 文件大小
+
 单个文件建议不超过 400 行。超过时考虑拆分为多个模块。
 
-| 建议 | 操作 |
-|------|------|
-| < 400 行 | 保持 |
+| 建议       | 操作     |
+| ---------- | -------- |
+| < 400 行   | 保持     |
 | 400-500 行 | 考虑拆分 |
-| > 500 行 | 必须拆分 |
+| > 500 行   | 必须拆分 |
 
 ### 8.2 删除死代码
+
 删除未使用的方法、变量和类。
 
 **✗ 错误示例:**
+
 ```python
 def _unused_method(self):
     """从未被调用的方法"""

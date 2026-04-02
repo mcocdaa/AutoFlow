@@ -1,21 +1,19 @@
 {
-    "name": "AutoFlow Dev",
-    "dockerComposeFile": [
-        "docker-compose.yml"
-    ],
-    "service": "dev-container",
-    "workspaceFolder": "/workspace",
-    "shutdownAction": "stopCompose",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "ms-python.python",
-                "ms-python.vscode-pylance",
-                "dbaeumer.vscode-eslint",
-                "esbenp.prettier-vscode",
-                "Vue.volar"
-            ]
-        }
-    },
-    "postCreateCommand": "bash scripts/init-secrets.sh"
+  "name": "AutoFlow Dev",
+  "dockerComposeFile": ["docker-compose.yml"],
+  "service": "dev-container",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Vue.volar"
+      ]
+    }
+  },
+  "postCreateCommand": "bash scripts/init-secrets.sh"
 }

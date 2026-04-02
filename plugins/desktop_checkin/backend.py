@@ -72,7 +72,13 @@ class DesktopCheckinPlugin:
         focus = _is_truthy(params.get("focus", True))
 
         if _dry_run(ctx, params):
-            return {"activated": True, "title": title, "regex": use_regex, "focus": focus, "dry_run": True}
+            return {
+                "activated": True,
+                "title": title,
+                "regex": use_regex,
+                "focus": focus,
+                "dry_run": True,
+            }
 
         try:
             import pygetwindow as gw
@@ -109,10 +115,19 @@ class DesktopCheckinPlugin:
                         match.activate()
                     except Exception:
                         pass
-                return {"activated": True, "title": getattr(match, "title", "") or "", "dry_run": False}
+                return {
+                    "activated": True,
+                    "title": getattr(match, "title", "") or "",
+                    "dry_run": False,
+                }
 
             if time.time() >= deadline:
-                return {"activated": False, "title": title, "dry_run": False, "seen_titles": last_titles[:50]}
+                return {
+                    "activated": False,
+                    "title": title,
+                    "dry_run": False,
+                    "seen_titles": last_titles[:50],
+                }
             time.sleep(0.2)
 
     def click(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
@@ -123,12 +138,26 @@ class DesktopCheckinPlugin:
         interval = float(params.get("interval", 0))
 
         if _dry_run(ctx, params):
-            return {"clicked": True, "x": x, "y": y, "button": button, "clicks": clicks, "dry_run": True}
+            return {
+                "clicked": True,
+                "x": x,
+                "y": y,
+                "button": button,
+                "clicks": clicks,
+                "dry_run": True,
+            }
 
         import pyautogui
 
         pyautogui.click(x=x, y=y, clicks=clicks, interval=interval, button=button)
-        return {"clicked": True, "x": x, "y": y, "button": button, "clicks": clicks, "dry_run": False}
+        return {
+            "clicked": True,
+            "x": x,
+            "y": y,
+            "button": button,
+            "clicks": clicks,
+            "dry_run": False,
+        }
 
     def double_click(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
         params = dict(params)
@@ -172,13 +201,23 @@ class DesktopCheckinPlugin:
         secret = _is_truthy(params.get("secret"))
 
         if _dry_run(ctx, params):
-            return {"typed": True, "length": len(text), "secret": secret, "dry_run": True}
+            return {
+                "typed": True,
+                "length": len(text),
+                "secret": secret,
+                "dry_run": True,
+            }
 
         import pyautogui
 
         pyautogui.typewrite(text, interval=interval)
         if secret:
-            return {"typed": True, "length": len(text), "secret": True, "dry_run": False}
+            return {
+                "typed": True,
+                "length": len(text),
+                "secret": True,
+                "dry_run": False,
+            }
         return {"typed": True, "text": text, "secret": False, "dry_run": False}
 
     def hotkey(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
@@ -221,20 +260,33 @@ class DesktopCheckinPlugin:
                 Image.new("RGB", (1, 1), color=(0, 0, 0)).save(out_path, format="PNG")
             except Exception:
                 out_path.write_bytes(b"")
-            return {"saved": True, "path": str(out_path.relative_to(ctx.artifacts_dir)), "dry_run": True}
+            return {
+                "saved": True,
+                "path": str(out_path.relative_to(ctx.artifacts_dir)),
+                "dry_run": True,
+            }
 
         import pyautogui
 
         if region is not None:
             if not isinstance(region, list) or len(region) != 4:
                 raise ValueError("region must be [left, top, width, height]")
-            region_tuple = (int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+            region_tuple = (
+                int(region[0]),
+                int(region[1]),
+                int(region[2]),
+                int(region[3]),
+            )
         else:
             region_tuple = None
 
         img = pyautogui.screenshot(region=region_tuple)
         img.save(out_path)
-        return {"saved": True, "path": str(out_path.relative_to(ctx.artifacts_dir)), "dry_run": False}
+        return {
+            "saved": True,
+            "path": str(out_path.relative_to(ctx.artifacts_dir)),
+            "dry_run": False,
+        }
 
     def image_exists(self, ctx: CheckContext, params: dict[str, Any]) -> bool:
         template_path = params.get("template_path")
@@ -252,7 +304,9 @@ class DesktopCheckinPlugin:
                 if confidence is None:
                     found = pyautogui.locateOnScreen(str(template))
                 else:
-                    found = pyautogui.locateOnScreen(str(template), confidence=float(confidence))
+                    found = pyautogui.locateOnScreen(
+                        str(template), confidence=float(confidence)
+                    )
             except Exception:
                 found = None
             if found is not None:

@@ -60,13 +60,13 @@ run_flow(flow: FlowSpec, input, vars) → RunResult
 
 ### 1.2 数据流
 
-| 阶段 | 变量 | 用途 |
-|------|------|------|
-| 入口 | `input`, `vars` | 用户传入的初始输入和变量 |
-| Step 1 前 | `current_input` | 当前 step 的输入 |
-| Step 1 后 | `action_output` | action 执行结果 |
-| Step 1 后 | `current_input = action_output` | 作为下一个 step 的输入 |
-| 全局 | `runtime_vars` | 贯穿整个 Flow 的运行时变量 |
+| 阶段      | 变量                            | 用途                       |
+| --------- | ------------------------------- | -------------------------- |
+| 入口      | `input`, `vars`                 | 用户传入的初始输入和变量   |
+| Step 1 前 | `current_input`                 | 当前 step 的输入           |
+| Step 1 后 | `action_output`                 | action 执行结果            |
+| Step 1 后 | `current_input = action_output` | 作为下一个 step 的输入     |
+| 全局      | `runtime_vars`                  | 贯穿整个 Flow 的运行时变量 |
 
 ---
 
@@ -84,13 +84,13 @@ class Registry:
 
 **核心方法**：
 
-| 方法 | 功能 |
-|------|------|
-| `register_action(type_name, handler)` | 注册 action |
-| `register_check(type_name, handler)` | 注册 check |
-| `get_action(type_name)` | 获取 action handler |
-| `get_check(type_name)` | 获取 check handler |
-| `register_plugin(name, version)` | 记录插件信息 |
+| 方法                                  | 功能                |
+| ------------------------------------- | ------------------- |
+| `register_action(type_name, handler)` | 注册 action         |
+| `register_check(type_name, handler)`  | 注册 check          |
+| `get_action(type_name)`               | 获取 action handler |
+| `get_check(type_name)`                | 获取 check handler  |
+| `register_plugin(name, version)`      | 记录插件信息        |
 
 **类型签名**：
 
@@ -152,12 +152,12 @@ class MyPlugin:
 
 ### 3.1 可直接扩展的位置
 
-| 位置 | 当前行为 | 可扩展方向 |
-|------|----------|------------|
-| `run_flow` 入口 | 顺序执行 steps | **可加 if/else、for 循环** |
-| `step.action.params` | 静态字典 | **支持变量替换 `${{step.output}}`** |
-| `current_input` 传递 | 线性传递 | 可改为条件分支传递 |
-| Step 失败时 | 立即返回 | 可改为继续执行或跳过 |
+| 位置                 | 当前行为       | 可扩展方向                          |
+| -------------------- | -------------- | ----------------------------------- |
+| `run_flow` 入口      | 顺序执行 steps | **可加 if/else、for 循环**          |
+| `step.action.params` | 静态字典       | **支持变量替换 `${{step.output}}`** |
+| `current_input` 传递 | 线性传递       | 可改为条件分支传递                  |
+| Step 失败时          | 立即返回       | 可改为继续执行或跳过                |
 
 ### 3.2 需要扩展的核心点
 
@@ -184,7 +184,7 @@ backend/plugins/openclaw/
     └── knowflow_record.py
 ```
 
-#### 4.1.2 __init__.py 示例
+#### 4.1.2 **init**.py 示例
 
 ```python
 # plugins/openclaw/__init__.py
@@ -279,12 +279,12 @@ def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
 def autoflow_run(flow_id: str, input: Any = None, vars: dict = None) -> RunResult:
     """
     执行一个预定义的 AutoFlow
-    
+
     参数:
       flow_id: Flow 的标识符或 YAML 内容
       input: 传入 Flow 的输入数据
       vars: 运行时变量
-    
+
     返回:
       RunResult (status, steps, output 等)
     """
@@ -297,7 +297,7 @@ def autoflow_run(flow_id: str, input: Any = None, vars: dict = None) -> RunResul
 
 ```
 用户: "帮我运行数据清洗流程"
-Agent: 
+Agent:
   Tool: autoflow_run(flow_id="data-cleanup", input={"raw_data": "..."})
   → 返回 RunResult
 ```
@@ -366,7 +366,7 @@ for step in flow.steps:
             # 跳过或标记为 skipped
             run.steps.append(create_skipped_step(step))
             continue
-    
+
     # 原有执行逻辑...
 ```
 
@@ -400,14 +400,14 @@ if step.loop is not None:
 
 ## 六、总结
 
-| 能力 | 当前状态 | 方案 |
-|------|----------|------|
-| 顺序执行 steps | ✅ 已支持 | - |
-| 变量传递 | ✅ `current_input` 传递 | 增强 `${{vars.xxx}}` 引用 |
-| 条件分支 | ❌ 不支持 | 新增 `condition` 字段 |
-| 循环 | ❌ 不支持 | 新增 `loop` 字段 |
-| 调用外部服务 | ✅ Action 机制 | 新增 openclaw 插件 |
-| Agent 调用 Flow | ❌ 不支持 | OpenClaw 新增 autoflow_run 工具 |
+| 能力            | 当前状态                | 方案                            |
+| --------------- | ----------------------- | ------------------------------- |
+| 顺序执行 steps  | ✅ 已支持               | -                               |
+| 变量传递        | ✅ `current_input` 传递 | 增强 `${{vars.xxx}}` 引用       |
+| 条件分支        | ❌ 不支持               | 新增 `condition` 字段           |
+| 循环            | ❌ 不支持               | 新增 `loop` 字段                |
+| 调用外部服务    | ✅ Action 机制          | 新增 openclaw 插件              |
+| Agent 调用 Flow | ❌ 不支持               | OpenClaw 新增 autoflow_run 工具 |
 
 **实施优先级建议**：
 

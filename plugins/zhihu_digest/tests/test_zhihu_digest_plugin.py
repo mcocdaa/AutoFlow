@@ -6,9 +6,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 def test_zhihu_digest_actions_listed() -> None:
@@ -38,7 +37,9 @@ steps:
 """.lstrip()
 
     client = TestClient(app)
-    resp = client.post("/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"dry_run": True}})
+    resp = client.post(
+        "/api/v1/runs/execute", json={"flow_yaml": flow_yaml, "vars": {"dry_run": True}}
+    )
     assert resp.status_code == 200
     run = resp.json()
     assert run["status"] == "success"
@@ -48,7 +49,9 @@ steps:
     assert fetch["dry_run"] is True
     assert summ["dry_run"] is True
 
-    artifacts_dir = Path(__file__).resolve().parents[2] / "backend" / "artifacts" / run["run_id"]
+    artifacts_dir = (
+        Path(__file__).resolve().parents[2] / "backend" / "artifacts" / run["run_id"]
+    )
     assert (artifacts_dir / fetch["answer_text_path"]).exists()
     assert (artifacts_dir / summ["prompt_path"]).exists()
     assert (artifacts_dir / summ["summary_path"]).exists()

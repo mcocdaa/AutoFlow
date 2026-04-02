@@ -19,7 +19,7 @@ steps:
     action:
       type: openclaw.exec
       params:
-        command: "cd \"${repo_path}\" ; git status --short ; Write-Host '---' ; git log --oneline -5"
+        command: 'cd "${repo_path}" ; git status --short ; Write-Host ''---'' ; git log --oneline -5'
     output_var: git_output
 
   - id: git_branch
@@ -27,7 +27,7 @@ steps:
     action:
       type: openclaw.exec
       params:
-        command: "cd \"${repo_path}\" ; git branch --show-current"
+        command: 'cd "${repo_path}" ; git branch --show-current'
     output_var: branch_output
 
   - id: log_status

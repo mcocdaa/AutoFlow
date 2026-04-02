@@ -5,6 +5,7 @@ from .schema import SetupConfig
 from .executor import Executor
 from .utils import is_docker, is_root, is_linux
 
+
 class EnvManager:
     def __init__(self, root_dir: str, scope: str = "dev"):
         self.root_dir = root_dir
@@ -18,7 +19,7 @@ class EnvManager:
             if "setup.yaml" in files:
                 file_path = os.path.join(root, "setup.yaml")
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         data = yaml.safe_load(f)
                         if not data:
                             continue
@@ -61,7 +62,9 @@ class EnvManager:
         if not self.system_deps:
             return
 
-        Executor.log(f"Installing system dependencies: {', '.join(self.system_deps)}", "INFO")
+        Executor.log(
+            f"Installing system dependencies: {', '.join(self.system_deps)}", "INFO"
+        )
 
         if not is_linux():
             Executor.log("Skipping system dep installation (Not Linux)", "WARN")
@@ -70,14 +73,14 @@ class EnvManager:
         cmd = f"apt-get update && apt-get install -y {' '.join(self.system_deps)}"
 
         if not is_root():
-             Executor.log("Not root, trying with sudo...", "WARN")
-             cmd = "sudo " + cmd
+            Executor.log("Not root, trying with sudo...", "WARN")
+            cmd = "sudo " + cmd
 
         Executor.run_command(cmd)
 
     def _process_module(self, config: SetupConfig):
         Executor.log(f"Processing module: {config.name}", "HEADER")
-        cwd = getattr(config, '_context_dir', self.root_dir)
+        cwd = getattr(config, "_context_dir", self.root_dir)
 
         # 1. Strategy Execution
         if "python" in config.strategies:
@@ -124,6 +127,8 @@ class EnvManager:
         for script in scripts:
             # Check for risk
             if "pip install" in script and not is_docker() and is_root():
-                 Executor.log(f"Risk Warning: Running '{script}' as root on host.", "WARN")
+                Executor.log(
+                    f"Risk Warning: Running '{script}' as root on host.", "WARN"
+                )
 
             Executor.run_command(script, cwd=cwd)

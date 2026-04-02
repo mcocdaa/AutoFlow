@@ -6,7 +6,7 @@
 #   2. 初始化 OpenSpec 变更追踪
 #   3. 创建 Git 分支
 #   4. 记录项目信息到 KnowFlow
-#   
+#
 #   触发方式：手动执行或通过项目创建 webhook 触发
 #   参数：project_name, project_type, description
 # @create 2026-03-14

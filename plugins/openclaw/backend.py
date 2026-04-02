@@ -34,7 +34,9 @@ class OpenClawPlugin:
             "openclaw.exit_code_zero": self.exit_code_zero,
         }
 
-    def http_request(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
+    def http_request(
+        self, ctx: ActionContext, params: dict[str, Any]
+    ) -> dict[str, Any]:
         method = params.get("method", "GET").upper()
         url = params.get("url")
         headers = params.get("headers", {})
@@ -42,7 +44,12 @@ class OpenClawPlugin:
         timeout = params.get("timeout") or self.defaults.get("http_timeout", 30)
 
         if not url:
-            return {"error": "url is required", "status_code": None, "headers": None, "body": None}
+            return {
+                "error": "url is required",
+                "status_code": None,
+                "headers": None,
+                "body": None,
+            }
 
         try:
             req = Request(url, method=method)
@@ -94,7 +101,9 @@ class OpenClawPlugin:
                 "error_type": "unknown_error",
             }
 
-    def exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
+    def exec_command(
+        self, ctx: ActionContext, params: dict[str, Any]
+    ) -> dict[str, Any]:
         command = params.get("command")
         args = params.get("args")  # 可选参数列表
         cwd = params.get("cwd")
@@ -103,13 +112,23 @@ class OpenClawPlugin:
         allowed_commands = self.defaults.get("allowed_commands", [])
 
         if not command:
-            return {"exit_code": None, "stdout": "", "stderr": "command is required", "error": "command is required"}
+            return {
+                "exit_code": None,
+                "stdout": "",
+                "stderr": "command is required",
+                "error": "command is required",
+            }
 
         # 白名单校验（若配置了 allowed_commands）
         if allowed_commands:
             matched = any(re.match(pattern, command) for pattern in allowed_commands)
             if not matched:
-                return {"exit_code": -1, "stdout": "", "stderr": f"command not allowed: {command}", "error": "command_not_allowed"}
+                return {
+                    "exit_code": -1,
+                    "stdout": "",
+                    "stderr": f"command not allowed: {command}",
+                    "error": "command_not_allowed",
+                }
 
         # 构建执行参数
         # Windows 上内建命令（echo/dir等）需要 shell=True，safe_mode 下仍用 shlex 解析但保留 shell
@@ -158,7 +177,9 @@ class OpenClawPlugin:
                 "error_type": "unknown_error",
             }
 
-    def knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
+    def knowflow_record(
+        self, ctx: ActionContext, params: dict[str, Any]
+    ) -> dict[str, Any]:
         default_base_url = (
             self.secrets.get("knowflow_base_url")
             or os.environ.get("KNOWFLOW_BASE_URL")
@@ -173,9 +194,19 @@ class OpenClawPlugin:
         agent_source = params.get("agent_source", "autoflow")
 
         if not name:
-            return {"item_id": None, "name": None, "success": False, "error": "name is required"}
+            return {
+                "item_id": None,
+                "name": None,
+                "success": False,
+                "error": "name is required",
+            }
         if not project_id:
-            return {"item_id": None, "name": name, "success": False, "error": "project_id is required"}
+            return {
+                "item_id": None,
+                "name": name,
+                "success": False,
+                "error": "project_id is required",
+            }
 
         try:
             create_url = f"{base_url}/api/v1/item"
@@ -198,9 +229,16 @@ class OpenClawPlugin:
                 create_result = json.loads(response.read().decode("utf-8"))
                 item_id = create_result.get("id") or create_result.get("_id")
                 if not item_id:
-                    return {"item_id": None, "name": name, "success": False, "error": "Failed to get item_id from response"}
+                    return {
+                        "item_id": None,
+                        "name": name,
+                        "success": False,
+                        "error": "Failed to get item_id from response",
+                    }
 
-            update_url = f"{base_url}/api/v1/plugins/knowflow_openclaw/items/{item_id}/openclaw"
+            update_url = (
+                f"{base_url}/api/v1/plugins/knowflow_openclaw/items/{item_id}/openclaw"
+            )
             update_payload = {"agent": agent_source, "source": "autoflow"}
             update_data = json.dumps(update_payload).encode("utf-8")
 
@@ -223,11 +261,29 @@ class OpenClawPlugin:
 
         except HTTPError as e:
             error_body = e.read().decode("utf-8") if e.fp else ""
-            return {"item_id": None, "name": name, "success": False, "error": f"HTTP {e.code}: {error_body}", "error_type": "http_error"}
+            return {
+                "item_id": None,
+                "name": name,
+                "success": False,
+                "error": f"HTTP {e.code}: {error_body}",
+                "error_type": "http_error",
+            }
         except URLError as e:
-            return {"item_id": None, "name": name, "success": False, "error": str(e.reason), "error_type": "network_error"}
+            return {
+                "item_id": None,
+                "name": name,
+                "success": False,
+                "error": str(e.reason),
+                "error_type": "network_error",
+            }
         except Exception as e:
-            return {"item_id": None, "name": name, "success": False, "error": str(e), "error_type": "unknown_error"}
+            return {
+                "item_id": None,
+                "name": name,
+                "success": False,
+                "error": str(e),
+                "error_type": "unknown_error",
+            }
 
     def status_code_ok(self, ctx: CheckContext, params: dict[str, Any]) -> bool:
         expected = params.get("expected", 200)

@@ -14,12 +14,14 @@
 ### 1. 增加 safe_mode 配置开关
 
 修改 `config.yaml`：
+
 - 新增 `exec.safe_mode` 配置项，默认值为 `false`
 - 当 `safe_mode: true` 时，启用安全限制
 
 ### 2. 支持 command/args 分离模式
 
 修改 `plugins/openclaw/backend.py` 的 `exec_command` 方法：
+
 - 支持 `shell=False` 模式，使用列表形式的 `command` + `args`
 - 示例：`["git", "clone", "https://github.com/user/repo.git"]`
 - 避免 shell 注入风险
@@ -27,6 +29,7 @@
 ### 3. 可选命令白名单正则
 
 在 `config.yaml` 中配置允许执行的命令白名单：
+
 ```yaml
 exec:
   safe_mode: true
@@ -48,6 +51,7 @@ exec:
 ## Scope
 
 涉及文件：
+
 - `plugins/openclaw/backend.py` - `exec_command` 方法
 - `config.yaml` - 新增 `exec` 配置段
 

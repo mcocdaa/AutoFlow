@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia'
-import apiClient from '../api'
+import { defineStore } from "pinia";
+import apiClient from "../api";
 
-export const usePluginsStore = defineStore('plugins', {
+export const usePluginsStore = defineStore("plugins", {
   state: () => ({
     plugins: [] as any[],
     actions: [] as string[],
@@ -12,20 +12,20 @@ export const usePluginsStore = defineStore('plugins', {
   }),
   actions: {
     async fetchPlugins() {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
       try {
-        const response = await apiClient.get('/plugins')
-        this.plugins = response.data.plugins
-        this.actions = response.data.actions
-        this.checks = response.data.checks
-        this.errors = response.data.errors || []
+        const response = await apiClient.get("/plugins");
+        this.plugins = response.data.plugins || [];
+        this.actions = response.data.actions || [];
+        this.checks = response.data.checks || [];
+        this.errors = response.data.errors || [];
       } catch (error: any) {
-        this.error = error.message
-        console.error('Failed to fetch plugins:', error)
+        this.error = error.message;
+        console.error("Failed to fetch plugins:", error);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
   },
-})
+});

@@ -1,6 +1,8 @@
 # 规则文档
+
 docs/rules/index.md
 其索引了
+
 - [docs.md]: 文档规范
 - [code.md]: 代码规范
 - [api-spec.md]: API 规范

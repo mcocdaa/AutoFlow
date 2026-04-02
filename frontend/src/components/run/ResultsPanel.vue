@@ -6,7 +6,9 @@
           <BarChartOutlined class="card-icon" />
           Execution Result
         </div>
-        <a-tag v-if="run" :color="statusColor" class="status-tag">{{ run.status }}</a-tag>
+        <a-tag v-if="run" :color="statusColor" class="status-tag">{{
+          run.status
+        }}</a-tag>
       </div>
     </template>
 
@@ -43,12 +45,17 @@
               <a-alert :message="step.error" type="error" :closable="false" />
             </div>
             <div class="step-output">
-              <pre class="output-pre">{{ JSON.stringify(step.action_output, null, 2) }}</pre>
+              <pre class="output-pre">{{
+                JSON.stringify(step.action_output, null, 2)
+              }}</pre>
             </div>
             <div v-if="step.check_passed !== null" class="step-check">
               <span class="check-label">Check:</span>
-              <a-tag :color="step.check_passed ? 'green' : 'red'" class="check-tag">
-                {{ step.check_passed ? 'Passed' : 'Failed' }}
+              <a-tag
+                :color="step.check_passed ? 'green' : 'red'"
+                class="check-tag"
+              >
+                {{ step.check_passed ? "Passed" : "Failed" }}
               </a-tag>
             </div>
           </a-collapse-panel>
@@ -68,27 +75,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 import {
   BarChartOutlined,
   UserOutlined,
   ClockCircleOutlined,
   UnorderedListOutlined,
   CloudServerOutlined,
-} from '@ant-design/icons-vue'
-import type { RunResult } from '../../types/runs'
+} from "@ant-design/icons-vue";
+import type { RunResult } from "../../types/runs";
 
 const props = defineProps<{
-  run: RunResult | null
-  error: string | null
-}>()
+  run: RunResult | null;
+  error: string | null;
+}>();
 
 const statusColor = computed(() => {
-  if (!props.run) return 'blue'
-  if (props.run.status === 'success') return 'green'
-  if (props.run.status === 'failed') return 'red'
-  return 'orange'
-})
+  if (!props.run) return "blue";
+  if (props.run.status === "success") return "green";
+  if (props.run.status === "failed") return "red";
+  return "orange";
+});
 </script>
 
 <style scoped>
@@ -158,7 +165,7 @@ const statusColor = computed(() => {
 }
 
 .info-value {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 13px;
   color: var(--flow-text-primary);
   word-break: break-all;

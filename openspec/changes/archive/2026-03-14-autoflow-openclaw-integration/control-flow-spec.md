@@ -20,21 +20,21 @@
 ### 2.2 StepSpec 新增字段
 
 ```yaml
-condition: str | None = None  # 条件表达式，为 None 时默认执行
+condition: str | None = None # 条件表达式，为 None 时默认执行
 ```
 
 ### 2.3 条件表达式语法
 
 条件表达式为字符串，支持以下语法：
 
-| 语法 | 说明 | 示例 |
-|------|------|------|
-| `{{vars.X}}` | 引用运行时变量 | `{{vars.env}} == 'prod'` |
-| `{{steps.X.output}}` | 引用步骤输出 | `{{steps.validate.output}} == true` |
-| `{{input}}` | 引用当前输入 | `{{input}} != null` |
-| 比较运算符 | `==`, `!=`, `<`, `>`, `<=`, `>=` | `{{vars.count}} > 5` |
-| 逻辑运算符 | `and`, `or`, `not` | `{{vars.a}} == 1 and {{vars.b}} == 2` |
-| 内置函数 | `empty()`, `contains()`, `len()` | `empty({{vars.list}})` |
+| 语法                 | 说明                             | 示例                                  |
+| -------------------- | -------------------------------- | ------------------------------------- |
+| `{{vars.X}}`         | 引用运行时变量                   | `{{vars.env}} == 'prod'`              |
+| `{{steps.X.output}}` | 引用步骤输出                     | `{{steps.validate.output}} == true`   |
+| `{{input}}`          | 引用当前输入                     | `{{input}} != null`                   |
+| 比较运算符           | `==`, `!=`, `<`, `>`, `<=`, `>=` | `{{vars.count}} > 5`                  |
+| 逻辑运算符           | `and`, `or`, `not`               | `{{vars.a}} == 1 and {{vars.b}} == 2` |
+| 内置函数             | `empty()`, `contains()`, `len()` | `empty({{vars.list}})`                |
 
 ### 2.4 YAML 示例
 
@@ -110,21 +110,21 @@ steps:
 ### 3.2 StepSpec 新增字段
 
 ```yaml
-for_each: str | None = None      # 引用列表变量的表达式，如 "{{vars.items}}"
-for_each_as: str = "item"       # 循环变量名，默认为 "item"
-for_index_as: str = "index"     # 索引变量名，默认为 "index"
+for_each: str | None = None # 引用列表变量的表达式，如 "{{vars.items}}"
+for_each_as: str = "item" # 循环变量名，默认为 "item"
+for_index_as: str = "index" # 索引变量名，默认为 "index"
 ```
 
 ### 3.3 循环变量引用
 
 在配置了 `for_each` 的 step 中，以下模板变量可用：
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{item}}` | 当前迭代元素（默认名） | `{{item.name}}` |
-| `{{index}}` | 当前迭代索引（从 0 开始） | `{{index}}` |
-| `{{forEach.item}}` | 显式访问循环变量 | `{{forEach.item.id}}` |
-| `{{forEach.index}}` | 显式访问循环索引 | `{{forEach.index}}` |
+| 变量                | 说明                      | 示例                  |
+| ------------------- | ------------------------- | --------------------- |
+| `{{item}}`          | 当前迭代元素（默认名）    | `{{item.name}}`       |
+| `{{index}}`         | 当前迭代索引（从 0 开始） | `{{index}}`           |
+| `{{forEach.item}}`  | 显式访问循环变量          | `{{forEach.item.id}}` |
+| `{{forEach.index}}` | 显式访问循环索引          | `{{forEach.index}}`   |
 
 ### 3.4 YAML 示例
 
@@ -200,7 +200,7 @@ class StepSpec(_Base):
     check: CheckSpec | None = None
     retry: RetrySpec | None = None
     output_var: str | None = None
-    
+
     # === 新增字段 ===
     condition: str | None = None      # if/else 条件表达式
     for_each: str | None = None       # for 循环列表表达式
@@ -220,7 +220,7 @@ class StepResult(_Base):
     action_output: Any | None = None
     check_passed: bool | None = None
     error: str | None = None
-    
+
     # === 新增字段 ===
     skipped_reason: str | None = None  # 跳过原因（condition_false / empty_for_each_list）
     parent_step_id: str | None = None  # 父 step ID（用于 for 循环子步骤）
@@ -242,7 +242,7 @@ StepStatus = Literal["success", "failed", "skipped"]
 def evaluate_condition(condition: str | None, context: dict[str, Any]) -> bool:
     """
     评估条件表达式，返回 True/False
-    
+
     支持的语法：
     - {{vars.X}} == 'value'
     - {{steps.X.output}} > 10
@@ -250,10 +250,10 @@ def evaluate_condition(condition: str | None, context: dict[str, Any]) -> bool:
     """
     if not condition:
         return True
-    
+
     # 1. 先解析所有模板变量
     resolved = resolve_templates_in_condition(condition, context)
-    
+
     # 2. 使用安全的 eval 评估表达式
     # 限制可用的操作符和函数
     allowed_names = {
@@ -264,7 +264,7 @@ def evaluate_condition(condition: str | None, context: dict[str, Any]) -> bool:
         "contains": lambda x, y: y in x if x else False,
         "len": len,
     }
-    
+
     try:
         result = eval(resolved, {"__builtins__": {}}, allowed_names)
         return bool(result)
@@ -280,7 +280,7 @@ def resolve_templates_in_condition(condition: str, context: dict[str, Any]) -> s
         template = match.group(1).strip()
         value = resolve_template_value(template, context)
         return repr(value)  # 使用 repr 确保字符串正确转义
-    
+
     return re.sub(r'\{\{(.+?)\}\}', replace_template, condition)
 
 
@@ -293,27 +293,27 @@ def resolve_template_value(template: str, context: dict[str, Any]) -> Any:
     if steps_match:
         step_id = steps_match.group(1)
         return context.get("steps", {}).get(step_id)
-    
+
     # {{vars.X}}
     vars_match = re.match(r'^vars\.(\w+)$', template)
     if vars_match:
         var_name = vars_match.group(1)
         return context.get("vars", {}).get(var_name)
-    
+
     # {{input}}
     if template == "input":
         return context.get("input")
-    
+
     # {{item}}, {{index}} (for 循环内)
     if template in ("item", "index"):
         return context.get("forEach", {}).get(template)
-    
+
     # {{forEach.item}}, {{forEach.index}}
     foreach_match = re.match(r'^forEach\.(\w+)$', template)
     if foreach_match:
         key = foreach_match.group(1)
         return context.get("forEach", {}).get(key)
-    
+
     return None
 ```
 
@@ -322,12 +322,12 @@ def resolve_template_value(template: str, context: dict[str, Any]) -> Any:
 ```python
 def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, Any] | None = None) -> RunResult:
     # ... 初始化代码保持不变 ...
-    
+
     for step in flow.steps:
         # === 新增：条件判断 ===
         if step.condition is not None:
             condition_passed = evaluate_condition(
-                step.condition, 
+                step.condition,
                 {"steps": step_outputs, "vars": runtime_vars, "input": current_input}
             )
             if not condition_passed:
@@ -343,14 +343,14 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                 run.steps.append(step_result)
                 self._store.save_run(run)
                 continue  # 跳过此 step，继续执行后续步骤
-        
+
         # === 新增：for 循环处理 ===
         if step.for_each is not None:
             items = resolve_templates(step.for_each, {"steps": step_outputs, "vars": runtime_vars, "input": current_input})
-            
+
             if not isinstance(items, list):
                 raise TypeError(f"for_each must resolve to a list, got {type(items).__name__}")
-            
+
             if len(items) == 0:
                 # 空列表，标记为 skipped
                 step_result = StepResult(
@@ -364,12 +364,12 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                 run.steps.append(step_result)
                 self._store.save_run(run)
                 continue
-            
+
             # 执行循环
             parent_step_started = _utc_now()
             all_success = True
             last_output = None
-            
+
             for idx, item in enumerate(items):
                 # 构建循环上下文
                 loop_context = {
@@ -381,7 +381,7 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                         step.for_index_as: idx,
                     }
                 }
-                
+
                 # 执行单次迭代
                 child_result = self._execute_single_step(
                     step=step,
@@ -391,16 +391,16 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                     parent_step_id=step.id,
                     iteration_index=idx,
                 )
-                
+
                 run.steps.append(child_result)
                 self._store.save_run(run)
-                
+
                 if child_result.status == "failed":
                     all_success = False
                     break
-                
+
                 last_output = child_result.action_output
-            
+
             # 创建父 step 结果
             parent_step_finished = _utc_now()
             parent_result = StepResult(
@@ -413,7 +413,7 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
             )
             # 注意：父 step 不加入 run.steps，或者作为汇总记录
             # 可选：将子 step 结果嵌套到父 step 中
-            
+
             if not all_success:
                 # 循环失败，终止流程
                 finished_at = _utc_now()
@@ -423,15 +423,15 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                 run.error = f"for_each loop failed at iteration {idx}"
                 self._store.save_run(run)
                 return run
-            
+
             # 记录输出
             step_outputs[step.id] = last_output
             if step.output_var is not None:
                 runtime_vars[step.output_var] = last_output
-            
+
             current_input = last_output
             continue
-        
+
         # === 原有单 step 执行逻辑 ===
         step_result = self._execute_single_step(
             step=step,
@@ -439,11 +439,11 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
             run_id=run_id,
             run_artifacts_dir=run_artifacts_dir,
         )
-        
+
         # ... 后续处理保持不变 ...
 ```
 
-### 5.3 新增 _execute_single_step 方法
+### 5.3 新增 \_execute_single_step 方法
 
 ```python
 def _execute_single_step(
@@ -462,10 +462,10 @@ def _execute_single_step(
     step_error: str | None = None
     action_output: Any | None = None
     check_passed: bool | None = None
-    
+
     attempts = step.retry.attempts if step.retry else 0
     backoff = step.retry.backoff_seconds if step.retry else 0.0
-    
+
     for attempt in range(max(1, attempts + 1)):
         try:
             # 解析 action params 中的模板变量
@@ -473,7 +473,7 @@ def _execute_single_step(
                 step.action.params,
                 context
             )
-            
+
             action = self._registry.get_action(step.action.type)
             action_output = action(
                 ActionContext(
@@ -485,7 +485,7 @@ def _execute_single_step(
                 ),
                 resolved_params,
             )
-            
+
             if step.check is not None:
                 check = self._registry.get_check(step.check.type)
                 check_passed = check(
@@ -499,26 +499,26 @@ def _execute_single_step(
                 )
                 if not check_passed:
                     raise RuntimeError(f"check failed: {step.check.type}")
-            
+
             step_error = None
             break
-            
+
         except Exception as e:
             step_error = str(e)
             if attempt >= attempts:
                 break
             if backoff > 0:
                 time.sleep(backoff * (2**attempt))
-    
+
     step_finished = _utc_now()
     status: StepStatus = "success" if step_error is None else "failed"
-    
+
     action_output = externalize_if_large(
-        action_output, 
-        artifacts_dir=run_artifacts_dir, 
+        action_output,
+        artifacts_dir=run_artifacts_dir,
         file_stem=f"{step.id}.{iteration_index}.action_output" if iteration_index is not None else f"{step.id}.action_output"
     )
-    
+
     return StepResult(
         step_id=f"{step.id}[{iteration_index}]" if iteration_index is not None else step.id,
         status=status,
@@ -540,11 +540,13 @@ def _execute_single_step(
 **决策**：`condition` 使用字符串表达式 `"{{vars.env}} == 'prod'"`，而非结构化对象如 `{"var": "env", "op": "==", "value": "prod""}`。
 
 **理由**：
+
 - 更直观，用户可以直接阅读和理解
 - 灵活性高，支持复杂逻辑组合
 - 与现有模板语法保持一致
 
 **风险与缓解**：
+
 - 风险：需要安全地 eval 表达式
 - 缓解：限制 eval 环境，只允许比较/逻辑运算符和特定函数
 
@@ -553,11 +555,13 @@ def _execute_single_step(
 **决策**：for 循环的每次迭代作为独立的 StepResult 存储，使用 `step_id[ index ]` 格式命名。
 
 **理由**：
+
 - 保持执行记录的可观测性
 - 便于调试和追踪单个迭代的问题
 - 与现有存储结构兼容
 
 **替代方案**：嵌套存储（未采用）
+
 - 缺点：需要修改存储结构，增加复杂性
 
 ### 6.3 skipped 状态不影响流程继续
@@ -565,6 +569,7 @@ def _execute_single_step(
 **决策**：condition 为 false 或 for_each 为空列表时，step 标记为 `skipped`，但流程继续执行。
 
 **理由**：
+
 - 符合用户直觉：条件不满足 = 不需要执行 ≠ 失败
 - 避免不必要的错误处理
 - 与 GitHub Actions 等主流 CI/CD 工具行为一致
@@ -574,6 +579,7 @@ def _execute_single_step(
 **决策**：提供 `for_each_as` 和 `for_index_as` 字段，允许用户自定义循环变量名。
 
 **理由**：
+
 - 避免变量名冲突（如嵌套循环场景）
 - 提高可读性（`{{user}}` 比 `{{item}}` 更清晰）
 - 默认值为 `"item"` 和 `"index"`，保持简单场景的简洁性
@@ -583,6 +589,7 @@ def _execute_single_step(
 **决策**：for 循环中任一迭代失败，整个循环终止，流程失败。
 
 **理由**：
+
 - 默认安全：避免在错误状态下继续执行
 - 简单明确：易于理解和预测
 - 未来可扩展：可添加 `continue_on_error` 字段支持容错模式
@@ -603,4 +610,4 @@ def _execute_single_step(
 
 ---
 
-*文档结束*
+_文档结束_

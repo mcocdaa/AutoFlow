@@ -10,5 +10,6 @@ class HelloWorldPlugin:
     def execute(self, name: str = "World"):
         return f"Hello, {name} from AutoFlow!"
 
+
 def register():
     return HelloWorldPlugin()

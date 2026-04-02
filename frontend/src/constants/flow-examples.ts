@@ -38,8 +38,8 @@ steps:
     action:
       type: "ai.deepseek_summarize"
       params:
-        system_prompt: "Summarize this answer"`
-}
+        system_prompt: "Summarize this answer"`,
+};
 
 export const DEFAULT_FLOW_YAML = `version: "1"
 name: "demo-flow"
@@ -49,4 +49,4 @@ steps:
       type: "core.log"
       params:
         message: "Hello AutoFlow!"
-`
+`;

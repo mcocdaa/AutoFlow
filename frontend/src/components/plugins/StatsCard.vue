@@ -31,13 +31,20 @@ import {
   AppstoreOutlined,
   ThunderboltOutlined,
   CheckCircleOutlined,
-} from '@ant-design/icons-vue'
+} from "@ant-design/icons-vue";
 
-defineProps<{
-  plugins: any[]
-  actions: string[]
-  checks: string[]
-}>()
+withDefaults(
+  defineProps<{
+    plugins: any[];
+    actions: string[];
+    checks: string[];
+  }>(),
+  {
+    plugins: () => [],
+    actions: () => [],
+    checks: () => [],
+  },
+);
 </script>
 
 <style scoped>
