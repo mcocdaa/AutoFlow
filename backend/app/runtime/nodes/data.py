@@ -15,6 +15,8 @@ class MergeNode(BaseNode):
         inputs: Optional[List[InputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("outputs", None)
         config = kwargs.get("config", {})
         if "strategy" not in config:
             config["strategy"] = "list_concat"
@@ -73,6 +75,8 @@ class SplitNode(BaseNode):
         outputs: Optional[List[OutputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
         config = kwargs.get("config", {})
         if "strategy" not in config:
             config["strategy"] = "by_index"

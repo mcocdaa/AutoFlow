@@ -1,13 +1,12 @@
 # @file /backend/app/runtime/models.py
-# @brief Flow/Step/Action/Check 与执行结果的 Pydantic 模型
-# @create 2026-02-21 00:00:00
-# @update 2026-03-30 添加 WorkflowSpec SQLAlchemy 模型和相关 Pydantic 模型
+# @brief 数据库模型和 API 响应模型
+# @create 2026-03-30
 
 from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
@@ -29,72 +28,6 @@ class RunStatus(str, Enum):
 
 class _Base(BaseModel):
     model_config = {"extra": "forbid"}
-
-
-class ActionSpec(_Base):
-    type: str
-    params: dict[str, Any] = Field(default_factory=dict)
-
-
-class CheckSpec(_Base):
-    type: str
-    params: dict[str, Any] = Field(default_factory=dict)
-
-
-class RetrySpec(_Base):
-    attempts: int = 0
-    backoff_seconds: float = 0.0
-
-
-class StepSpec(_Base):
-    id: str
-    name: str | None = None
-    action: ActionSpec
-    check: CheckSpec | None = None
-    retry: RetrySpec | None = None
-    output_var: str | None = None
-    for_each: str | None = None
-    for_item_var: str = "item"
-    condition: str | None = None
-
-
-class HookSpec(_Base):
-    on_success: list[ActionSpec] | None = None
-    on_failure: list[ActionSpec] | None = None
-
-
-class FlowSpec(_Base):
-    version: str
-    name: str
-    steps: list[StepSpec]
-    hooks: HookSpec | None = None
-
-
-StepStatus = Literal["success", "failed", "skipped"]
-OldRunStatus = Literal["success", "failed", "running"]
-
-
-class StepResult(_Base):
-    step_id: str
-    status: StepStatus
-    started_at: datetime
-    finished_at: datetime
-    duration_ms: int
-    action_output: Any | None = None
-    check_passed: bool | None = None
-    error: str | None = None
-    iterations: list[dict] | None = None
-
-
-class RunResult(_Base):
-    run_id: str
-    flow_name: str
-    status: OldRunStatus
-    started_at: datetime
-    finished_at: datetime | None = None
-    duration_ms: int | None = None
-    steps: list[StepResult] = Field(default_factory=list)
-    error: str | None = None
 
 
 class WorkflowSpec(Base):
@@ -136,7 +69,7 @@ class WorkflowListResponse(_Base):
 
 
 class NodeState(_Base):
-    status: Literal["pending", "running", "completed", "failed", "skipped"]
+    status: str
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
     output: Any = None

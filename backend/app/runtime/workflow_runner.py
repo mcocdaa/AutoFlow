@@ -92,6 +92,7 @@ class WorkflowRunner:
         except Exception as e:
             self.executor.on_error(node, str(e))
             self.data_router.distribute_outputs(node, {})
+            raise
 
     def _finalize_workflow(self) -> None:
         all_completed = True

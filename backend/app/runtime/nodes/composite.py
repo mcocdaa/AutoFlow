@@ -22,6 +22,9 @@ class GroupNode(BaseNode):
         name: str = "Group",
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
+        kwargs.pop("outputs", None)
         if "type" not in kwargs:
             kwargs["type"] = "group"
         super().__init__(
@@ -123,6 +126,9 @@ class SubflowNode(BaseNode):
         name: str = "Subflow",
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
+        kwargs.pop("outputs", None)
         if "type" not in kwargs:
             kwargs["type"] = "subflow"
         super().__init__(

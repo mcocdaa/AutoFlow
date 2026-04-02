@@ -15,6 +15,8 @@ class IfNode(BaseNode):
         outputs: Optional[list[OutputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
         input_port = InputPort(
             id="input",
             name="Input",
@@ -68,6 +70,8 @@ class SwitchNode(BaseNode):
         outputs: Optional[list[OutputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
         input_port = InputPort(
             id="input",
             name="Input",
@@ -115,6 +119,9 @@ class ForNode(BaseNode):
         name: str = "For",
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
+        kwargs.pop("outputs", None)
         input_port = InputPort(
             id="items",
             name="Items",
@@ -169,6 +176,9 @@ class WhileNode(BaseNode):
         name: str = "While",
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
+        kwargs.pop("outputs", None)
         initial_port = InputPort(
             id="initial",
             name="Initial",
@@ -234,6 +244,9 @@ class RetryNode(BaseNode):
         name: str = "Retry",
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
+        kwargs.pop("outputs", None)
         config = kwargs.get("config", {})
         if "attempts" not in config:
             config["attempts"] = 0

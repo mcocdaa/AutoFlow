@@ -41,16 +41,14 @@ const handleHeadersChange = (value: string) => {
   try {
     const parsed = value ? JSON.parse(value) : undefined;
     handleConfigChange("headers", parsed);
-  } catch {
-  }
+  } catch {}
 };
 
 const handleBodyChange = (value: string) => {
   try {
     const parsed = value ? JSON.parse(value) : undefined;
     handleConfigChange("body", parsed);
-  } catch {
-  }
+  } catch {}
 };
 </script>
 

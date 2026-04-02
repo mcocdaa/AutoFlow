@@ -53,7 +53,6 @@ from app.runtime.nodes import (
     SwitchNode,
     WhileNode,
 )
-from app.runtime.runner import Runner
 from app.runtime.scheduler import DAGScheduler
 from app.runtime.store import RunStore, WorkflowStore
 from app.runtime.websocket_manager import WebSocketManager, get_websocket_manager
@@ -85,17 +84,11 @@ def get_store() -> RunStore:
     return get_run_store()
 
 
-@lru_cache(maxsize=1)
-def get_runner() -> Runner:
-    return Runner(registry=get_registry(), store=get_store())
-
-
 __all__ = [
     "get_registry",
     "get_store",
     "get_run_store",
     "get_workflow_store",
-    "get_runner",
     "ActionRegistry",
     "get_action_registry",
     "register_builtin_actions",

@@ -81,7 +81,11 @@ import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import jsYaml from "js-yaml";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
-import type { DAGWorkflow, BaseNodeData, EdgeData } from "../../types/dag-workflow";
+import type {
+  DAGWorkflow,
+  BaseNodeData,
+  EdgeData,
+} from "../../types/dag-workflow";
 
 const dagStore = useDAGWorkflowStore();
 

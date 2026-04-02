@@ -23,14 +23,12 @@ from app.runtime.nodes import ActionNode, EndNode, PassNode, StartNode
 
 class TestNodeExecutorCreation:
     def test_executor_creation(self):
-        """测试 NodeExecutor 创建"""
         state = ExecutionState()
         executor = NodeExecutor(state)
         assert executor.state is state
         assert executor.action_registry is not None
 
     def test_executor_with_custom_registry(self):
-        """测试 NodeExecutor 带自定义 ActionRegistry"""
         state = ExecutionState()
         registry = ActionRegistry()
         executor = NodeExecutor(state, action_registry=registry)
@@ -39,14 +37,12 @@ class TestNodeExecutorCreation:
 
 class TestInputCollection:
     def test_collect_inputs_from_available_inputs(self):
-        """测试从 available_inputs 收集输入"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="test_node",
             name="Test Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -64,14 +60,12 @@ class TestInputCollection:
         assert inputs == {"input1": "value1", "input2": "value2"}
 
     def test_collect_inputs_with_defaults(self):
-        """测试使用默认值收集输入"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="test_node",
             name="Test Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -98,14 +92,12 @@ class TestInputCollection:
         assert inputs == {"input1": "default1", "input2": "default2"}
 
     def test_collect_inputs_mixed(self):
-        """测试混合收集输入（可用输入和默认值）"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="test_node",
             name="Test Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -130,24 +122,26 @@ class TestInputCollection:
 
 class TestExecuteNode:
     def test_execute_start_node(self):
-        """测试执行 StartNode"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = StartNode(
             id="start",
             name="Start",
-            type="start",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
-            inputs=[],
             outputs=[
-                OutputPort(id="output", name="Output", type="any", required=True),
+                OutputPort(
+                    id="output",
+                    name="Output",
+                    type="any",
+                    required=True,
+                    default="test_value"
+                ),
             ],
         )
 
-        state.available_inputs["start.output"] = "test_value"
         outputs = executor.execute_node(node)
 
         record = state.history.get_record("start")
@@ -155,14 +149,12 @@ class TestExecuteNode:
         assert outputs == {"output": "test_value"}
 
     def test_execute_pass_node(self):
-        """测试执行 PassNode"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="pass",
             name="Pass",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -182,21 +174,18 @@ class TestExecuteNode:
         assert outputs == {"input": "test_value"}
 
     def test_execute_end_node(self):
-        """测试执行 EndNode"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = EndNode(
             id="end",
             name="End",
-            type="end",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
             inputs=[
                 InputPort(id="input", name="Input", type="any", required=True),
             ],
-            outputs=[],
         )
 
         state.available_inputs["end.input"] = "test_value"
@@ -204,10 +193,9 @@ class TestExecuteNode:
 
         record = state.history.get_record("end")
         assert record.status == NodeStatus.COMPLETED
-        assert outputs == {}
+        assert outputs == {"input": "test_value"}
 
     def test_execute_action_node_with_custom_handler(self):
-        """测试执行带自定义 handler 的 ActionNode"""
         state = ExecutionState()
         registry = ActionRegistry()
 
@@ -220,9 +208,8 @@ class TestExecuteNode:
         node = ActionNode(
             id="action",
             name="Double Action",
-            type="action",
+            action_type="double",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
-            config={"action_type": "double"},
             metadata={},
             inputs=[
                 InputPort(id="value", name="Value", type="number", required=True),
@@ -242,7 +229,6 @@ class TestExecuteNode:
 
 class TestRetryLogic:
     def test_retry_on_failure(self):
-        """测试失败时重试"""
         state = ExecutionState()
         registry = ActionRegistry()
 
@@ -261,9 +247,8 @@ class TestRetryLogic:
         node = ActionNode(
             id="action",
             name="Flaky Action",
-            type="action",
+            action_type="flaky",
             retry=RetrySpec(attempts=3, backoff_seconds=0),
-            config={"action_type": "flaky"},
             metadata={},
             inputs=[],
             outputs=[
@@ -280,7 +265,6 @@ class TestRetryLogic:
         assert outputs == {"result": "success"}
 
     def test_retry_exhausted(self):
-        """测试重试次数耗尽"""
         state = ExecutionState()
         registry = ActionRegistry()
 
@@ -297,9 +281,8 @@ class TestRetryLogic:
         node = ActionNode(
             id="action",
             name="Failing Action",
-            type="action",
+            action_type="fails",
             retry=RetrySpec(attempts=2, backoff_seconds=0),
-            config={"action_type": "fails"},
             metadata={},
             inputs=[],
             outputs=[
@@ -316,7 +299,6 @@ class TestRetryLogic:
         assert attempt_count == 3
 
     def test_retry_backoff(self):
-        """测试重试延迟"""
         with patch("time.sleep") as mock_sleep:
             state = ExecutionState()
             registry = ActionRegistry()
@@ -336,9 +318,8 @@ class TestRetryLogic:
             node = ActionNode(
                 id="action",
                 name="Flaky Action",
-                type="action",
+                action_type="flaky",
                 retry=RetrySpec(attempts=2, backoff_seconds=1.5),
-                config={"action_type": "flaky"},
                 metadata={},
                 inputs=[],
                 outputs=[
@@ -348,23 +329,20 @@ class TestRetryLogic:
 
             executor.execute_node(node)
 
-            # 应该只在第一次失败后等待
             assert mock_sleep.call_count == 1
             mock_sleep.assert_called_with(1.5)
 
 
 class TestErrorHandling:
     def test_unknown_action_type(self):
-        """测试未知的 Action 类型"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = ActionNode(
             id="action",
             name="Unknown Action",
-            type="action",
+            action_type="nonexistent",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
-            config={"action_type": "nonexistent"},
             metadata={},
             inputs=[],
             outputs=[],
@@ -377,16 +355,13 @@ class TestErrorHandling:
         assert record.status == NodeStatus.FAILED
 
     def test_missing_action_type(self):
-        """测试缺失 Action 类型"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = ActionNode(
             id="action",
             name="No Action Type",
-            type="action",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
-            config={},
             metadata={},
             inputs=[],
             outputs=[],
@@ -399,21 +374,18 @@ class TestErrorHandling:
         assert record.status == NodeStatus.FAILED
 
     def test_unknown_node_type(self):
-        """测试未知节点类型"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
-        # 创建一个未知类型的节点
         node = StartNode(
             id="unknown",
             name="Unknown",
-            type="unknown",  # 不是有效的节点类型
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
-            inputs=[],
             outputs=[],
         )
+        node.type = "unknown"
 
         with pytest.raises(ValueError, match="Unknown node type: unknown"):
             executor._execute_node_logic(node, {})
@@ -421,14 +393,12 @@ class TestErrorHandling:
 
 class TestMarkNodeSkipped:
     def test_mark_node_skipped(self):
-        """测试标记节点为跳过状态"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="node",
             name="Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -444,14 +414,12 @@ class TestMarkNodeSkipped:
 
 class TestLifecycleHooks:
     def test_before_execute(self):
-        """测试执行前钩子"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="node",
             name="Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -465,14 +433,12 @@ class TestLifecycleHooks:
         assert "Starting execution of node: node" in state.history.logs[0]
 
     def test_after_execute(self):
-        """测试执行后钩子"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="node",
             name="Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -486,14 +452,12 @@ class TestLifecycleHooks:
         assert "Completed execution of node: node" in state.history.logs[0]
 
     def test_on_error(self):
-        """测试错误钩子"""
         state = ExecutionState()
         executor = NodeExecutor(state)
 
         node = PassNode(
             id="node",
             name="Node",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},

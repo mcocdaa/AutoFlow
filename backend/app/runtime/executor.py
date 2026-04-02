@@ -31,12 +31,20 @@ class NodeExecutor:
 
     def collect_inputs(self, node: BaseNode) -> Dict[str, Any]:
         inputs = {}
-        for port in node.inputs:
-            port_key = f"{node.id}.{port.id}"
-            if port_key in self.state.available_inputs:
-                inputs[port.id] = self.state.available_inputs[port_key]
-            elif port.default is not None:
-                inputs[port.id] = port.default
+        if node.type == "start":
+            for port in node.outputs:
+                port_key = f"{node.id}.{port.id}"
+                if port_key in self.state.available_inputs:
+                    inputs[port.id] = self.state.available_inputs[port_key]
+                elif port.default is not None:
+                    inputs[port.id] = port.default
+        else:
+            for port in node.inputs:
+                port_key = f"{node.id}.{port.id}"
+                if port_key in self.state.available_inputs:
+                    inputs[port.id] = self.state.available_inputs[port_key]
+                elif port.default is not None:
+                    inputs[port.id] = port.default
         return inputs
 
     def execute_node(self, node: BaseNode) -> Dict[str, Any]:
@@ -80,7 +88,41 @@ class NodeExecutor:
         elif node.type == "pass":
             return node.execute(inputs)
         elif node.type == "action":
-            return self._execute_action_node(node, inputs)
+            action_type = node.config.get("action_type", "")
+            if not action_type:
+                raise ValueError("Action type not specified")
+
+            try:
+                handler = self.action_registry.get(action_type)
+            except ValueError:
+                if self.core_registry:
+                    try:
+                        core_handler = self.core_registry.get_action(action_type)
+                        ctx = ActionContext(
+                            run_id=self.run_id,
+                            step_id=node.id,
+                            input=inputs,
+                            vars=self.state.variables.all(),
+                            artifacts_dir=self.artifacts_dir,
+                        )
+                        result = core_handler(ctx, node.config)
+                        if len(node.outputs) == 1:
+                            return {node.outputs[0].id: result}
+                        elif isinstance(result, dict):
+                            return result
+                        return {}
+                    except KeyError:
+                        pass
+                raise ValueError(f"Action type '{action_type}' not found")
+
+            ctx = ActionContext(
+                run_id=self.run_id,
+                step_id=node.id,
+                input=inputs,
+                vars=self.state.variables.all(),
+                artifacts_dir=self.artifacts_dir,
+            )
+            return node.execute(inputs, action_handler=handler, ctx=ctx, config={**node.config, **inputs})
         else:
             raise ValueError(f"Unknown node type: {node.type}")
 

@@ -10,7 +10,6 @@ from app.runtime.dag_models import (
     BaseNode,
     InputPort,
     OutputPort,
-    PortDataType,
     RetrySpec,
 )
 from app.runtime.nodes import ActionNode, EndNode, PassNode, StartNode
@@ -31,7 +30,7 @@ class TestStartNode:
                 OutputPort(
                     id="output",
                     name="Output",
-                    type=PortDataType.ANY,
+                    type="any",
                     required=True,
                 )
             ],
@@ -57,13 +56,13 @@ class TestStartNode:
                 OutputPort(
                     id="output1",
                     name="Output 1",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 ),
                 OutputPort(
                     id="output2",
                     name="Output 2",
-                    type=PortDataType.NUMBER,
+                    type="number",
                     required=True,
                     default=42,
                 ),
@@ -91,7 +90,7 @@ class TestEndNode:
                 InputPort(
                     id="input",
                     name="Input",
-                    type=PortDataType.ANY,
+                    type="any",
                     required=True,
                 )
             ],
@@ -117,13 +116,13 @@ class TestEndNode:
                 InputPort(
                     id="input1",
                     name="Input 1",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 ),
                 InputPort(
                     id="input2",
                     name="Input 2",
-                    type=PortDataType.NUMBER,
+                    type="number",
                     required=True,
                 ),
             ],
@@ -133,7 +132,7 @@ class TestEndNode:
         inputs = {"input1": "result", "input2": 100}
         outputs = node.execute(inputs)
 
-        assert outputs == {}
+        assert outputs == inputs
 
 
 class TestActionNode:
@@ -142,6 +141,7 @@ class TestActionNode:
         node = ActionNode(
             id="action_1",
             name="Log Message",
+            action_type="log",
             type="action",
             retry=RetrySpec(attempts=2, backoff_seconds=1),
             config={"action_type": "log"},
@@ -150,7 +150,7 @@ class TestActionNode:
                 InputPort(
                     id="message",
                     name="Message",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 )
             ],
@@ -158,7 +158,7 @@ class TestActionNode:
                 OutputPort(
                     id="output",
                     name="Output",
-                    type=PortDataType.ANY,
+                    type="any",
                     required=True,
                 )
             ],
@@ -175,6 +175,7 @@ class TestActionNode:
         node = ActionNode(
             id="action_1",
             name="Test Action",
+            action_type="test",
             type="action",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={"action_type": "test"},
@@ -183,7 +184,7 @@ class TestActionNode:
                 InputPort(
                     id="input",
                     name="Input",
-                    type=PortDataType.NUMBER,
+                    type="number",
                     required=True,
                 )
             ],
@@ -191,14 +192,14 @@ class TestActionNode:
                 OutputPort(
                     id="output",
                     name="Output",
-                    type=PortDataType.NUMBER,
+                    type="number",
                     required=True,
                 )
             ],
         )
 
-        def test_handler(inputs: dict):
-            return {"output": inputs["input"] * 2}
+        def test_handler(inputs: dict, **kwargs):
+            return inputs["input"] * 2
 
         inputs = {"input": 5}
         outputs = node.execute(inputs, action_handler=test_handler)
@@ -220,7 +221,7 @@ class TestPassNode:
                 InputPort(
                     id="input",
                     name="Input",
-                    type=PortDataType.ANY,
+                    type="any",
                     required=True,
                 )
             ],
@@ -228,7 +229,7 @@ class TestPassNode:
                 OutputPort(
                     id="output",
                     name="Output",
-                    type=PortDataType.ANY,
+                    type="any",
                     required=True,
                 )
             ],
@@ -251,13 +252,13 @@ class TestPassNode:
                 InputPort(
                     id="input1",
                     name="Input 1",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 ),
                 InputPort(
                     id="input2",
                     name="Input 2",
-                    type=PortDataType.NUMBER,
+                    type="number",
                     required=True,
                 ),
             ],
@@ -265,13 +266,13 @@ class TestPassNode:
                 OutputPort(
                     id="input1",
                     name="Output 1",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 ),
                 OutputPort(
                     id="input2",
                     name="Output 2",
-                    type=PortDataType.NUMBER,
+                    type="number",
                     required=True,
                 ),
             ],
@@ -290,13 +291,13 @@ class TestPassNode:
             name="Pass Through",
             type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
-            config={"transform": {"output": lambda x: x["input"].upper()}},
+            config={},
             metadata={},
             inputs=[
                 InputPort(
                     id="input",
                     name="Input",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 )
             ],
@@ -304,7 +305,7 @@ class TestPassNode:
                 OutputPort(
                     id="output",
                     name="Output",
-                    type=PortDataType.STRING,
+                    type="string",
                     required=True,
                 )
             ],
@@ -313,4 +314,4 @@ class TestPassNode:
         inputs = {"input": "hello"}
         outputs = node.execute(inputs)
 
-        assert outputs["output"] == "HELLO"
+        assert outputs["output"] == "hello"

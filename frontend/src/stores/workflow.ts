@@ -77,63 +77,20 @@ export const useWorkflowStore = defineStore("workflow", {
       if (!this.canUndo) return;
       const item = this.history[this.historyIndex];
       this.historyIndex--;
-
-      switch (item.type) {
-        case "add_node":
-          this.nodes = item.before.nodes;
-          this.edges = item.before.edges;
-          break;
-        case "delete_node":
-          this.nodes = item.before.nodes;
-          this.edges = item.before.edges;
-          break;
-        case "update_node":
-          this.nodes = item.before.nodes;
-          break;
-        case "add_edge":
-          this.edges = item.before.edges;
-          break;
-        case "delete_edge":
-          this.edges = item.before.edges;
-          break;
-        case "reset":
-          this.nodes = item.before.nodes;
-          this.edges = item.before.edges;
-          this.name = item.before.name;
-          break;
-      }
+      this.applyHistoryState(item.before);
       this.isDirty = true;
     },
     redo() {
       if (!this.canRedo) return;
       this.historyIndex++;
       const item = this.history[this.historyIndex];
-
-      switch (item.type) {
-        case "add_node":
-          this.nodes = item.after.nodes;
-          this.edges = item.after.edges;
-          break;
-        case "delete_node":
-          this.nodes = item.after.nodes;
-          this.edges = item.after.edges;
-          break;
-        case "update_node":
-          this.nodes = item.after.nodes;
-          break;
-        case "add_edge":
-          this.edges = item.after.edges;
-          break;
-        case "delete_edge":
-          this.edges = item.after.edges;
-          break;
-        case "reset":
-          this.nodes = item.after.nodes;
-          this.edges = item.after.edges;
-          this.name = item.after.name;
-          break;
-      }
+      this.applyHistoryState(item.after);
       this.isDirty = true;
+    },
+    applyHistoryState(state: any) {
+      if (state.nodes !== undefined) this.nodes = state.nodes;
+      if (state.edges !== undefined) this.edges = state.edges;
+      if (state.name !== undefined) this.name = state.name;
     },
     copySelectedNode() {
       if (!this.selectedNode) return;

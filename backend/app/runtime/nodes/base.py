@@ -15,6 +15,8 @@ class StartNode(BaseNode):
         outputs: Optional[List[OutputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("inputs", None)
         super().__init__(
             id=id, name=name, type="start", inputs=[], outputs=outputs or [], **kwargs
         )
@@ -40,13 +42,15 @@ class EndNode(BaseNode):
         inputs: Optional[List[InputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
+        kwargs.pop("outputs", None)
         super().__init__(
             id=id, name=name, type="end", inputs=inputs or [], outputs=[], **kwargs
         )
 
     def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """执行结束节点，直接返回输入"""
-        return inputs
+        """执行结束节点，保存输入作为输出"""
+        return inputs.copy()
 
 
 class ActionNode(BaseNode):
@@ -55,14 +59,16 @@ class ActionNode(BaseNode):
     def __init__(
         self,
         id: str,
-        name: str,
-        action_type: str,
+        name: str = "Action",
+        action_type: Optional[str] = None,
         inputs: Optional[List[InputPort]] = None,
         outputs: Optional[List[OutputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
         config = kwargs.get("config", {})
-        config["action_type"] = action_type
+        if action_type:
+            config["action_type"] = action_type
         kwargs["config"] = config
 
         super().__init__(
@@ -83,21 +89,26 @@ class ActionNode(BaseNode):
         self,
         inputs: Dict[str, Any],
         action_handler: Optional[Callable] = None,
+        ctx: Optional[Any] = None,
+        config: Optional[Dict[str, Any]] = None,
         **handler_kwargs,
     ) -> Dict[str, Any]:
         """执行动作节点，调用动作处理器"""
         if action_handler is None:
             return {}
 
-        result = action_handler(inputs, **handler_kwargs)
+        if ctx is not None and config is not None:
+            result = action_handler(ctx, config)
+        else:
+            result = action_handler(inputs, **handler_kwargs)
 
         outputs = {}
-        if len(self.outputs) == 1:
-            outputs[self.outputs[0].id] = result
-        elif isinstance(result, dict):
+        if isinstance(result, dict):
             for port in self.outputs:
                 if port.id in result:
                     outputs[port.id] = result[port.id]
+        elif len(self.outputs) == 1:
+            outputs[self.outputs[0].id] = result
 
         return outputs
 
@@ -113,6 +124,7 @@ class PassNode(BaseNode):
         outputs: Optional[List[OutputPort]] = None,
         **kwargs,
     ):
+        kwargs.pop("type", None)
         super().__init__(
             id=id,
             name=name,

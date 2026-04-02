@@ -26,11 +26,9 @@ def create_simple_workflow():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[
             OutputPort(
                 id="input_value",
@@ -44,7 +42,6 @@ def create_simple_workflow():
     pass_node = PassNode(
         id="pass",
         name="Pass",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -54,12 +51,10 @@ def create_simple_workflow():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
         inputs=[InputPort(id="result", name="Result", type="number", required=True)],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Simple Workflow",
@@ -88,11 +83,9 @@ def create_workflow_with_action():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[
             OutputPort(
                 id="input_value", name="Input Value", type="number", required=True
@@ -102,9 +95,8 @@ def create_workflow_with_action():
     action_node = ActionNode(
         id="double",
         name="Double",
-        type="action",
+        action_type="double",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
-        config={"action_type": "double"},
         metadata={},
         inputs=[InputPort(id="value", name="Value", type="number", required=True)],
         outputs=[OutputPort(id="result", name="Result", type="number", required=True)],
@@ -112,12 +104,10 @@ def create_workflow_with_action():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
         inputs=[InputPort(id="result", name="Result", type="number", required=True)],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Action Workflow",
@@ -139,11 +129,9 @@ def create_branched_workflow():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[
             OutputPort(id="value", name="Value", type="number", required=True),
         ],
@@ -151,7 +139,6 @@ def create_branched_workflow():
     pass1_node = PassNode(
         id="pass1",
         name="Pass 1",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -161,7 +148,6 @@ def create_branched_workflow():
     pass2_node = PassNode(
         id="pass2",
         name="Pass 2",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -171,7 +157,6 @@ def create_branched_workflow():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -179,7 +164,6 @@ def create_branched_workflow():
             InputPort(id="value1", name="Value 1", type="number", required=True),
             InputPort(id="value2", name="Value 2", type="number", required=True),
         ],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Branched Workflow",
@@ -387,11 +371,9 @@ class TestWorkflowWithError:
         start_node = StartNode(
             id="start",
             name="Start",
-            type="start",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
-            inputs=[],
             outputs=[
                 OutputPort(id="value", name="Value", type="number", required=True),
             ],
@@ -401,9 +383,8 @@ class TestWorkflowWithError:
         action_node = ActionNode(
             id="error_action",
             name="Error Action",
-            type="action",
+            action_type="nonexistent",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
-            config={"action_type": "nonexistent"},
             metadata={},
             inputs=[InputPort(id="value", name="Value", type="number", required=True)],
             outputs=[
@@ -415,14 +396,12 @@ class TestWorkflowWithError:
         end_node = EndNode(
             id="end",
             name="End",
-            type="end",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
             inputs=[
                 InputPort(id="result", name="Result", type="number", required=True)
             ],
-            outputs=[],
         )
         workflow.nodes["end"] = end_node
 

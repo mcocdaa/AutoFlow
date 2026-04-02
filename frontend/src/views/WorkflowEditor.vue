@@ -117,7 +117,6 @@ import {
 import ResultsPanel from "../components/run/ResultsPanel.vue";
 import { useWorkflowStore } from "../stores/workflow";
 import { useRunsStore } from "../stores/runs";
-import { yamlToWorkflow } from "../utils/workflow-yaml";
 import type { Example } from "../types/workflow";
 
 type ViewMode = "visual" | "yaml" | "split";
@@ -208,46 +207,6 @@ watch(
 );
 
 onMounted(() => {
-  // 添加调试函数到 window
-  (window as any).debugYamlToWorkflow = () => {
-    const testYaml = `version: "1"
-name: "demo-flow"
-steps:
-  - id: "hello"
-    action:
-      type: "core.log"
-      params:
-        message: "Hello AutoFlow!"
-`;
-    console.log("=== Debug yamlToWorkflow ===");
-    console.log("Input YAML:", testYaml);
-    const result = yamlToWorkflow(testYaml);
-    console.log("Result:", result);
-    console.log("Nodes:", result.nodes);
-    console.log("Edges:", result.edges);
-    return result;
-  };
-  (window as any).resetWorkflow = () => {
-    localStorage.removeItem("autoflow_workflow");
-    workflowStore.reset();
-    console.log("Workflow reset!");
-  };
-  (window as any).loadTestWorkflow = () => {
-    const testYaml = `version: "1"
-name: "demo-flow"
-steps:
-  - id: "hello"
-    action:
-      type: "core.log"
-      params:
-        message: "Hello AutoFlow!"
-`;
-    console.log("Loading test workflow...");
-    workflowStore.loadFromYAML(testYaml);
-    console.log("Loaded! Nodes:", workflowStore.nodes);
-    console.log("Loaded! Edges:", workflowStore.edges);
-  };
-
   workflowStore.loadFromLocalStorage();
   window.addEventListener("keydown", handleGlobalKeyDown);
 });

@@ -67,12 +67,12 @@ stop_docker_services() {
     else
         docker compose -p autoflow -f "$DOCKER_DIR/docker-compose.base.yml" down 2>/dev/null || true
     fi
-    echo "✓ Docker 服务已停止"
+    echo "Docker 服务已停止"
 }
 
 init_env() {
-    if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-        echo "📄 创建 .env 文件..."
+    if [ ! -f "$PROJECT_ROOT/.env" ]; then
+        echo "创建 .env 文件..."
         cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
     fi
 }
@@ -98,7 +98,7 @@ start_backend_local() {
     poetry install
     echo "启动本地后端服务..."
     cd "$BACKEND_DIR" && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 &
-    echo "✓ 本地后端已启动 (http://localhost:3000)"
+    echo "本地后端已启动 (http://localhost:3000)"
 }
 
 start_frontend_local() {
@@ -108,7 +108,7 @@ start_frontend_local() {
         cd "$FRONTEND_DIR" && npm install
     fi
     echo "启动本地前端服务..."
-    echo "✓ 本地前端已启动"
+    echo "本地前端已启动"
     echo "访问地址: http://localhost:5180"
     cd "$FRONTEND_DIR" && DOCKER_WEB=true npm run dev
 }
@@ -212,7 +212,7 @@ else
 fi
 
 echo ""
-echo "✓ 启动完成"
+echo "启动完成"
 echo "========================================"
 echo ""
 echo "访问地址:"

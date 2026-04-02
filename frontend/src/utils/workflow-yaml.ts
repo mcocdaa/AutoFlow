@@ -6,11 +6,19 @@ import type {
   NodeData,
 } from "../types/workflow";
 
+const YAML_VERSION = "1.0";
+const DEFAULT_WORKFLOW_NAME = "Untitled Workflow";
+const START_NODE_TYPE = "start";
+const END_NODE_TYPE = "end";
+const NODE_POSITION_OFFSET_X = 250;
+const NODE_POSITION_START_X = 100;
+const NODE_POSITION_Y = 200;
+
 export interface FlowYAML {
   version: string;
   name: string;
   steps: FlowStep[];
-  hooks?: any;
+  hooks?: unknown;
 }
 
 export interface FlowStep {
@@ -18,22 +26,115 @@ export interface FlowStep {
   name?: string;
   action: {
     type: string;
-    params: Record<string, any>;
+    params: Record<string, unknown>;
   };
-  check?: any;
-  retry?: any;
+  check?: unknown;
+  retry?: unknown;
   output_var?: string;
   for_each?: string;
   for_item_var?: string;
   condition?: string;
 }
 
-export function workflowToYAML(
-  name: string,
+interface NodeTypeConfig {
+  actionType: string;
+  defaultLabel: string;
+  getParams: (config: Record<string, unknown>) => Record<string, unknown>;
+  outputVar?: boolean;
+}
+
+const NODE_TYPE_CONFIGS: Record<string, NodeTypeConfig> = {
+  llm: {
+    actionType: "ai_deepseek.chat",
+    defaultLabel: "LLM Call",
+    getParams: (config) => ({
+      prompt: config.prompt || "",
+      model: config.model || "deepseek-chat",
+      temperature: config.temperature ?? 0.7,
+    }),
+    outputVar: true,
+  },
+  python: {
+    actionType: "dummy.python_exec",
+    defaultLabel: "Python Script",
+    getParams: (config) => ({
+      code: config.code || "",
+    }),
+    outputVar: true,
+  },
+  api: {
+    actionType: "dummy.http_request",
+    defaultLabel: "API Call",
+    getParams: (config) => ({
+      url: config.url || "",
+      method: config.method || "GET",
+      headers: config.headers || {},
+      body: config.body || "",
+    }),
+    outputVar: true,
+  },
+  condition: {
+    actionType: "dummy.noop",
+    defaultLabel: "Condition",
+    getParams: () => ({}),
+  },
+  loop: {
+    actionType: "dummy.noop",
+    defaultLabel: "Loop",
+    getParams: () => ({}),
+  },
+  "core.log": {
+    actionType: "core.log",
+    defaultLabel: "Log",
+    getParams: (config) => ({
+      message: config.message || "",
+    }),
+  },
+  "core.set_var": {
+    actionType: "core.set_var",
+    defaultLabel: "Set Variable",
+    getParams: (config) => ({
+      name: config.name || "",
+      value: config.value || "",
+    }),
+  },
+  "core.wait": {
+    actionType: "core.wait",
+    defaultLabel: "Wait",
+    getParams: (config) => ({
+      seconds: config.seconds || 1,
+    }),
+  },
+  output: {
+    actionType: "dummy.noop",
+    defaultLabel: "Output",
+    getParams: () => ({}),
+  },
+};
+
+const NODE_TYPE_MAPPINGS: Record<string, NodeType> = {
+  "core.log": "core.log",
+  "core.set_var": "core.set_var",
+  "core.wait": "core.wait",
+  "browser.navigate": "browser.navigate",
+  "browser.click": "browser.click",
+  "browser.type": "browser.type",
+  "browser.screenshot": "browser.screenshot",
+  "browser.get_text": "browser.get_text",
+  "browser.get_attribute": "browser.get_attribute",
+  "browser.scroll": "browser.scroll",
+  "browser.wait_for": "browser.wait_for",
+  "tool.http_request": "tool.http_request",
+  "tool.read_file": "tool.read_file",
+  "tool.write_file": "tool.write_file",
+  "tool.exec": "tool.exec",
+  "tool.sleep": "tool.sleep",
+};
+
+function buildTopologicalOrder(
   nodes: WorkflowNode[],
   edges: WorkflowEdge[],
-): string {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+): string[] {
   const inDegree = new Map(nodes.map((n) => [n.id, 0]));
   const adjacency = new Map(nodes.map((n) => [n.id, [] as string[]]));
 
@@ -44,7 +145,7 @@ export function workflowToYAML(
 
   const order: string[] = [];
   const queue = [...inDegree.entries()]
-    .filter(([_, d]) => d === 0)
+    .filter(([_, degree]) => degree === 0)
     .map(([id]) => id);
 
   while (queue.length > 0) {
@@ -58,336 +159,193 @@ export function workflowToYAML(
     }
   }
 
-  const steps: FlowStep[] = order
-    .filter((nodeId) => {
-      const node = nodeMap.get(nodeId);
-      return node && node.type !== "start" && node.type !== "end";
-    })
-    .map((nodeId) => {
-      const node = nodeMap.get(nodeId)!;
-      return nodeToStep(node);
-    });
-
-  const yamlObj: FlowYAML = {
-    version: "1.0",
-    name,
-    steps,
-  };
-
-  return jsYAML.dump(yamlObj);
+  return order;
 }
 
 function nodeToStep(node: WorkflowNode): FlowStep {
   const config = node.data.config || {};
+  const nodeType = node.type;
+  const configEntry = NODE_TYPE_CONFIGS[nodeType];
 
-  switch (node.type) {
-    case "llm":
-      return {
-        id: node.id,
-        name: node.data.label || "LLM Call",
-        action: {
-          type: "ai_deepseek.chat",
-          params: {
-            prompt: config.prompt || "",
-            model: config.model || "deepseek-chat",
-            temperature: config.temperature ?? 0.7,
-          },
-        },
-        output_var: `${node.id}_output`,
-      };
+  if (configEntry) {
+    const step: FlowStep = {
+      id: node.id,
+      name: node.data.label || configEntry.defaultLabel,
+      action: {
+        type: configEntry.actionType,
+        params: configEntry.getParams(config),
+      },
+    };
 
-    case "python":
-      return {
-        id: node.id,
-        name: node.data.label || "Python Script",
-        action: {
-          type: "dummy.python_exec",
-          params: {
-            code: config.code || "",
-          },
-        },
-        output_var: `${node.id}_output`,
-      };
+    if (configEntry.outputVar) {
+      step.output_var = `${node.id}_output`;
+    }
 
-    case "api":
-      return {
-        id: node.id,
-        name: node.data.label || "API Call",
-        action: {
-          type: "dummy.http_request",
-          params: {
-            url: config.url || "",
-            method: config.method || "GET",
-            headers: config.headers || {},
-            body: config.body || "",
-          },
-        },
-        output_var: `${node.id}_output`,
-      };
+    if (nodeType === "condition") {
+      step.condition = config.condition || "";
+    } else if (nodeType === "loop") {
+      step.for_each = config.forEach ? String(config.forEach) : "";
+      step.for_item_var = config.forItemVar || "item";
+    }
 
-    case "condition":
-      return {
-        id: node.id,
-        name: node.data.label || "Condition",
-        action: {
-          type: "dummy.noop",
-          params: {},
-        },
-        condition: config.condition || "",
-      };
-
-    case "loop":
-      return {
-        id: node.id,
-        name: node.data.label || "Loop",
-        action: {
-          type: "dummy.noop",
-          params: {},
-        },
-        for_each: config.forEach ? String(config.forEach) : "",
-        for_item_var: config.forItemVar || "item",
-      };
-
-    case "core.log":
-      return {
-        id: node.id,
-        name: node.data.label || "Log",
-        action: {
-          type: "core.log",
-          params: {
-            message: config.message || "",
-          },
-        },
-      };
-
-    case "core.set_var":
-      return {
-        id: node.id,
-        name: node.data.label || "Set Variable",
-        action: {
-          type: "core.set_var",
-          params: {
-            name: config.name || "",
-            value: config.value || "",
-          },
-        },
-      };
-
-    case "core.wait":
-      return {
-        id: node.id,
-        name: node.data.label || "Wait",
-        action: {
-          type: "core.wait",
-          params: {
-            seconds: config.seconds || 1,
-          },
-        },
-      };
-
-    case "output":
-      return {
-        id: node.id,
-        name: node.data.label || "Output",
-        action: {
-          type: "dummy.noop",
-          params: {},
-        },
-      };
-
-    case "start":
-    case "end":
-    default:
-      return {
-        id: node.id,
-        name: node.data.label || "Start",
-        action: {
-          type: "dummy.noop",
-          params: {},
-        },
-      };
+    return step;
   }
+
+  return {
+    id: node.id,
+    name: node.data.label || "Start",
+    action: {
+      type: "dummy.noop",
+      params: {},
+    },
+  };
 }
 
-export function yamlToWorkflow(yaml: string): {
-  name: string;
+function determineNodeType(step: FlowStep): NodeType {
+  const actionType = step.action.type;
+
+  if (NODE_TYPE_MAPPINGS[actionType]) {
+    return NODE_TYPE_MAPPINGS[actionType];
+  }
+
+  if (
+    actionType.includes("llm") ||
+    actionType.includes("chat") ||
+    actionType.includes("ai_")
+  ) {
+    return "llm";
+  }
+
+  if (actionType.includes("http") || actionType.includes("api")) {
+    return "api";
+  }
+
+  if (step.condition) {
+    return "condition";
+  }
+
+  if (step.for_each) {
+    return "loop";
+  }
+
+  return "python";
+}
+
+function buildNodeData(step: FlowStep, nodeType: NodeType): NodeData {
+  const config: Record<string, unknown> = {};
+  const params = step.action.params;
+
+  switch (nodeType) {
+    case "python":
+      config.code = `# ${step.name || step.id}\n# Action: ${step.action.type}\n\nprint(${JSON.stringify(params)})`;
+      break;
+    case "llm":
+      config.model = params.model || "deepseek-chat";
+      config.prompt = params.prompt || "";
+      config.temperature = params.temperature ?? 0.7;
+      break;
+    case "api":
+      config.url = params.url || "";
+      config.method = params.method || "GET";
+      config.headers = params.headers || {};
+      config.body = params.body || "";
+      break;
+    case "condition":
+      config.condition = step.condition || "";
+      break;
+    case "loop":
+      config.forEach = step.for_each || "";
+      config.forItemVar = step.for_item_var || "item";
+      break;
+    case "core.log":
+      config.message = params.message || "";
+      break;
+    case "core.set_var":
+      config.name = params.name || "";
+      config.value = params.value || "";
+      break;
+    case "core.wait":
+      config.seconds = params.seconds || 1;
+      break;
+  }
+
+  return {
+    type: nodeType,
+    label: step.name || step.id,
+    config,
+  };
+}
+
+function buildNodesAndEdges(parsed: FlowYAML): {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
 } {
-  const parsed = jsYAML.load(yaml) as FlowYAML;
-
   const nodes: WorkflowNode[] = [];
   const edges: WorkflowEdge[] = [];
+  const stepCount = parsed.steps.length;
 
-  // 1. 添加 Start 节点
   nodes.push({
     id: "start",
-    type: "start",
-    position: { x: 100, y: 200 },
+    type: START_NODE_TYPE,
+    position: { x: NODE_POSITION_START_X, y: NODE_POSITION_Y },
     data: {
-      type: "start",
+      type: START_NODE_TYPE,
       label: "Start",
       config: {},
     },
   });
 
-  // 2. 根据步骤创建中间节点
   parsed.steps.forEach((step, index) => {
-    // 确定节点类型
-    let nodeType: NodeType = "python"; // 默认类型
-
-    if (step.action.type === "core.log") {
-      nodeType = "core.log";
-    } else if (step.action.type === "core.set_var") {
-      nodeType = "core.set_var";
-    } else if (step.action.type === "core.wait") {
-      nodeType = "core.wait";
-    } else if (step.action.type.includes("browser.navigate")) {
-      nodeType = "browser.navigate";
-    } else if (step.action.type.includes("browser.click")) {
-      nodeType = "browser.click";
-    } else if (step.action.type.includes("browser.type")) {
-      nodeType = "browser.type";
-    } else if (step.action.type.includes("browser.screenshot")) {
-      nodeType = "browser.screenshot";
-    } else if (step.action.type.includes("browser.get_text")) {
-      nodeType = "browser.get_text";
-    } else if (step.action.type.includes("browser.get_attribute")) {
-      nodeType = "browser.get_attribute";
-    } else if (step.action.type.includes("browser.scroll")) {
-      nodeType = "browser.scroll";
-    } else if (step.action.type.includes("browser.wait_for")) {
-      nodeType = "browser.wait_for";
-    } else if (step.action.type.includes("tool.http_request")) {
-      nodeType = "tool.http_request";
-    } else if (step.action.type.includes("tool.read_file")) {
-      nodeType = "tool.read_file";
-    } else if (step.action.type.includes("tool.write_file")) {
-      nodeType = "tool.write_file";
-    } else if (step.action.type.includes("tool.exec")) {
-      nodeType = "tool.exec";
-    } else if (step.action.type.includes("tool.sleep")) {
-      nodeType = "tool.sleep";
-    } else if (
-      step.action.type.includes("llm") ||
-      step.action.type.includes("chat") ||
-      step.action.type.includes("ai_")
-    ) {
-      nodeType = "llm";
-    } else if (
-      step.action.type.includes("http") ||
-      step.action.type.includes("api")
-    ) {
-      nodeType = "api";
-    } else if (step.condition) {
-      nodeType = "condition";
-    } else if (step.for_each) {
-      nodeType = "loop";
-    }
-
-    // 创建节点数据
-    const nodeData: NodeData = {
-      type: nodeType,
-      label: step.name || step.id,
-      config: {
-        // 根据节点类型设置配置
-        ...(nodeType === "python" && {
-          code: `# ${step.name || step.id}\n# Action: ${step.action.type}\n\nprint(${JSON.stringify(step.action.params)})`,
-        }),
-        ...(nodeType === "llm" && {
-          model: step.action.params.model || "deepseek-chat",
-          prompt: step.action.params.prompt || "",
-          temperature: step.action.params.temperature ?? 0.7,
-        }),
-        ...(nodeType === "api" && {
-          url: step.action.params.url || "",
-          method: step.action.params.method || "GET",
-          headers: step.action.params.headers || {},
-          body: step.action.params.body || "",
-        }),
-        ...(nodeType === "condition" && {
-          condition: step.condition || "",
-        }),
-        ...(nodeType === "loop" && {
-          forEach: step.for_each || "",
-          forItemVar: step.for_item_var || "item",
-        }),
-        // 核心节点配置
-        ...(nodeType === "core.log" && {
-          message: step.action.params.message || "",
-        }),
-        ...(nodeType === "core.set_var" && {
-          name: step.action.params.name || "",
-          value: step.action.params.value || "",
-        }),
-        ...(nodeType === "core.wait" && {
-          seconds: step.action.params.seconds || 1,
-        }),
-      },
-    };
-
-    // 计算节点位置（横向排列，从 start 后面开始）
-    const position = {
-      x: 100 + (index + 1) * 250,
-      y: 200,
-    };
-
+    const nodeType = determineNodeType(step);
     nodes.push({
       id: step.id,
       type: nodeType,
-      position,
-      data: nodeData,
+      position: {
+        x: NODE_POSITION_START_X + (index + 1) * NODE_POSITION_OFFSET_X,
+        y: NODE_POSITION_Y,
+      },
+      data: buildNodeData(step, nodeType),
     });
   });
 
-  // 3. 添加 End 节点
-  const endNodeX = 100 + (parsed.steps.length + 1) * 250;
+  const endNodeX = NODE_POSITION_START_X + (stepCount + 1) * NODE_POSITION_OFFSET_X;
   nodes.push({
     id: "end",
-    type: "end",
-    position: { x: endNodeX, y: 200 },
+    type: END_NODE_TYPE,
+    position: { x: endNodeX, y: NODE_POSITION_Y },
     data: {
-      type: "end",
+      type: END_NODE_TYPE,
       label: "End",
       config: {},
     },
   });
 
-  // 4. 创建连线
-  // start -> 第一个节点
-  if (parsed.steps.length > 0) {
+  if (stepCount > 0) {
     edges.push({
       id: "edge-start-" + parsed.steps[0].id,
       source: "start",
       target: parsed.steps[0].id,
       animated: true,
     });
-  }
 
-  // 中间节点之间的连线
-  parsed.steps.forEach((step, index) => {
-    if (index < parsed.steps.length - 1) {
-      edges.push({
-        id: `edge-${step.id}-${parsed.steps[index + 1].id}`,
-        source: step.id,
-        target: parsed.steps[index + 1].id,
-        animated: true,
-      });
-    }
-  });
+    parsed.steps.forEach((step, index) => {
+      if (index < stepCount - 1) {
+        edges.push({
+          id: `edge-${step.id}-${parsed.steps[index + 1].id}`,
+          source: step.id,
+          target: parsed.steps[index + 1].id,
+          animated: true,
+        });
+      }
+    });
 
-  // 最后一个节点 -> end
-  if (parsed.steps.length > 0) {
     edges.push({
-      id: "edge-" + parsed.steps[parsed.steps.length - 1].id + "-end",
-      source: parsed.steps[parsed.steps.length - 1].id,
+      id: "edge-" + parsed.steps[stepCount - 1].id + "-end",
+      source: parsed.steps[stepCount - 1].id,
       target: "end",
       animated: true,
     });
-  }
-
-  // 如果没有步骤，直接连接 start -> end
-  if (parsed.steps.length === 0) {
+  } else {
     edges.push({
       id: "edge-start-end",
       source: "start",
@@ -396,8 +354,43 @@ export function yamlToWorkflow(yaml: string): {
     });
   }
 
+  return { nodes, edges };
+}
+
+export function workflowToYAML(
+  name: string,
+  nodes: WorkflowNode[],
+  edges: WorkflowEdge[],
+): string {
+  const order = buildTopologicalOrder(nodes, edges);
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+  const steps: FlowStep[] = order
+    .filter((nodeId) => {
+      const node = nodeMap.get(nodeId);
+      return node && node.type !== START_NODE_TYPE && node.type !== END_NODE_TYPE;
+    })
+    .map((nodeId) => nodeToStep(nodeMap.get(nodeId)!));
+
+  const yamlObj: FlowYAML = {
+    version: YAML_VERSION,
+    name,
+    steps,
+  };
+
+  return jsYAML.dump(yamlObj);
+}
+
+export function yamlToWorkflow(yaml: string): {
+  name: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+} {
+  const parsed = jsYAML.load(yaml) as FlowYAML;
+  const { nodes, edges } = buildNodesAndEdges(parsed);
+
   return {
-    name: parsed.name || "Untitled Workflow",
+    name: parsed.name || DEFAULT_WORKFLOW_NAME,
     nodes,
     edges,
   };

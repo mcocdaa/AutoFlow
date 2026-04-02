@@ -24,17 +24,14 @@ def create_simple_dag():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[OutputPort(id="output", name="Output", type="any", required=True)],
     )
     pass_node = PassNode(
         id="pass",
         name="Pass",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -44,12 +41,10 @@ def create_simple_dag():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
         inputs=[InputPort(id="input", name="Input", type="any", required=True)],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Simple DAG",
@@ -71,17 +66,14 @@ def create_dag_with_branch():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[OutputPort(id="output", name="Output", type="any", required=True)],
     )
     pass1_node = PassNode(
         id="pass1",
         name="Pass 1",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -91,7 +83,6 @@ def create_dag_with_branch():
     pass2_node = PassNode(
         id="pass2",
         name="Pass 2",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -101,7 +92,6 @@ def create_dag_with_branch():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -109,7 +99,6 @@ def create_dag_with_branch():
             InputPort(id="input1", name="Input 1", type="any", required=True),
             InputPort(id="input2", name="Input 2", type="any", required=True),
         ],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Branched DAG",
@@ -134,17 +123,14 @@ def create_dag_with_cycle():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[OutputPort(id="output", name="Output", type="any", required=True)],
     )
     pass1_node = PassNode(
         id="pass1",
         name="Pass 1",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -154,7 +140,6 @@ def create_dag_with_cycle():
     pass2_node = PassNode(
         id="pass2",
         name="Pass 2",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -164,12 +149,10 @@ def create_dag_with_cycle():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
         inputs=[InputPort(id="input", name="Input", type="any", required=True)],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Cyclic DAG",

@@ -25,11 +25,9 @@ def create_router_test_dag():
     start_node = StartNode(
         id="start",
         name="Start",
-        type="start",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
-        inputs=[],
         outputs=[
             OutputPort(id="output", name="Output", type="any", required=True),
             OutputPort(
@@ -44,7 +42,6 @@ def create_router_test_dag():
     pass1_node = PassNode(
         id="pass1",
         name="Pass 1",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -54,7 +51,6 @@ def create_router_test_dag():
     pass2_node = PassNode(
         id="pass2",
         name="Pass 2",
-        type="pass",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -64,7 +60,6 @@ def create_router_test_dag():
     end_node = EndNode(
         id="end",
         name="End",
-        type="end",
         retry=RetrySpec(attempts=0, backoff_seconds=0),
         config={},
         metadata={},
@@ -78,7 +73,6 @@ def create_router_test_dag():
                 default="default",
             ),
         ],
-        outputs=[],
     )
     workflow = DAGWorkflow(
         name="Router Test DAG",
@@ -117,14 +111,14 @@ class TestConditionEvaluator:
     def test_evaluate_with_variables(self):
         """测试带变量的条件"""
         variables = {"threshold": 10}
-        result = ConditionEvaluator.evaluate("data > vars.threshold", 15, variables)
+        result = ConditionEvaluator.evaluate("data > variables.threshold", 15, variables)
         assert result is True
 
     def test_evaluate_complex_expression(self):
         """测试复杂表达式"""
         variables = {"min": 5, "max": 20}
         result = ConditionEvaluator.evaluate(
-            "data > vars.min and data < vars.max", 10, variables
+            "data > variables.min and data < variables.max", 10, variables
         )
         assert result is True
 
@@ -266,7 +260,6 @@ class TestConditionalDistribution:
         node = PassNode(
             id="test",
             name="Test",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -277,7 +270,7 @@ class TestConditionalDistribution:
                     name="Output",
                     type="any",
                     required=True,
-                    condition="data > vars.threshold",
+                    condition="data > variables.threshold",
                 )
             ],
         )
@@ -293,12 +286,10 @@ class TestConditionalDistribution:
         end_node = EndNode(
             id="end",
             name="End",
-            type="end",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
             inputs=[InputPort(id="input", name="Input", type="any", required=True)],
-            outputs=[],
         )
         workflow.nodes["end"] = end_node
 
@@ -323,7 +314,6 @@ class TestErrorDistribution:
         node = PassNode(
             id="test",
             name="Test",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},
@@ -340,7 +330,6 @@ class TestErrorDistribution:
         error_handler = PassNode(
             id="error_handler",
             name="Error Handler",
-            type="pass",
             retry=RetrySpec(attempts=0, backoff_seconds=0),
             config={},
             metadata={},

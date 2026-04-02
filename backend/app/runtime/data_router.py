@@ -18,6 +18,11 @@ from app.runtime.dag_models import (
 from app.runtime.execution_state import ExecutionState
 
 
+class _Namespace:
+    def __init__(self, data: Dict[str, Any]):
+        self.__dict__.update(data)
+
+
 class ConditionEvaluator:
     @staticmethod
     def evaluate(
@@ -29,7 +34,7 @@ class ConditionEvaluator:
         try:
             locals_dict = {
                 "data": data,
-                "vars": variables,
+                "variables": _Namespace(variables),
                 "True": True,
                 "False": False,
                 "None": None,

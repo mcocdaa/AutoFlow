@@ -3,4 +3,4 @@
 # ============================================
 
 include:
-  - docker/docker-compose.full.yml
+  - docker-compose.full.yml
