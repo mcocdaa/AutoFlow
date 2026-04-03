@@ -1,69 +1,45 @@
 #!/bin/bash
-# ============================================
-# Secrets 初始化脚本
-# 自动创建缺失的 secrets 文件并生成随机值
-# ============================================
-
 set -euo pipefail
+# ============================================
+# AutoFlow 初始化 Docker Secrets
+# 从 .env 读取密码并写入 secrets/ 目录下的文件
+# Docker Compose 使用这些文件作为 secrets 挂载到容器
+#
+# 用法: ./scripts/init-secrets.sh
+# ============================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SECRETS_DIR="${ROOT_DIR}/secrets"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SECRETS_DIR="$PROJECT_ROOT/secrets"
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+if [ ! -f "$PROJECT_ROOT/.env" ]; then
+    echo "错误: .env 文件不存在"
+    echo "请先复制模板: cp .env.example .env"
+    exit 1
+fi
 
-generate_password() {
-    openssl rand -base64 32 | tr -d '=+/' | cut -c1-24
-}
+# 用 set -a 方式加载，支持含空格/特殊字符的值
+set -a
+# shellcheck source=/dev/null
+source "$PROJECT_ROOT/.env"
+set +a
 
-generate_key() {
-    openssl rand -hex 32
-}
+# 检查必需变量
+: "${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}"
+: "${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}"
+: "${SECRET_KEY:?请在 .env 中设置 SECRET_KEY}"
 
-init_secret() {
-    local filename="$1"
-    local description="$2"
-    local generator="$3"
-    local filepath="${SECRETS_DIR}/${filename}"
+mkdir -p "$SECRETS_DIR"
 
-    if [[ -f "$filepath" && -s "$filepath" ]]; then
-        echo "  ✅ $description 已存在"
-        return 0
-    fi
+printf '%s' "$DB_PASSWORD"          > "$SECRETS_DIR/db_password"
+printf '%s' "$MYSQL_ROOT_PASSWORD"  > "$SECRETS_DIR/mysql_root_password"
+printf '%s' "$SECRET_KEY"           > "$SECRETS_DIR/secret_key"
 
-    local value
-    value=$($generator)
-    echo "$value" > "$filepath"
-    chmod 600 "$filepath"
-    echo -e "  ${GREEN}✅ 已生成: $description${NC}"
-}
+chmod 600 "$SECRETS_DIR/db_password" \
+          "$SECRETS_DIR/mysql_root_password" \
+          "$SECRETS_DIR/secret_key"
 
-main() {
-    echo "🔐 初始化 Secrets"
-    echo "=================="
-    echo ""
-
-    # 创建目录
-    if [[ ! -d "$SECRETS_DIR" ]]; then
-        mkdir -p "$SECRETS_DIR"
-        echo "📁 创建目录: secrets/"
-        echo ""
-    fi
-
-    # 初始化各文件
-    init_secret "db_password" "数据库密码" generate_password
-    init_secret "mysql_root_password" "MySQL root 密码" generate_password
-    init_secret "secret_key" "应用密钥" generate_key
-
-    echo ""
-    echo -e "${GREEN}🎉 Secrets 初始化完成${NC}"
-    echo ""
-    echo -e "${YELLOW}⚠️  注意:${NC}"
-    echo "   - 自动生成的密钥仅适用于开发环境"
-    echo "   - 生产环境请手动设置强密码"
-    echo "   - 请勿提交 secrets/ 目录到版本控制"
-}
-
-main "$@"
+echo "✓ Secrets 初始化完成:"
+echo "  $SECRETS_DIR/db_password"
+echo "  $SECRETS_DIR/mysql_root_password"
+echo "  $SECRETS_DIR/secret_key"

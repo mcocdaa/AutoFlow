@@ -1,6 +1,8 @@
 # ============================================
 # AutoFlow 默认启动: 全栈模式
+# 用法: docker compose --env-file ../.env up --build -d
 # ============================================
 
 include:
+  - docker-compose.base.yml
   - docker-compose.full.yml

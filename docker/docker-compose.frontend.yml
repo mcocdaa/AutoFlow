@@ -1,7 +1,7 @@
 # ============================================
-# AutoFlow 仅前端模式
-# 使用: docker-compose -f docker-compose.frontend.yml -p autoflow up
-# 注意：需要已有后端服务运行
+# AutoFlow 前端叠加层
+# 与 docker-compose.base.yml 合并使用
+# 注意：base.yml 已包含 backend，此文件仅暴露前端并添加 frontend 服务
 # ============================================
 
 services:
@@ -15,7 +15,7 @@ services:
     ports:
       - "${FRONTEND_EXTERNAL_PORT:-8001}:8000"
     environment:
-      - VITE_API_PROXY_URL=http://autoflow-backend:3000
+      - VITE_API_URL=http://autoflow-backend:3000
       - DOCKER_WEB=true
     networks:
       - autoflow-network

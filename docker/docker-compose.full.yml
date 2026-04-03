@@ -1,6 +1,6 @@
 # ============================================
 # AutoFlow 全栈模式（后端 + 前端）
-# 使用: docker-compose -f docker-compose.full.yml -p autoflow up
+# 与 docker-compose.base.yml 合并使用
 # ============================================
 
 services:
@@ -21,6 +21,8 @@ services:
     environment:
       - VITE_API_URL=http://autoflow-backend:3000
       - DOCKER_WEB=true
+    networks:
+      - autoflow-network
     depends_on:
       - autoflow-backend
 

@@ -1,46 +1,43 @@
 #!/bin/bash
+set -euo pipefail
 # ============================================
 # AutoFlow 停止脚本
-# 用法:
-#   ./stop.sh <mode>
-#   mode: dev | prod
-# 示例:
-#   ./stop.sh dev    # 开发模式停止
-#   ./stop.sh prod   # 生产模式停止
+# 用法: ./scripts/stop.sh <mode> [service]
+#   mode:    dev | prod
+#   service: backend | frontend | full（默认 full）
 # ============================================
-
-set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
 usage() {
-    echo "用法: $0 <mode>"
-    echo "  mode: dev | prod"
+    echo "用法: $0 <mode> [service]"
+    echo "  mode:    dev | prod"
+    echo "  service: backend | frontend | full（默认 full）"
     echo ""
     echo "示例:"
-    echo "  $0 dev   # 开发模式停止"
-    echo "  $0 prod  # 生产模式停止"
+    echo "  $0 dev           # 停止全部（dev 模式）"
+    echo "  $0 dev backend   # 停止仅后端"
+    echo "  $0 prod          # 停止生产 stack"
     exit 1
 }
 
-if [ $# -lt 1 ]; then
-    usage
-fi
+[ $# -lt 1 ] && usage
 
 MODE="$1"
+SERVICE="${2:-full}"
 
-cd "$DOCKER_DIR"
-
+# 加载 .env
 if [ -f "$PROJECT_ROOT/.env" ]; then
-    export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+    set -a
+    # shellcheck source=/dev/null
+    source "$PROJECT_ROOT/.env"
+    set +a
 fi
 
 echo "========================================"
-echo "AutoFlow 停止"
-echo "========================================"
-echo "模式: $MODE"
+echo "AutoFlow 停止 [mode=$MODE, service=$SERVICE]"
 echo "========================================"
 
 if [ "$MODE" = "prod" ]; then
@@ -48,7 +45,16 @@ if [ "$MODE" = "prod" ]; then
     echo "等待服务移除..."
     sleep 5
 else
-    docker compose -p autoflow -f docker-compose.base.yml -f docker-compose.backend.yml -f docker-compose.frontend.yml down 2>/dev/null || true
+    # 根据 service 组合 compose 文件（与 start.sh 保持一致）
+    files="-f $DOCKER_DIR/docker-compose.base.yml"
+    [ "$SERVICE" != "frontend" ] && files="$files -f $DOCKER_DIR/docker-compose.backend.yml"
+    [ "$SERVICE" != "backend"  ] && files="$files -f $DOCKER_DIR/docker-compose.frontend.yml"
+
+    docker compose \
+        --env-file "$PROJECT_ROOT/.env" \
+        -p autoflow \
+        $files \
+        down 2>/dev/null || true
 fi
 
 echo ""
