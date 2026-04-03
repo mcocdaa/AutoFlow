@@ -215,9 +215,8 @@ const addNodeToCenter = (template: NodeTemplate) => {
 
 <style scoped>
 .node-palette {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
-  max-height: 100%;
   display: flex;
   flex-direction: column;
   background: #0f172a;
@@ -257,9 +256,8 @@ const addNodeToCenter = (template: NodeTemplate) => {
 }
 
 .category-list {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
-  max-height: calc(100vh - 200px);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 2px 0;

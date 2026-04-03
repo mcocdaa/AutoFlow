@@ -2,8 +2,6 @@
   <div class="workflow-editor">
     <Toolbar @open-example-selector="showExampleSelector = true" />
 
-    <ExecutionStats />
-
     <div class="editor-body">
       <aside class="editor-sidebar" :class="{ collapsed: paletteCollapsed }">
         <div class="palette-container">
@@ -43,15 +41,16 @@
           </transition>
         </div>
 
-        <button
-          class="palette-toggle"
-          @click="paletteCollapsed = !paletteCollapsed"
-          :title="paletteCollapsed ? '展开节点库' : '折叠节点库'"
-        >
-          <LeftOutlined v-if="!paletteCollapsed" />
-          <RightOutlined v-else />
-        </button>
       </aside>
+
+      <button
+        class="palette-toggle"
+        @click="paletteCollapsed = !paletteCollapsed"
+        :title="paletteCollapsed ? '展开节点库' : '折叠节点库'"
+      >
+        <LeftOutlined v-if="!paletteCollapsed" />
+        <RightOutlined v-else />
+      </button>
 
       <main class="editor-main">
         <div v-show="viewMode !== 'yaml'" class="canvas-area">
@@ -83,6 +82,8 @@
       v-model:visible="showExampleSelector"
       @import-example="handleImportExample"
     />
+
+    <ExecutionStats />
 
     <div v-if="runsStore.currentRun || runsStore.error" class="results-section">
       <ResultsPanel :run="runsStore.currentRun" :error="runsStore.error" />
@@ -274,7 +275,7 @@ onUnmounted(() => {
 
 .editor-body {
   display: flex;
-  flex: 1;
+  height: calc(100% - 40px);
   min-height: 0;
   position: relative;
   overflow: hidden;
@@ -284,11 +285,13 @@ onUnmounted(() => {
   width: 280px;
   min-width: 280px;
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 100;
   background: #0f172a;
+  overflow: hidden;
 }
 
 .editor-sidebar.collapsed {
@@ -297,7 +300,7 @@ onUnmounted(() => {
 }
 
 .palette-container {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -313,18 +316,20 @@ onUnmounted(() => {
 }
 
 .sidebar-bottom-section {
-  flex-shrink: 0;
+  flex: 0 0 108px;
   display: flex;
   flex-direction: column;
-  height: 220px;
+  height: 108px;
+  max-height: 108px;
   overflow: hidden;
+  border-top: 1px solid #334155;
 }
 
 .palette-toggle {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  right: -14px;
+  left: 266px;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -337,8 +342,12 @@ onUnmounted(() => {
   justify-content: center;
   z-index: 1000;
   font-size: 12px;
-  transition: all 0.2s ease;
+  transition: left 0.2s ease, background 0.2s ease, color 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.editor-sidebar.collapsed ~ .palette-toggle {
+  left: 46px;
 }
 
 .palette-toggle:hover {
@@ -472,7 +481,7 @@ onUnmounted(() => {
 .slide-down-enter-to,
 .slide-down-leave-from {
   opacity: 1;
-  max-height: 184px;
+  max-height: 250px;
 }
 
 .editor-main {
