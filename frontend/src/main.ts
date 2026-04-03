@@ -8,7 +8,15 @@ import router from "./router";
 import { FDS_CSS_VARS } from "./theme/flow-design-theme";
 
 const style = document.createElement("style");
-style.textContent = FDS_CSS_VARS;
+style.textContent = FDS_CSS_VARS + `
+html, body {
+  overflow: hidden;
+  height: 100%;
+}
+#app {
+  height: 100%;
+}
+`;
 document.head.appendChild(style);
 
 const app = createApp(App);

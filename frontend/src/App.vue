@@ -1,15 +1,11 @@
 <template>
   <a-config-provider :theme="FDS_THEME">
-    <a-layout class="fds-layout">
-      <div class="fds-header">
-        <div class="fds-header-left">
-          <div class="fds-logo" @click="goHome">
-            <div class="fds-logo-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="header-left">
+          <div class="brand" @click="goHome">
+            <div class="brand-mark">
+              <svg viewBox="0 0 24 24" fill="none">
                 <path
                   d="M12 2L2 7L12 12L22 7L12 2Z"
                   fill="white"
@@ -18,47 +14,35 @@
                 <path
                   d="M2 17L12 22L22 17"
                   stroke="white"
-                  stroke-width="2"
+                  stroke-width="1.8"
                   stroke-linecap="round"
-                  stroke-linejoin="round"
                 />
                 <path
                   d="M2 12L12 17L22 12"
                   stroke="white"
-                  stroke-width="2"
+                  stroke-width="1.8"
                   stroke-linecap="round"
-                  stroke-linejoin="round"
                 />
               </svg>
             </div>
-            <div class="fds-logo-text-group">
-              <span class="fds-logo-text">AutoFlow</span>
-              <span class="fds-logo-subtitle">Workflow Automation</span>
+            <div class="brand-text">
+              <span class="brand-name">AutoFlow</span>
+              <span class="brand-sub">Workflow Automation</span>
             </div>
           </div>
         </div>
-        <div class="fds-header-center"></div>
-        <div class="fds-header-right">
-          <a-button
-            type="primary"
-            class="create-flow-btn"
-            @click="navigateToEditor"
-          >
+
+        <div class="header-center"></div>
+
+        <div class="header-right">
+          <a-button type="primary" class="btn-create" @click="navigateToEditor">
             <template #icon><PlusOutlined /></template>
             创建流程
           </a-button>
           <a-dropdown>
-            <div class="user-info" @click.prevent>
-              <a-avatar
-                class="user-avatar"
-                size="small"
-                :style="{
-                  background:
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                }"
-                >U</a-avatar
-              >
-              <span class="user-name">User</span>
+            <div class="user-chip">
+              <a-avatar :size="28" class="user-avatar">U</a-avatar>
+              <span class="user-label">User</span>
             </div>
             <template #overlay>
               <a-menu>
@@ -68,21 +52,29 @@
             </template>
           </a-dropdown>
         </div>
-      </div>
+      </header>
 
-      <a-layout style="margin-top: 68px">
-        <a-layout-sider
-          v-model:collapsed="collapsed"
-          class="fds-sider"
-          width="260"
-          style="margin-top: 0"
+      <div class="app-body">
+        <aside
+          class="app-sidebar"
+          :class="{ collapsed: sidebarCollapsed }"
+          @mouseenter="handleSidebarEnter"
+          @mouseleave="handleSidebarLeave"
         >
-          <div class="sider-content">
+          <button
+            class="sidebar-collapse-btn"
+            @click="sidebarCollapsed = !sidebarCollapsed"
+          >
+            <MenuFoldOutlined v-if="!sidebarCollapsed" />
+            <MenuUnfoldOutlined v-else />
+          </button>
+
+          <nav class="sidebar-nav">
             <a-menu
               v-model:selectedKeys="selectedKeys"
               mode="inline"
-              :theme="'dark'"
-              class="fds-menu"
+              theme="dark"
+              class="side-menu"
             >
               <a-menu-item key="/" @click="router.push('/')">
                 <template #icon><AppstoreOutlined /></template>
@@ -97,14 +89,14 @@
                 <span>YAML 编辑器</span>
               </a-menu-item>
             </a-menu>
-          </div>
-        </a-layout-sider>
+          </nav>
+        </aside>
 
-        <a-layout-content class="fds-content">
-          <router-view></router-view>
-        </a-layout-content>
-      </a-layout>
-    </a-layout>
+        <main class="app-main">
+          <router-view />
+        </main>
+      </div>
+    </div>
   </a-config-provider>
 </template>
 
@@ -116,13 +108,31 @@ import {
   PlayCircleOutlined,
   PlusOutlined,
   BranchesOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from "@ant-design/icons-vue";
 import { FDS_THEME } from "./theme/flow-design-theme";
 
 const router = useRouter();
 const route = useRoute();
-const collapsed = ref(false);
+const sidebarCollapsed = ref(false);
 const selectedKeys = ref<string[]>([route.path]);
+
+let collapseTimer: number | null = null;
+
+const handleSidebarEnter = () => {
+  if (collapseTimer) {
+    clearTimeout(collapseTimer);
+    collapseTimer = null;
+  }
+  sidebarCollapsed.value = false;
+};
+
+const handleSidebarLeave = () => {
+  collapseTimer = window.setTimeout(() => {
+    sidebarCollapsed.value = true;
+  }, 300);
+};
 
 watch(
   () => route.path,
@@ -142,166 +152,229 @@ const navigateToEditor = () => {
 </script>
 
 <style>
-.fds-layout {
+.app-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
 }
 
-.fds-header {
+.app-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  height: 68px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+  padding: 0 24px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
 }
 
-.fds-header-left {
+.header-left {
   display: flex;
   align-items: center;
 }
 
-.fds-logo {
+.brand {
   display: flex;
   align-items: center;
+  gap: 12px;
   cursor: pointer;
-  gap: 14px;
-  transition: transform 0.2s ease;
+  transition: opacity 0.2s;
 }
 
-.fds-logo:hover {
-  transform: scale(1.02);
+.brand:hover {
+  opacity: 0.9;
 }
 
-.fds-logo-icon {
-  width: 40px;
-  height: 40px;
+.brand-mark {
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
-.fds-logo-icon svg {
-  width: 24px;
-  height: 24px;
+.brand-mark svg {
+  width: 20px;
+  height: 20px;
 }
 
-.fds-logo-text-group {
+.brand-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
-.fds-logo-text {
-  font-size: 22px;
+.brand-name {
+  font-size: 18px;
   font-weight: 700;
-  color: white;
+  color: #e2e8f0;
   letter-spacing: -0.3px;
 }
 
-.fds-logo-subtitle {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+.brand-sub {
+  font-size: 11px;
+  color: #64748b;
   font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
-.fds-header-right {
+.header-center {
+  flex: 1;
+}
+
+.header-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
 }
 
-.create-flow-btn {
-  background: white;
-  color: #667eea;
-  border: none;
+.btn-create {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  border: none !important;
   font-weight: 600;
-  height: 40px;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.25s;
 }
 
-.create-flow-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  background: white !important;
-  color: #667eea !important;
+.btn-create:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
+  background: linear-gradient(135deg, #5558e3, #7c3aed) !important;
+  color: white !important;
 }
 
-.create-flow-btn:active {
-  transform: translateY(0);
-}
-
-.user-info {
+.user-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 10px;
-  transition: background 0.2s ease;
+  padding: 4px 10px 4px 4px;
+  border-radius: 9999px;
+  transition: background 0.2s;
 }
 
-.user-info:hover {
-  background: rgba(255, 255, 255, 0.15);
+.user-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.user-name {
+.user-avatar {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  font-size: 12px !important;
+  font-weight: 600;
+}
+
+.user-label {
+  font-size: 13px;
   font-weight: 500;
-  font-size: 14px;
-  color: white;
+  color: #cbd5e1;
 }
 
-.fds-sider {
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  border-right: none;
+.app-body {
+  margin-top: 56px;
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 56px);
 }
 
-.sider-content {
-  padding-top: 20px;
+.app-sidebar {
+  position: fixed;
+  left: 0;
+  top: 56px;
+  bottom: 0;
+  width: 220px;
+  background: #0f172a;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 800;
+  overflow: hidden;
 }
 
-.fds-menu {
-  border-right: none;
-  background: transparent;
+.app-sidebar.collapsed {
+  width: 64px;
 }
 
-.fds-menu :deep(.ant-menu-item) {
-  margin: 4px 12px;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-  color: rgba(255, 255, 255, 0.7);
+.sidebar-collapse-btn {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
 }
 
-.fds-menu :deep(.ant-menu-item:hover) {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+.sidebar-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
 }
 
-.fds-menu :deep(.ant-menu-item-selected) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+.sidebar-nav {
+  padding-top: 48px;
+  flex: 1;
+  overflow-y: auto;
 }
 
-.fds-menu :deep(.ant-menu-item .anticon) {
-  font-size: 18px;
+.side-menu {
+  border-right: none !important;
+  background: transparent !important;
 }
 
-.fds-content {
-  padding: 28px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: calc(100vh - 68px);
+.side-menu :deep(.ant-menu-item) {
+  margin: 3px 10px !important;
+  border-radius: 8px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  transition: all 0.2s !important;
+}
+
+.side-menu :deep(.ant-menu-item:hover) {
+  color: #e2e8f0 !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.side-menu :deep(.ant-menu-item-selected) {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15) !important;
+}
+
+.side-menu :deep(.ant-menu-item .anticon) {
+  font-size: 16px !important;
+}
+
+.app-main {
+  flex: 1;
+  margin-left: 220px;
+  min-height: calc(100vh - 56px);
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar.collapsed ~ .app-main {
+  margin-left: 64px;
 }
 </style>

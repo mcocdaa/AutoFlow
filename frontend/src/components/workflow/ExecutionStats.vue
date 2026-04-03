@@ -1,23 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useExecutionStore } from "../../stores/execution";
+import { useWorkflowStore } from "../../stores/workflow";
 import type { ExecutionStatus } from "../../types/dag-workflow";
 
 const executionStore = useExecutionStore();
+const workflowStore = useWorkflowStore();
 
 const currentTime = ref(Date.now());
 let timer: number | null = null;
 
 const statusConfig: Record<
   ExecutionStatus,
-  { label: string; color: string; icon: string }
+  { label: string; color: string; dot: string }
 > = {
-  idle: { label: "空闲", color: "#9CA3AF", icon: "⏸️" },
-  running: { label: "运行中", color: "#3B82F6", icon: "▶️" },
-  paused: { label: "已暂停", color: "#F59E0B", icon: "⏯️" },
-  completed: { label: "已完成", color: "#10B981", icon: "✅" },
-  failed: { label: "失败", color: "#EF4444", icon: "❌" },
-  stopped: { label: "已停止", color: "#6B7280", icon: "⏹️" },
+  idle: { label: "空闲", color: "#64748b", dot: "#64748b" },
+  running: { label: "运行中", color: "#3b82f6", dot: "#3b82f6" },
+  paused: { label: "已暂停", color: "#f59e0b", dot: "#f59e0b" },
+  completed: { label: "成功", color: "#10b981", dot: "#10b981" },
+  failed: { label: "失败", color: "#ef4444", dot: "#ef4444" },
+  stopped: { label: "已停止", color: "#6b7280", dot: "#6b7280" },
 };
 
 const currentStatus = computed(() => statusConfig[executionStore.status]);
@@ -39,18 +41,17 @@ const durationDisplay = computed(() => {
   const hours = Math.floor(minutes / 60);
 
   if (hours > 0) {
-    return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    return `${hours}:${String(minutes % 60).padStart(2, "0")}:${String(
+      seconds % 60
+    ).padStart(2, "0")}`;
   } else if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
+    return `${minutes}:${String(seconds % 60).padStart(2, "0")}s`;
   } else {
-    return `${seconds}s ${ms % 1000}ms`;
+    return `${seconds}.${String(Math.floor((ms % 1000) / 10)).padStart(
+      2,
+      "0"
+    )}s`;
   }
-});
-
-const successRate = computed(() => {
-  const total = executionStore.successCount + executionStore.failedCount;
-  if (total === 0) return 0;
-  return Math.round((executionStore.successCount / total) * 100);
 });
 
 const startTimer = () => {
@@ -76,142 +77,152 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="execution-stats">
-    <div class="status-section">
-      <div class="status-item">
-        <span class="status-icon">{{ currentStatus.icon }}</span>
-        <span class="status-label">状态</span>
-        <span class="status-value" :style="{ color: currentStatus.color }">{{
-          currentStatus.label
-        }}</span>
-      </div>
-      <div v-if="hasExecution" class="timer-item">
-        <span class="timer-icon">⏱️</span>
-        <span class="timer-label">执行时间</span>
-        <span class="timer-value">{{ durationDisplay }}</span>
-      </div>
+  <div class="status-bar">
+    <div class="status-left">
+      <span class="workflow-name">{{ workflowStore.name || 'hello-world' }}</span>
     </div>
-    <div v-if="hasExecution" class="stats-section">
-      <div class="stat-item">
-        <span class="stat-label">总节点数</span>
-        <span class="stat-value">{{ executionStore.progress.total }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">已完成</span>
-        <span class="stat-value success">{{
-          executionStore.successCount
-        }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">失败</span>
-        <span class="stat-value error">{{ executionStore.failedCount }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">成功率</span>
-        <span
-          class="stat-value"
-          :class="{
-            success: successRate > 80,
-            warning: successRate <= 80 && successRate >= 50,
-            error: successRate < 50,
-          }"
-          >{{ successRate }}%</span
-        >
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">进度</span>
-        <span class="stat-value"
-          >{{ executionStore.progress.percentage }}%</span
-        >
-      </div>
+    <div class="status-center">
+      <span
+        class="status-dot"
+        :class="{ running: executionStore.status === 'running' }"
+        :style="{ backgroundColor: currentStatus.dot }"
+      ></span>
+      <span
+        class="status-label"
+        :style="{ color: currentStatus.color }"
+      >{{ currentStatus.label }}</span>
+    </div>
+    <div class="status-right">
+      <template v-if="hasExecution">
+        <span class="stat-item">
+          <span class="stat-label">耗时</span>
+          <span class="stat-value">{{ durationDisplay }}</span>
+        </span>
+        <span class="stat-divider"></span>
+        <span class="stat-item">
+          <span class="stat-label">节点</span>
+          <span class="stat-value">{{ executionStore.progress.total }}</span>
+        </span>
+        <span class="stat-divider"></span>
+        <span class="stat-item">
+          <span class="stat-label success">完成</span>
+          <span class="stat-value success">{{ executionStore.successCount }}</span>
+        </span>
+        <span class="stat-divider"></span>
+        <span class="stat-item">
+          <span class="stat-label error">失败</span>
+          <span class="stat-value error">{{ executionStore.failedCount }}</span>
+        </span>
+      </template>
+      <template v-else>
+        <span class="stat-item">
+          <span class="stat-label">就绪</span>
+        </span>
+      </template>
     </div>
   </div>
 </template>
 
 <style scoped>
-.execution-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  border-radius: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.status-section {
-  display: flex;
-  gap: 32px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.status-item,
-.timer-item {
+.status-bar {
+  height: 40px;
+  width: 100%;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
 }
 
-.status-icon,
-.timer-icon {
-  font-size: 24px;
+.status-left {
+  display: flex;
+  align-items: center;
+  min-width: 160px;
 }
 
-.status-label,
-.timer-label {
+.workflow-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.status-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.status-dot.running {
+  animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 8px 4px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.status-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
 }
 
-.status-value {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.timer-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #60a5fa;
-  font-family: "Courier New", monospace;
-}
-
-.stats-section {
+.status-right {
   display: flex;
-  gap: 28px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
 }
 
 .stat-item {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: #94a3b8;
+}
+
+.stat-label.success {
+  color: #10b981;
+}
+
+.stat-label.error {
+  color: #ef4444;
 }
 
 .stat-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
 .stat-value.success {
-  color: #4ade80;
-}
-
-.stat-value.warning {
-  color: #fbbf24;
+  color: #10b981;
 }
 
 .stat-value.error {
-  color: #f87171;
+  color: #ef4444;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 16px;
+  background: #334155;
 }
 </style>

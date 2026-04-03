@@ -16,28 +16,35 @@ defineProps<{ data: any; selected?: boolean }>();
 
 <style scoped>
 .node-container {
-  width: 200px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  min-width: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   overflow: hidden;
-  background: white;
-  transition: all 0.2s ease;
+  background: #1a1f2e;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
 .node-container.node-selected {
-  border: 3px solid #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  transform: scale(1.02);
+  border-color: rgba(129, 140, 248, 0.6) !important;
+  box-shadow:
+    0 0 0 2px rgba(129, 140, 248, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  transform: scale(1.015);
 }
 
 .node-header {
-  height: 36px;
+  height: 32px;
   background-color: var(--flow-color-purple);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  background: linear-gradient(180deg, var(--flow-color-purple) 0%, color-mix(in srgb, var(--flow-color-purple) 85%, black) 100%);
 }
 </style>

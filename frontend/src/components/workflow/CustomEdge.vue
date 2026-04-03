@@ -30,17 +30,17 @@ const isSelected = computed(() =>
 );
 
 const strokeColor = computed(() => {
-  if (isSelected.value) return "#3B82F6";
-  if (isActive.value) return "#3B82F6";
-  if (isSuccess.value) return "#10B981";
-  if (isFailed.value) return "#EF4444";
-  return "#9CA3AF";
+  if (isSelected.value) return "#818cf8";
+  if (isActive.value) return "#60a5fa";
+  if (isSuccess.value) return "#34d399";
+  if (isFailed.value) return "#f87171";
+  return "#3d4a5c";
 });
 
 const strokeWidth = computed(() => {
-  if (isSelected.value) return 4;
-  if (isSuccess.value || isFailed.value || isActive.value) return 3;
-  return 2;
+  if (isSelected.value) return 2;
+  if (isSuccess.value || isFailed.value || isActive.value) return 1.5;
+  return 1.5;
 });
 
 const gradientId = computed(() =>
@@ -54,8 +54,15 @@ const getPathD = () => {
   const { sourceX, sourceY, targetX, targetY } = props;
   const dx = targetX - sourceX;
   const dy = targetY - sourceY;
-  const controlPoint = Math.max(Math.abs(dx), Math.abs(dy)) * 0.5;
 
+  const isHorizontal = Math.abs(dx) > Math.abs(dy);
+
+  if (isHorizontal && dx > 0) {
+    const midX = sourceX + dx * 0.5;
+    return `M ${sourceX} ${sourceY} C ${midX} ${sourceY}, ${midX} ${targetY}, ${targetX} ${targetY}`;
+  }
+
+  const controlPoint = Math.max(Math.abs(dx), Math.abs(dy)) * 0.45;
   return `M ${sourceX} ${sourceY} C ${sourceX + controlPoint} ${sourceY}, ${targetX - controlPoint} ${targetY}, ${targetX} ${targetY}`;
 };
 </script>
@@ -82,6 +89,7 @@ const getPathD = () => {
       :stroke-width="strokeWidth"
       fill="none"
       stroke-linecap="round"
+      class="edge-path"
       :class="{
         'edge-shadow': isActive,
         'edge-selected': isSelected,
@@ -92,9 +100,10 @@ const getPathD = () => {
       v-if="isActive"
       :d="getPathD()"
       :stroke="`url(#${gradientId})`"
-      stroke-width="6"
+      stroke-width="5"
       fill="none"
       stroke-linecap="round"
+      stroke-dasharray="8 6"
       class="flow-animation"
     />
     <path
@@ -105,31 +114,30 @@ const getPathD = () => {
       fill="none"
       stroke-linecap="round"
       stroke-dasharray="6 3"
-      opacity="0.5"
+      opacity="0.35"
     />
   </svg>
 </template>
 
 <style scoped>
 .edge-shadow {
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.7));
+  filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.4));
 }
 
 .edge-selected {
-  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.9));
+  filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.5));
 }
 
 .edge-pulse {
-  animation: edgePulse 1.5s ease-in-out infinite;
+  animation: edgePulse 2s ease-in-out infinite;
 }
 
 @keyframes edgePulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.7));
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.4));
   }
   50% {
-    filter: drop-shadow(0 0 16px rgba(59, 130, 246, 1));
+    filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.65));
   }
 }
 
@@ -138,11 +146,7 @@ const getPathD = () => {
 }
 
 @keyframes flowAnimation {
-  0% {
-    stroke-dashoffset: 100;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
+  0% { stroke-dashoffset: 28; }
+  100% { stroke-dashoffset: 0; }
 }
 </style>

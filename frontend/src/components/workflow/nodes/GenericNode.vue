@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { Handle, Position } from "@vue-flow/core";
 import { NODE_TEMPLATES } from "../../../constants/node-templates";
 import { useExecutionStore } from "../../../stores/execution";
@@ -20,17 +20,32 @@ const emit = defineEmits<{
 }>();
 
 const executionStore = useExecutionStore();
+const showDetail = ref(false);
 
 const getNodeTemplate = (type: string) => {
   return NODE_TEMPLATES.find((t) => t.type === type);
 };
 
 const template = computed(() => getNodeTemplate(props.data?.type || ""));
-const nodeColor = computed(() => template.value?.color || "#6B7280");
-const nodeIcon = computed(() => template.value?.icon || "📦");
+const nodeColor = computed(() => template.value?.color || "#64748b");
+const nodeIcon = computed(() => template.value?.icon || "\u{1F4E6}");
 const nodeLabel = computed(
   () => props.data?.name || template.value?.label || "Node",
 );
+const attrRows = computed(() => {
+  const rows: Array<{ label: string; value: string; isInput?: boolean; isOutput?: boolean }> = [];
+  rows.push({ label: "类型", value: props.data.type });
+  if (template.value?.description) {
+    rows.push({ label: "描述", value: template.value.description });
+  }
+  (props.data.inputs || []).forEach((p) => {
+    rows.push({ label: p.name, value: p.type, isInput: true });
+  });
+  (props.data.outputs || []).forEach((p) => {
+    rows.push({ label: p.name, value: p.type, isOutput: true });
+  });
+  return rows;
+});
 
 const executionState = computed(() => {
   if (!props.id) return null;
@@ -47,31 +62,29 @@ const isCompleted = computed(
 const isFailed = computed(() => executionState.value?.status === "failed");
 const isSkipped = computed(() => executionState.value?.status === "skipped");
 
-const getStatusColor = () => {
-  if (isRunning.value) return "#3B82F6";
-  if (isCompleted.value) return "#10B981";
-  if (isFailed.value) return "#EF4444";
-  if (isSkipped.value) return "#F59E0B";
-  if (isPending.value) return "#6B7280";
-  return "#6B7280";
-};
-
 const getStatusIcon = () => {
-  if (isRunning.value) return "⚡";
-  if (isCompleted.value) return "✓";
-  if (isFailed.value) return "✕";
-  if (isSkipped.value) return "⏭";
-  if (isPending.value) return "○";
+  if (isRunning.value) return "\u26A1";
+  if (isCompleted.value) return "\u2713";
+  if (isFailed.value) return "\u2715";
+  if (isSkipped.value) return "\u23ED";
+  if (isPending.value) return "\u25CB";
   return "";
 };
 
 const getBorderColor = () => {
-  if (isRunning.value) return "#3B82F6";
-  if (isCompleted.value) return "#10B981";
-  if (isFailed.value) return "#EF4444";
-  if (isSkipped.value) return "#F59E0B";
-  if (isPending.value) return "#9CA3AF";
-  return "#ddd";
+  if (isRunning.value) return "#3b82f6";
+  if (isCompleted.value) return "#10b981";
+  if (isFailed.value) return "#ef4444";
+  if (isSkipped.value) return "#f59e0b";
+  if (isPending.value) return "#334155";
+  return "#334155";
+};
+
+const getBoxShadow = () => {
+  if (isCompleted.value) return "0 0 8px rgba(16,185,129,0.35)";
+  if (isRunning.value) return "0 0 12px rgba(59,130,246,0.25)";
+  if (isFailed.value) return "0 0 8px rgba(239,68,68,0.35)";
+  return "0 2px 4px rgba(0,0,0,0.2)";
 };
 
 const getExecutionDuration = () => {
@@ -93,20 +106,8 @@ const getExecutionDuration = () => {
   return null;
 };
 
-const getPortTypeIcon = (type: string) => {
-  const icons: Record<string, string> = {
-    any: "🔷",
-    string: "📝",
-    number: "🔢",
-    boolean: "🔘",
-    object: "📦",
-    array: "📊",
-  };
-  return icons[type] || "🔷";
-};
-
 const isErrorPortVisible = computed(() => {
-  return props.data.metadata?.showErrorPort || false;
+  return !!(props.data.metadata?.showErrorPort || false) && !!props.data.error_port;
 });
 
 const breakpoint = computed<Breakpoint | undefined>(() => {
@@ -117,16 +118,17 @@ const breakpoint = computed<Breakpoint | undefined>(() => {
 const hasBreakpoint = computed(() => breakpoint.value !== undefined);
 const isBreakpointEnabled = computed(() => breakpoint.value?.enabled ?? false);
 
+const toggleDetail = (event: MouseEvent) => {
+  event.stopPropagation();
+  showDetail.value = !showDetail.value;
+};
+
 const handleNodeClick = () => {
-  if (props.id) {
-    emit("node-click", props.id);
-  }
+  if (props.id) emit("node-click", props.id);
 };
 
 const handleNodeDoubleClick = () => {
-  if (props.id) {
-    emit("node-double-click", props.id);
-  }
+  if (props.id) emit("node-double-click", props.id);
 };
 
 const handlePortHover = (portId: string, isHovered: boolean) => {
@@ -136,11 +138,8 @@ const handlePortHover = (portId: string, isHovered: boolean) => {
 const handleBreakpointClick = (event: MouseEvent) => {
   event.stopPropagation();
   if (!props.id) return;
-
-  if (hasBreakpoint.value) {
-    if (breakpoint.value) {
-      executionStore.toggleBreakpoint(breakpoint.value.id);
-    }
+  if (hasBreakpoint.value && breakpoint.value) {
+    executionStore.toggleBreakpoint(breakpoint.value.id);
   } else {
     executionStore.addBreakpoint(props.id);
   }
@@ -150,14 +149,13 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   event.preventDefault();
   event.stopPropagation();
   if (!props.id || !breakpoint.value) return;
-
   executionStore.removeBreakpointByNodeId(props.id);
 };
 </script>
 
 <template>
   <div
-    class="node-container"
+    class="browser-node"
     :class="{
       'node-selected': selected,
       'node-pending': isPending,
@@ -165,14 +163,18 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
       'node-completed': isCompleted,
       'node-failed': isFailed,
       'node-skipped': isSkipped,
+      'expanded-detail': showDetail,
     }"
-    :style="{ borderColor: getBorderColor() }"
+    :style="{ borderColor: getBorderColor(), boxShadow: getBoxShadow() }"
     @click="handleNodeClick"
     @dblclick="handleNodeDoubleClick"
   >
+    <div v-if="isCompleted && !isFailed" class="success-badge">&#x2713;</div>
+    <div v-if="isFailed" class="error-badge">&#x2715;</div>
+
     <div class="input-ports">
       <div
-        v-for="port in data.inputs"
+        v-for="port in (data.inputs || [])"
         :key="port.id"
         class="port-container"
         @mouseenter="handlePortHover(port.id, true)"
@@ -185,79 +187,74 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
           class="port-handle"
           :class="{ 'port-required': port.required }"
         />
-        <span class="port-icon">{{ getPortTypeIcon(port.type) }}</span>
-        <span class="port-label">{{ port.name }}</span>
       </div>
     </div>
 
-    <div v-if="isFailed" class="error-badge">✕</div>
-
-    <div class="node-header" :style="{ backgroundColor: nodeColor }">
-      <div
-        class="breakpoint-indicator"
-        :class="{
-          'breakpoint-active': hasBreakpoint,
-          'breakpoint-enabled': isBreakpointEnabled,
-          'breakpoint-disabled': hasBreakpoint && !isBreakpointEnabled,
-        }"
-        @click="handleBreakpointClick"
-        @contextmenu="handleBreakpointRightClick"
-      >
-        <span v-if="!hasBreakpoint" class="breakpoint-placeholder"></span>
-        <span v-else-if="isBreakpointEnabled" class="breakpoint-dot"></span>
-        <span v-else class="breakpoint-disabled-dot"></span>
+    <div class="browser-titlebar">
+      <div class="titlebar-left">
+        <span class="node-icon">{{ nodeIcon }}</span>
+        <span class="node-title">{{ nodeLabel }}</span>
       </div>
-      <span class="node-icon">{{ nodeIcon }}</span>
-      <span class="node-title">{{ nodeLabel }}</span>
-      <span
-        class="status-indicator"
-        :style="{ backgroundColor: getStatusColor() }"
-      >
-        {{ getStatusIcon() }}
-      </span>
+      <div class="titlebar-right">
+        <span
+          class="breakpoint-dot-wrap"
+          :class="{
+            active: hasBreakpoint,
+            enabled: isBreakpointEnabled,
+            disabled: hasBreakpoint && !isBreakpointEnabled,
+          }"
+          @click="handleBreakpointClick"
+          @contextmenu="handleBreakpointRightClick"
+        ></span>
+        <span class="status-indicator" :class="{ active: isRunning }">
+          {{ getStatusIcon() }}
+        </span>
+        <button class="more-btn" @click="toggleDetail" :title="showDetail ? '收起' : '更多'">
+          {{ showDetail ? '\u25B2' : '\u25BC' }}
+        </button>
+      </div>
     </div>
 
-    <div v-if="isFailed && executionState?.error" class="node-error-tooltip">
-      <div class="tooltip-title">错误</div>
-      <div class="tooltip-message">{{ executionState.error }}</div>
-    </div>
+    <div class="browser-content">
+      <div class="content-row" v-for="(row, idx) in attrRows" :key="idx">
+        <span class="row-label">{{ row.label }}</span>
+        <span class="row-value" :class="{ 'row-input': row.isInput, 'row-output': row.isOutput }">
+          {{ row.value }}
+        </span>
+      </div>
 
-    <div v-if="isFailed && executionState?.error" class="node-error">
-      <span class="error-icon">⚠️</span>
-      <span class="error-text">{{ executionState.error }}</span>
-    </div>
+      <div v-if="isFailed && executionState?.error" class="error-row">
+        <span class="row-label">错误</span>
+        <span class="row-error">{{ executionState.error }}</span>
+      </div>
 
-    <div v-if="getExecutionDuration()" class="node-duration">
-      {{ getExecutionDuration() }}
+      <div v-if="getExecutionDuration()" class="duration-row">
+        <span class="row-label">耗时</span>
+        <span class="row-duration">{{ getExecutionDuration() }}</span>
+      </div>
     </div>
 
     <div class="output-ports">
       <div
-        v-for="port in data.outputs"
+        v-for="port in (data.outputs || [])"
         :key="port.id"
         class="port-container"
         @mouseenter="handlePortHover(port.id, true)"
         @mouseleave="handlePortHover(port.id, false)"
       >
-        <span class="port-label">{{ port.name }}</span>
-        <span class="port-icon">{{ getPortTypeIcon(port.type) }}</span>
         <Handle
           type="source"
           :position="Position.Right"
           :id="port.id"
           class="port-handle"
         />
-        <span v-if="port.condition" class="port-condition">📋</span>
       </div>
-
       <div
         v-if="data.error_port && isErrorPortVisible"
         class="port-container error-port"
         @mouseenter="handlePortHover('error', true)"
         @mouseleave="handlePortHover('error', false)"
       >
-        <span class="port-label">{{ data.error_port.name }}</span>
-        <span class="port-icon">⚠️</span>
         <Handle
           type="source"
           :position="Position.Right"
@@ -270,254 +267,162 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
 </template>
 
 <style scoped>
-.node-container {
+.browser-node {
   min-width: 200px;
   max-width: 280px;
-  border: 2px solid #ddd;
-  border-radius: 12px;
+  border: 1px solid #2a2d37;
+  border-radius: 4px;
   overflow: hidden;
-  background: white;
-  transition: all 0.2s ease;
+  background: #1a1b1f;
+  transition: all 0.15s ease;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .node-selected {
-  border-color: #3b82f6;
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: scale(1.02);
-}
-
-.node-pending {
-  border-color: #9ca3af;
-  background: #f9fafb;
+  border-color: #4a90d9 !important;
+  box-shadow: 0 0 0 1px #4a90d9, 0 2px 12px rgba(74, 144, 217, 0.3) !important;
+  z-index: 10;
 }
 
 .node-running {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  animation: pulse 1.5s infinite;
+  border-color: #4a90d9;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: 0 0 0 1px #4a90d9, 0 2px 12px rgba(74, 144, 217, 0.4); }
 }
 
 .node-completed {
-  border-color: #10b981;
-  background: #f0fdf4;
+  border-color: #3a925a;
 }
-
 .node-failed {
-  border-color: #ef4444;
-  border-width: 3px;
-  background: #fee2e2;
+  border-color: #d94a4a;
+  border-width: 1px;
 }
+.node-skipped { opacity: 0.6; }
 
-.node-skipped {
-  border-color: #f59e0b;
-  opacity: 0.6;
-  background: #fffbeb;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
-  }
-}
-
-.error-badge {
+.success-badge {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 26px;
-  height: 26px;
-  background: #ef4444;
+  top: -4px;
+  left: -4px;
+  width: 12px;
+  height: 12px;
+  background: #3a925a;
   color: white;
-  border-radius: 50%;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 8px;
   font-weight: bold;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-  animation: badge-pulse 2s infinite;
+  line-height: 1;
 }
-
-@keyframes badge-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
+.error-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 12px;
+  height: 12px;
+  background: #d94a4a;
+  color: white;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: bold;
+  z-index: 10;
+  line-height: 1;
 }
 
 .input-ports,
 .output-ports {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 4px;
+  gap: 0px;
+  padding: 2px 2px;
+  position: absolute;
+  top: 28px;
 }
-
 .input-ports {
+  left: 0;
   align-items: flex-start;
 }
-
 .output-ports {
+  right: 0;
   align-items: flex-end;
 }
 
 .port-container {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
+  gap: 2px;
+  padding: 1px 2px;
+  border-radius: 2px;
+  transition: background-color 0.1s ease;
 }
-
 .port-container:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.port-icon {
-  font-size: 14px;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.port-label {
-  font-size: 12px;
-  color: #4b5563;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
+  background-color: rgba(74, 144, 217, 0.1);
 }
 
 .port-handle {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #6b7280;
-  background: white;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #5a5f6e;
+  background: #1a1b1f;
+  border-radius: 2px;
+  transition: all 0.1s ease;
   z-index: 5;
 }
-
 .port-handle:hover {
-  width: 16px;
-  height: 16px;
-  border-color: #3b82f6;
-  background: #3b82f6;
+  border-color: #4a90d9;
+  background: #4a90d9;
+  box-shadow: 0 0 6px rgba(74, 144, 217, 0.6);
 }
-
 .port-required {
-  border-color: #ef4444;
+  border-color: #d94a4a;
 }
-
-.port-required::after {
-  content: "*";
-  position: absolute;
-  top: -8px;
-  right: -6px;
-  color: #ef4444;
-  font-size: 12px;
-  font-weight: bold;
-}
-
 .port-handle-error {
-  border-color: #ef4444;
+  border-color: #d94a4a;
 }
-
 .port-handle-error:hover {
-  border-color: #ef4444;
-  background: #ef4444;
+  border-color: #d94a4a;
+  background: #d94a4a;
 }
-
-.port-condition {
-  font-size: 12px;
-}
-
 .error-port {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(217, 74, 74, 0.08);
 }
 
-.node-header {
-  height: 44px;
-  color: white;
+.browser-titlebar {
+  height: 28px;
+  color: #e0e0e0;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 0 12px;
-  gap: 8px;
+  justify-content: space-between;
+  padding: 0 8px;
+  gap: 6px;
+  user-select: none;
+  cursor: default;
+  position: relative;
+  background: #2a2d37;
+  border-bottom: 1px solid #1f2128;
 }
 
-.breakpoint-indicator {
-  width: 20px;
-  height: 20px;
+.titlebar-left {
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 50%;
-}
-
-.breakpoint-indicator:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.breakpoint-placeholder {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background-color: transparent;
-}
-
-.breakpoint-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: #ef4444;
-  border: 2px solid white;
-  box-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
-  animation: breakpoint-pulse 2s infinite;
-}
-
-.breakpoint-disabled-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: #9ca3af;
-  border: 2px solid white;
-  opacity: 0.6;
-}
-
-@keyframes breakpoint-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
-  }
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .node-icon {
-  font-size: 18px;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .node-title {
@@ -525,97 +430,169 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.breakpoint-dot-wrap {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1.5px solid #5a5f6e;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.breakpoint-dot-wrap.active.enabled {
+  background: #d94a4a;
+  border-color: #d94a4a;
+}
+.breakpoint-dot-wrap.active.disabled {
+  background: #5a5f6e;
+  border-color: #5a5f6e;
+  opacity: 0.5;
+}
+.breakpoint-dot-wrap:hover {
+  border-color: #8a8f9e;
 }
 
 .status-indicator {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  color: white;
+  font-size: 8px;
+  color: #1a1b1f;
   font-weight: bold;
-  border: 2px solid white;
+  flex-shrink: 0;
+  background: #5a5f6e;
+}
+.status-indicator.active {
+  background: #4a90d9;
+  animation: status-blink 1s ease-in-out infinite;
 }
 
-.node-error-tooltip {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1f2937;
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  z-index: 100;
-  min-width: 220px;
-  max-width: 300px;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s ease;
-  margin-top: 8px;
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-.node-container:hover .node-error-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-.node-error-tooltip::before {
-  content: "";
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 8px solid transparent;
-  border-bottom-color: #1f2937;
-}
-
-.tooltip-title {
-  font-weight: 600;
-  font-size: 14px;
-  color: #ef4444;
-  margin-bottom: 4px;
-}
-
-.tooltip-message {
-  font-size: 13px;
-  color: #e5e7eb;
-  line-height: 1.5;
-  word-wrap: break-word;
-}
-
-.node-error {
-  padding: 8px 12px;
-  background: #fee2e2;
-  border-top: 1px solid #fecaca;
+.more-btn {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: #8a8f9e;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #dc2626;
+  justify-content: center;
+  transition: all 0.1s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.more-btn:hover {
+  background: #3a3d47;
+  color: #e0e0e0;
 }
 
-.error-icon {
-  font-size: 14px;
+.browser-content {
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #1a1b1f;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
-.error-text {
+.browser-content::-webkit-scrollbar {
+  width: 4px;
+}
+.browser-content::-webkit-scrollbar-thumb {
+  background: #3a3d47;
+  border-radius: 2px;
+}
+.browser-content::-webkit-scrollbar-track {
+  background: #1a1b1f;
+}
+
+.content-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 3px;
+  border-radius: 2px;
+  transition: background 0.1s;
+}
+.content-row:hover {
+  background: #2a2d37;
+}
+
+.row-label {
+  font-size: 10px;
+  color: #7a7f8e;
+  font-weight: 500;
+  min-width: 34px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.row-value {
+  font-size: 10px;
+  color: #c0c0c0;
+  font-family: "Consolas", "Monaco", monospace;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.row-input {
+  color: #6aa0d9;
+}
+.row-output {
+  color: #6ad98a;
+}
 
-.node-duration {
-  padding: 4px 12px;
-  background: #f0fdf4;
-  border-top: 1px solid #bbf7d0;
-  font-size: 11px;
-  color: #166534;
-  text-align: right;
+.error-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 3px 3px;
+  border-top: 1px solid #2a2d37;
+  margin-top: 1px;
+}
+.row-error {
+  font-size: 9px;
+  color: #d96a6a;
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.duration-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 3px;
+  border-top: 1px solid #2a2d37;
+  margin-top: 1px;
+}
+.row-duration {
+  font-size: 9px;
+  color: #6ad98a;
+  font-family: "Consolas", "Monaco", monospace;
+  font-weight: 500;
 }
 </style>

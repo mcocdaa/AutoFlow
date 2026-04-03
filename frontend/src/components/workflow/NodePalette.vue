@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useWorkflowStore } from "../../stores/workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
 import type {
   NodeTemplate,
   NodeCategory,
-  NodeType,
 } from "../../types/workflow";
 
 interface CategoryGroup {
@@ -15,22 +14,39 @@ interface CategoryGroup {
   nodes: NodeTemplate[];
 }
 
+const props = defineProps<{
+  collapsed?: boolean;
+}>();
+
 const store = useWorkflowStore();
 
 const searchQuery = ref("");
 const expandedCategories = ref<Set<NodeCategory>>(new Set(["start", "core"]));
+const activeCategory = ref<NodeCategory | null>(null);
+
+watch(
+  () => props.collapsed,
+  (collapsed) => {
+    if (collapsed) {
+      expandedCategories.value.clear();
+      activeCategory.value = null;
+    } else {
+      expandedCategories.value = new Set(["start", "core"]);
+    }
+  },
+);
 
 const CATEGORY_INFO: Record<NodeCategory, { name: string; icon: string }> = {
-  start: { name: "开始/结束", icon: "🚀" },
-  end: { name: "结束", icon: "🔚" },
-  basic: { name: "基础节点", icon: "📦" },
-  control: { name: "控制流", icon: "🔀" },
-  data: { name: "数据处理", icon: "📊" },
-  composite: { name: "组合节点", icon: "🧩" },
-  core: { name: "核心节点", icon: "⚙️" },
-  browser: { name: "浏览器", icon: "🌐" },
-  tool: { name: "工具", icon: "🛠️" },
-  other: { name: "其他", icon: "📦" },
+  start: { name: "开始/结束", icon: "\u{1F680}" },
+  end: { name: "结束", icon: "\u{1F51A}" },
+  basic: { name: "基础节点", icon: "\u{1F4E6}" },
+  control: { name: "控制流", icon: "\u{1F500}" },
+  data: { name: "数据处理", icon: "\u{1F4CA}" },
+  composite: { name: "组合节点", icon: "\u{1F9E9}" },
+  core: { name: "核心节点", icon: "\u2699\uFE0F" },
+  browser: { name: "浏览器", icon: "\u{1F310}" },
+  tool: { name: "工具", icon: "\u{1F527}" },
+  other: { name: "其他", icon: "\u{1F4E6}" },
 };
 
 const categories = computed<CategoryGroup[]>(() => {
@@ -46,7 +62,7 @@ const categories = computed<CategoryGroup[]>(() => {
   return Object.entries(groups).map(([id, nodes]) => ({
     id: id as NodeCategory,
     name: CATEGORY_INFO[id as NodeCategory]?.name || id,
-    icon: CATEGORY_INFO[id as NodeCategory]?.icon || "📦",
+    icon: CATEGORY_INFO[id as NodeCategory]?.icon || "\u{1F4E6}",
     nodes: nodes as NodeTemplate[],
   }));
 });
@@ -55,7 +71,6 @@ const filteredCategories = computed<CategoryGroup[]>(() => {
   if (!searchQuery.value.trim()) {
     return categories.value;
   }
-
   const query = searchQuery.value.toLowerCase();
   return categories.value
     .map((category) => ({
@@ -73,8 +88,12 @@ const filteredCategories = computed<CategoryGroup[]>(() => {
 const toggleCategory = (categoryId: NodeCategory) => {
   if (expandedCategories.value.has(categoryId)) {
     expandedCategories.value.delete(categoryId);
+    if (activeCategory.value === categoryId) {
+      activeCategory.value = null;
+    }
   } else {
     expandedCategories.value.add(categoryId);
+    activeCategory.value = categoryId;
   }
 };
 
@@ -82,9 +101,16 @@ const isCategoryExpanded = (categoryId: NodeCategory): boolean => {
   return expandedCategories.value.has(categoryId);
 };
 
+watch(searchQuery, () => {
+  if (searchQuery.value.trim()) {
+    categories.value.forEach((cat) => {
+      expandedCategories.value.add(cat.id);
+    });
+  }
+});
+
 const onDragStart = (event: DragEvent, template: NodeTemplate) => {
   if (!event.dataTransfer) return;
-
   event.dataTransfer.setData(
     "application/vueflow",
     JSON.stringify({ type: template.type, label: template.label }),
@@ -95,7 +121,7 @@ const onDragStart = (event: DragEvent, template: NodeTemplate) => {
 const addNodeToCenter = (template: NodeTemplate) => {
   const newNode = {
     id: crypto.randomUUID(),
-    type: template.type as NodeType,
+    type: template.type as any,
     position: {
       x: 300 + Math.random() * 100,
       y: 200 + Math.random() * 100,
@@ -106,15 +132,14 @@ const addNodeToCenter = (template: NodeTemplate) => {
       config: {},
     },
   };
-
   store.addNode(newNode);
   store.selectNode(newNode.id);
 };
 </script>
 
 <template>
-  <div class="node-palette">
-    <div class="search-bar">
+  <div class="node-palette" :class="{ collapsed: props.collapsed }">
+    <div v-if="!props.collapsed" class="search-bar">
       <input
         v-model="searchQuery"
         type="text"
@@ -128,44 +153,61 @@ const addNodeToCenter = (template: NodeTemplate) => {
         v-for="category in filteredCategories"
         :key="category.id"
         class="category"
+        :class="{ expanded: isCategoryExpanded(category.id) }"
       >
-        <div class="category-header" @click="toggleCategory(category.id)">
+        <div
+          v-if="!props.collapsed"
+          class="category-header"
+          @click="toggleCategory(category.id)"
+        >
+          <span class="category-arrow-wrap">
+            <span
+              class="category-arrow"
+              :class="{ expanded: isCategoryExpanded(category.id) }"
+            >&#x25B6;</span>
+          </span>
           <span class="category-icon">{{ category.icon }}</span>
           <span class="category-name">{{ category.name }}</span>
-          <span
-            class="category-arrow"
-            :class="{ expanded: isCategoryExpanded(category.id) }"
-          >
-            ▶
-          </span>
+          <span class="category-count">{{ category.nodes.length }}</span>
+        </div>
+        <div
+          v-else
+          class="category-header-collapsed"
+          :title="category.name"
+          @click="toggleCategory(category.id)"
+        >
+          <span class="category-icon">{{ category.icon }}</span>
         </div>
 
-        <div v-show="isCategoryExpanded(category.id)" class="category-content">
-          <div
-            v-for="template in category.nodes"
-            :key="template.type"
-            class="node-item"
-            draggable="true"
-            @dragstart="onDragStart($event, template)"
-            @click="addNodeToCenter(template)"
-          >
+        <transition name="accordion">
+          <div v-show="isCategoryExpanded(category.id) && !props.collapsed" class="category-content">
             <div
-              class="node-item-icon"
-              :style="{
-                backgroundColor: template.color + '20',
-                color: template.color,
-              }"
+              v-for="template in category.nodes"
+              :key="template.type"
+              class="node-item"
+              draggable="true"
+              @dragstart="onDragStart($event, template)"
+              @click="addNodeToCenter(template)"
             >
-              {{ template.icon }}
-            </div>
-            <div class="node-item-content">
-              <div class="node-item-label">{{ template.label }}</div>
-              <div class="node-item-description">
-                {{ template.description }}
+              <div
+                class="node-item-icon"
+                :style="{
+                  backgroundColor: template.color + '20',
+                  color: template.color,
+                }"
+              >
+                {{ template.icon }}
+              </div>
+              <div class="node-item-content">
+                <div class="node-item-label">{{ template.label }}</div>
+                <div class="node-item-description">
+                  {{ template.description }}
+                </div>
               </div>
             </div>
+            <div v-if="category.nodes.length === 0" class="empty-hint">无匹配节点</div>
           </div>
-        </div>
+        </transition>
       </div>
     </div>
   </div>
@@ -173,67 +215,67 @@ const addNodeToCenter = (template: NodeTemplate) => {
 
 <style scoped>
 .node-palette {
-  height: 100%;
-  max-height: 600px;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-radius: 12px;
+  background: #0f172a;
   overflow: hidden;
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.node-palette.collapsed .search-bar {
+  display: none;
 }
 
 .search-bar {
   padding: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #1e293b;
   flex-shrink: 0;
 }
 
 .search-input {
   width: 100%;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  padding: 10px 14px;
-  font-size: 14px;
+  border: 1px solid #334155;
+  padding: 8px 12px;
+  font-size: 13px;
   transition: all 0.2s;
   outline: none;
+  background: #1e293b;
+  color: #e2e8f0;
 }
 
 .search-input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  background: #1e293b;
+}
+
+.search-input::placeholder {
+  color: #64748b;
 }
 
 .category-list {
   flex: 1;
+  min-height: 0;
+  max-height: calc(100vh - 200px);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 0;
-  max-height: calc(600px - 70px);
+  padding: 2px 0;
 }
 
 .category-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.category-list::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
+  width: 3px;
 }
 
 .category-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.category-list::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #334155;
+  border-radius: 2px;
 }
 
 .category {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #1e293b;
 }
 
 .category:last-child {
@@ -243,58 +285,129 @@ const addNodeToCenter = (template: NodeTemplate) => {
 .category-header {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 14px 10px 12px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 13px;
-  color: #475569;
-  transition: background 0.2s;
+  font-size: 12px;
+  color: #94a3b8;
+  transition: all 0.15s ease;
   user-select: none;
+  letter-spacing: 0.2px;
+  gap: 8px;
 }
 
 .category-header:hover {
-  background: #f8fafc;
+  background: #1e293b;
+  color: #e2e8f0;
 }
 
-.category-icon {
-  margin-right: 8px;
-  font-size: 16px;
+.category-header-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px;
+  cursor: default;
 }
 
-.category-name {
-  flex: 1;
+.category-arrow-wrap {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .category-arrow {
-  transition: transform 0.2s;
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: 8px;
+  color: #64748b;
+  transition: transform 0.2s ease;
+  display: inline-block;
 }
 
 .category-arrow.expanded {
   transform: rotate(90deg);
 }
 
+.category-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.node-palette.collapsed .category-icon {
+  margin-right: 0;
+}
+
+.category-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-palette.collapsed .category-name {
+  display: none;
+}
+
+.category-count {
+  font-size: 10px;
+  color: #475569;
+  background: #1e293b;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.node-palette.collapsed .category-count,
+.node-palette.collapsed .category-arrow-wrap {
+  display: none;
+}
+
 .category-content {
-  padding: 4px 8px 8px;
+  padding: 2px 8px 8px 20px;
+  overflow: hidden;
+}
+
+.accordion-enter-active,
+.accordion-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.accordion-enter-from,
+.accordion-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.accordion-enter-to,
+.accordion-leave-from {
+  opacity: 1;
+  max-height: 600px;
 }
 
 .node-item {
   display: flex;
   align-items: center;
-  padding: 12px;
-  margin: 4px 0;
+  padding: 10px;
+  margin: 3px 0;
   border-radius: 8px;
   cursor: grab;
-  transition: all 0.2s;
-  border: 2px solid transparent;
-  background: white;
+  transition: all 0.18s ease;
+  border: 1px solid transparent;
+  background: #1e293b;
 }
 
 .node-item:hover {
-  background: #f8fafc;
-  border-color: #667eea;
-  transform: translateX(4px);
+  background: #334155;
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateX(2px);
 }
 
 .node-item:active {
@@ -302,14 +415,14 @@ const addNodeToCenter = (template: NodeTemplate) => {
 }
 
 .node-item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  margin-right: 12px;
+  font-size: 16px;
+  margin-right: 10px;
   flex-shrink: 0;
 }
 
@@ -320,16 +433,23 @@ const addNodeToCenter = (template: NodeTemplate) => {
 
 .node-item-label {
   font-weight: 600;
-  font-size: 14px;
-  color: #1e293b;
-  margin-bottom: 2px;
+  font-size: 13px;
+  color: #e2e8f0;
+  margin-bottom: 1px;
 }
 
 .node-item-description {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.empty-hint {
+  text-align: center;
+  padding: 8px 0;
+  font-size: 11px;
+  color: #475569;
 }
 </style>

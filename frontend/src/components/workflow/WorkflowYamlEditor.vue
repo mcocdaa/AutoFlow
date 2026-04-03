@@ -104,20 +104,38 @@ const theme = EditorView.theme({
   "&": {
     height: "100%",
     fontSize: "14px",
+    background: "#0f172a",
+    color: "#e2e8f0",
   },
   ".cm-content": {
     fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     minHeight: "100%",
+    color: "#e2e8f0",
   },
   ".cm-scroller": {
     overflow: "auto",
     minHeight: "100%",
   },
+  ".cm-gutters": {
+    background: "#1e293b",
+    color: "#64748b",
+    borderRight: "1px solid #334155",
+  },
+  ".cm-activeLineGutter": {
+    background: "#1e293b",
+    color: "#e2e8f0",
+  },
+  ".cm-activeLine": {
+    background: "#1e293b",
+  },
   "&.cm-focused .cm-cursor": {
-    borderLeftColor: "#1890ff",
+    borderLeftColor: "#6366f1",
   },
   "&.cm-focused .cm-selectionBackground": {
-    backgroundColor: "#bae7ff",
+    backgroundColor: "rgba(99, 102, 241, 0.3)",
+  },
+  ".cm-selectionMatch": {
+    backgroundColor: "rgba(99, 102, 241, 0.2)",
   },
 });
 
@@ -439,7 +457,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #fff;
+  background: #0f172a;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -449,8 +467,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid #334155;
+  background: #1e293b;
 }
 
 .spacer {
@@ -458,33 +476,33 @@ onUnmounted(() => {
 }
 
 .error-indicator {
-  color: #ff4d4f;
+  color: #ef4444;
   font-size: 18px;
 }
 
 .dirty-indicator {
-  color: #faad14;
+  color: #f59e0b;
   font-size: 18px;
 }
 
 .editor-container {
   flex: 1;
   min-height: 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #334155;
 }
 
 .error-panel,
 .warning-panel {
   padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #334155;
 }
 
 .error-panel {
-  background: #fff2f0;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .warning-panel {
-  background: #fffbe6;
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .error-panel-title,
@@ -497,11 +515,11 @@ onUnmounted(() => {
 }
 
 .error-panel-title {
-  color: #ff4d4f;
+  color: #ef4444;
 }
 
 .warning-panel-title {
-  color: #faad14;
+  color: #f59e0b;
 }
 
 .error-list,
@@ -521,14 +539,14 @@ onUnmounted(() => {
 .error-line,
 .warning-line {
   font-weight: 600;
-  color: #666;
+  color: #94a3b8;
 }
 
 .error-message {
-  color: #ff4d4f;
+  color: #ef4444;
 }
 
 .warning-message {
-  color: #faad14;
+  color: #f59e0b;
 }
 </style>

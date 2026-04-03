@@ -65,16 +65,17 @@ const handlePortHover = (portId: string, isHovered: boolean) => {
   bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid #8b5cf6;
-  background: white;
+  background: #1a1f2e;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
+  color: #94a3b8;
   z-index: 10;
   transition: all 0.2s ease;
 }
@@ -86,19 +87,19 @@ const handlePortHover = (portId: string, isHovered: boolean) => {
 
 .subgraph-container {
   margin-top: 12px;
-  border: 2px dashed #8b5cf6;
+  border: 1.5px dashed rgba(139, 92, 246, 0.4);
   border-radius: 8px;
   padding: 16px;
-  background: rgba(139, 92, 246, 0.05);
+  background: rgba(139, 92, 246, 0.04);
 }
 
 .subgraph-placeholder {
-  min-height: 100px;
+  min-height: 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: #64748b;
 }
 
 .subgraph-label {

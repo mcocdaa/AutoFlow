@@ -68,35 +68,43 @@ const copyOutput = () => {
 
 <style scoped>
 .node-container {
-  width: 220px;
-  border: 2px solid #ddd;
+  min-width: 200px;
+  max-width: 260px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   overflow: hidden;
-  background: white;
-  transition: all 0.2s ease;
+  background: #1a1f2e;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
 .node-selected {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  transform: scale(1.02);
+  border-color: rgba(129, 140, 248, 0.6) !important;
+  box-shadow:
+    0 0 0 2px rgba(129, 140, 248, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  transform: scale(1.015);
 }
 
 .node-header {
-  height: 40px;
+  height: 32px;
   background-color: #10b981;
   color: white;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   font-weight: 600;
-  font-size: 14px;
-  padding: 0 12px;
-  gap: 8px;
+  font-size: 12px;
+  padding: 0 10px;
+  gap: 7px;
+  background: linear-gradient(180deg, #10b981 0%, color-mix(in srgb, #10b981 85%, black) 100%);
 }
 
 .node-icon {
-  font-size: 18px;
+  font-size: 13px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 
 .node-title {
@@ -104,69 +112,73 @@ const copyOutput = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .toggle-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   border: none;
-  color: white;
-  width: 24px;
-  height: 24px;
+  color: rgba(255, 255, 255, 0.8);
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s;
 }
 
 .toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.22);
+  color: white;
 }
 
 .output-content {
-  border-top: 1px solid #d1d5db;
-  background: #f9fafb;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #131827;
 }
 
 .output-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: #f0fdf4;
-  border-bottom: 1px solid #bbf7d0;
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.12);
 }
 
 .output-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #166534;
+  color: #34d399;
 }
 
 .copy-btn {
-  font-size: 11px;
-  padding: 4px 8px;
-  background: white;
-  border: 1px solid #86efac;
+  font-size: 10px;
+  padding: 3px 8px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 4px;
   cursor: pointer;
-  color: #166534;
+  color: #34d399;
+  transition: all 0.15s;
 }
 
 .copy-btn:hover {
-  background: #f0fdf4;
+  background: rgba(16, 185, 129, 0.25);
 }
 
 .output-text {
   margin: 0;
-  padding: 12px;
-  font-size: 12px;
-  font-family: monospace;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 200px;
+  max-height: 180px;
   overflow-y: auto;
-  color: #1f2937;
+  color: #cbd5e1;
 }
 </style>

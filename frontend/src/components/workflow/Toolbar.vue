@@ -10,37 +10,38 @@
       />
     </div>
     <div class="header-right">
-      <a-button @click="handleLoadExample">
+      <a-button @click="handleLoadExample" size="small">
         <FileTextOutlined />
         导入示例
       </a-button>
-      <a-button @click="handleSaveAsExample">
+      <a-button @click="handleSaveAsExample" size="small">
         <BookOutlined />
         保存为示例
       </a-button>
-      <a-button @click="handleExportYaml">
+      <a-button @click="handleExportYaml" size="small">
         <DownloadOutlined />
         导出YAML
       </a-button>
-      <a-button @click="handleSave">
+      <a-button @click="handleSave" size="small">
         <SaveOutlined />
         保存
       </a-button>
-      <a-button @click="handleReset">
+      <a-button @click="handleReset" size="small">
         <ClearOutlined />
         重置
       </a-button>
-      <a-button v-if="executionStore.isRunning" danger @click="handleStop">
+      <a-button v-if="executionStore.isRunning" danger size="small" @click="handleStop">
         <StopOutlined />
         停止
       </a-button>
-      <a-button v-if="executionStore.isRunning" @click="handlePause">
+      <a-button v-if="executionStore.isRunning" size="small" @click="handlePause">
         <PauseCircleOutlined />
         暂停
       </a-button>
       <a-button
         v-if="executionStore.isPaused"
         type="primary"
+        size="small"
         @click="handleResume"
       >
         <CaretRightOutlined />
@@ -49,6 +50,7 @@
       <a-button
         v-if="!executionStore.isRunning && !executionStore.isPaused"
         type="primary"
+        size="small"
         @click="handleExecute"
       >
         <PlayCircleOutlined />
@@ -313,42 +315,86 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  padding: 12px 20px;
   gap: 16px;
   flex-wrap: wrap;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
   min-width: 200px;
 }
 
 .title-icon {
-  font-size: 24px;
-  color: var(--flow-color-primary);
+  font-size: 18px;
+  color: #6366f1;
 }
 
 .workflow-name-input {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   border: none;
   box-shadow: none;
   padding: 4px 8px;
   background: transparent;
+  color: #e2e8f0;
+  width: auto;
 }
 
 .workflow-name-input:hover,
 .workflow-name-input:focus {
-  background: var(--flow-bg-layer);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
 }
 
 .header-right {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   flex-wrap: wrap;
+}
+
+.header-right :deep(.ant-btn) {
+  height: 30px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border-color: #334155;
+  color: #94a3b8;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.header-right :deep(.ant-btn:hover) {
+  color: #e2e8f0;
+  border-color: #475569;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.header-right :deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.header-right :deep(.ant-btn-primary:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+  background: linear-gradient(135deg, #5558e3, #7c3aed) !important;
+  color: white !important;
+}
+
+.header-right :deep(.ant-btn-dangerous) {
+  border-color: #7f1d1d;
+  color: #ef4444;
+}
+
+.header-right :deep(.ant-btn-dangerous:hover) {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
 }
 </style>
