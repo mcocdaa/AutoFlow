@@ -54,7 +54,7 @@
 
       <main class="editor-main">
         <div v-show="viewMode !== 'yaml'" class="canvas-area">
-          <Canvas :node-types="nodeTypes" />
+          <Canvas :node-types="nodeTypes" :edge-types="edgeTypes" />
         </div>
 
         <div v-show="viewMode !== 'visual'" class="yaml-area">
@@ -101,6 +101,8 @@ import {
   Toolbar,
   ExampleSelectorModal,
   WorkflowYamlEditor,
+  ExecutionStats,
+  CustomEdge,
 } from "../components/workflow";
 import {
   StartNode,
@@ -185,6 +187,10 @@ const handleGlobalKeyDown = (event: KeyboardEvent) => {
     showExampleSelector.value = true;
     event.preventDefault();
   }
+};
+
+const edgeTypes = {
+  custom: markRaw(CustomEdge),
 };
 
 const nodeTypes = {
@@ -304,17 +310,9 @@ onUnmounted(() => {
 .palette-container {
   flex: 1 1 0;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.palette-container::-webkit-scrollbar {
-  width: 4px;
-}
-
-.palette-container::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar-bottom-section {
