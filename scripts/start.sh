@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -euo pipefail
 # ============================================
 # 极简项目启动脚本 - AutoFlow
 # ============================================
@@ -10,9 +10,6 @@ PROJECT_ROOT="$(dirname "$ROOT")"
 FRONT_DIR="$PROJECT_ROOT/frontend"
 BACK_DIR="$PROJECT_ROOT/backend"
 DOCKER_DIR="$PROJECT_ROOT/docker"
-
-BACK_PORT=3000      # 本地后端端口
-FRONT_PORT=5180     # 本地前端端口
 
 # 帮助信息
 if [ $# -ne 2 ]; then
@@ -48,8 +45,8 @@ cleanup() {
     echo "→ 清理现有服务..."
     docker compose -p "$PROJECT" down 2>/dev/null || true
     docker stack rm "$PROJECT" 2>/dev/null || true
-    lsof -ti:$BACK_PORT | xargs kill -9 2>/dev/null || true
-    lsof -ti:$FRONT_PORT | xargs kill -9 2>/dev/null || true
+    lsof -ti:$BACKEND_EXTERNAL_PORT | xargs kill -9 2>/dev/null || true
+    lsof -ti:$FRONTEND_EXTERNAL_PORT | xargs kill -9 2>/dev/null || true
 }
 
 # 本地后端启动（自动检测 Poetry 或 pip）
@@ -61,12 +58,12 @@ start_backend_local() {
     source .venv/bin/activate
 
     if command -v poetry &> /dev/null && [ -f "pyproject.toml" ]; then
-        poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port $BACK_PORT &
+        poetry install && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port $BACKEND_EXTERNAL_PORT &
     else
         pip install -r requirements.txt
-        python -m uvicorn app.main:app --reload --host 0.0.0.0 --port $BACK_PORT &
+        python -m uvicorn app.main:app --reload --host 0.0.0.0 --port $BACKEND_EXTERNAL_PORT &
     fi
-    echo "✓ 后端: http://localhost:$BACK_PORT"
+    echo "✓ 后端: http://localhost:$BACKEND_EXTERNAL_PORT"
 }
 
 # 本地前端启动
@@ -76,8 +73,8 @@ start_frontend_local() {
 
     [ ! -d "node_modules" ] && npm install
 
-    PORT=$FRONT_PORT npm run dev &
-    echo "✓ 前端: http://localhost:$FRONT_PORT"
+    PORT=$FRONTEND_EXTERNAL_PORT npm run dev
+    echo "✓ 前端: http://localhost:$FRONTEND_EXTERNAL_PORT"
 }
 
 # Docker 启动（自动组合 compose 文件）
