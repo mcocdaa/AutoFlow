@@ -103,18 +103,18 @@ const hasErrors = computed(() => validationErrors.value.length > 0);
 const theme = EditorView.theme({
   "&": {
     height: "100%",
+    maxHeight: "100%",
     fontSize: "14px",
     background: "#0f172a",
     color: "#e2e8f0",
   },
   ".cm-content": {
     fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-    minHeight: "100%",
     color: "#e2e8f0",
+    paddingBottom: "40px",
   },
   ".cm-scroller": {
     overflow: "auto",
-    minHeight: "100%",
   },
   ".cm-gutters": {
     background: "#1e293b",
@@ -486,9 +486,11 @@ onUnmounted(() => {
 }
 
 .editor-container {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  overflow: hidden;
   border-bottom: 1px solid #334155;
+  position: relative;
 }
 
 .error-panel,

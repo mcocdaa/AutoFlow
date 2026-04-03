@@ -15,6 +15,7 @@ import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import { onMounted, onUnmounted, ref, computed } from "vue";
 import type { NodeData } from "../../types/dag-workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
+import { getDefaultPorts } from "../../utils/node-defaults";
 
 const props = defineProps<{
   nodeTypes: Record<string, any>;
@@ -214,63 +215,20 @@ const onDrop = (event: DragEvent) => {
     const { type, label } = JSON.parse(data);
     const template = NODE_TEMPLATES.find((t) => t.type === type);
     const nodeId = crypto.randomUUID();
-
-    let inputs: any[] = [];
-    let outputs: any[] = [];
-
-    switch (type) {
-      case "start":
-        inputs = [];
-        outputs = [{ id: "output", name: "Output", type: "any" }];
-        break;
-      case "end":
-      case "output":
-        inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-        outputs = [];
-        break;
-      case "if":
-      case "switch":
-      case "condition":
-        inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-        outputs = [
-          { id: "true", name: "True", type: "any" },
-          { id: "false", name: "False", type: "any" },
-        ];
-        break;
-      case "merge":
-        inputs = [
-          { id: "input1", name: "Input 1", type: "any", required: true },
-          { id: "input2", name: "Input 2", type: "any" },
-        ];
-        outputs = [{ id: "output", name: "Output", type: "any" }];
-        break;
-      case "split":
-        inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-        outputs = [
-          { id: "output1", name: "Output 1", type: "any" },
-          { id: "output2", name: "Output 2", type: "any" },
-        ];
-        break;
-      default:
-        inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-        outputs = [{ id: "output", name: "Output", type: "any" }];
-    }
+    const { inputs, outputs, error_port } = getDefaultPorts(type);
 
     const newNode: NodeData = {
       id: nodeId,
       name: label || template?.label || type,
       type: type as any,
-      config: {},
+      config: type === "core.log" ? { action_type: "core.log" } : {},
       metadata: {
         x: event.clientX - 300,
         y: event.clientY - 150,
       },
       inputs,
       outputs,
-      error_port:
-        type !== "start" && type !== "end"
-          ? { id: "error", name: "Error", type: "any" }
-          : undefined,
+      error_port,
     } as any;
 
     store.addNode(newNode);

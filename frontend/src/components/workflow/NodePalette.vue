@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
+import { getDefaultPorts } from "../../utils/node-defaults";
 import type {
   NodeTemplate,
   NodeCategory,
@@ -37,16 +38,16 @@ watch(
 );
 
 const CATEGORY_INFO: Record<NodeCategory, { name: string; icon: string }> = {
-  start: { name: "开始/结束", icon: "\u{1F680}" },
-  end: { name: "结束", icon: "\u{1F51A}" },
-  basic: { name: "基础节点", icon: "\u{1F4E6}" },
-  control: { name: "控制流", icon: "\u{1F500}" },
-  data: { name: "数据处理", icon: "\u{1F4CA}" },
-  composite: { name: "组合节点", icon: "\u{1F9E9}" },
-  core: { name: "核心节点", icon: "\u2699\uFE0F" },
-  browser: { name: "浏览器", icon: "\u{1F310}" },
-  tool: { name: "工具", icon: "\u{1F527}" },
-  other: { name: "其他", icon: "\u{1F4E6}" },
+  start: { name: "入口/出口", icon: "▶" },
+  end: { name: "结束", icon: "⏹" },
+  basic: { name: "基础节点", icon: "📦" },
+  control: { name: "控制流", icon: "🔀" },
+  data: { name: "数据处理", icon: "📊" },
+  composite: { name: "组合节点", icon: "🧩" },
+  core: { name: "核心动作", icon: "⚙️" },
+  browser: { name: "浏览器", icon: "🌐" },
+  tool: { name: "工具", icon: "🔧" },
+  other: { name: "其他", icon: "📦" },
 };
 
 const categories = computed<CategoryGroup[]>(() => {
@@ -120,44 +121,19 @@ const onDragStart = (event: DragEvent, template: NodeTemplate) => {
 
 const addNodeToCenter = (template: NodeTemplate) => {
   const nodeId = crypto.randomUUID();
-  let inputs: any[] = [];
-  let outputs: any[] = [];
-  switch (template.type) {
-    case "start":
-      outputs = [{ id: "output", name: "Output", type: "any" }];
-      break;
-    case "end":
-    case "output":
-      inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-      break;
-    case "if":
-    case "switch":
-    case "condition":
-      inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-      outputs = [
-        { id: "true", name: "True", type: "any" },
-        { id: "false", name: "False", type: "any" },
-      ];
-      break;
-    default:
-      inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-      outputs = [{ id: "output", name: "Output", type: "any" }];
-  }
+  const { inputs, outputs, error_port } = getDefaultPorts(template.type);
   const newNode = {
     id: nodeId,
     name: template.label,
     type: template.type as any,
-    config: {},
+    config: template.type === "core.log" ? { action_type: "core.log" } : {},
     metadata: {
       x: 300 + Math.random() * 100,
       y: 200 + Math.random() * 100,
     },
     inputs,
     outputs,
-    error_port:
-      template.type !== "start" && template.type !== "end"
-        ? { id: "error", name: "Error", type: "any" }
-        : undefined,
+    error_port,
   };
   store.addNode(newNode as any);
 };

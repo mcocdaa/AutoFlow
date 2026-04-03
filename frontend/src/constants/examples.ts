@@ -153,11 +153,17 @@ export const customExamplesStorage = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────
+//  Official examples — v2 DAG format, backend-compatible
+// ─────────────────────────────────────────────────────────────
+
 export const OFFICIAL_EXAMPLES: Example[] = [
+  // ── Example 1: Hello World ──────────────────────────────────
   {
     id: "hello-world",
     name: "Hello World",
-    description: "最简单的工作流示例，学习如何使用日志节点",
+    description:
+      "最简单的工作流：开始节点传递 'Hello World!' 到 Log 节点，Log 将输入打印到终端并向结束节点输出空消息。",
     category: "tutorial",
     tags: ["入门", "基础", "日志"],
     difficulty: "beginner",
@@ -168,162 +174,204 @@ export const OFFICIAL_EXAMPLES: Example[] = [
     isFavorite: false,
     usageCount: 1200,
     rating: 4.8,
-    yamlContent: `version: "1"
+    yamlContent: `version: "2.0"
 name: "hello-world"
-steps:
-  - id: "hello"
-    action:
-      type: "core.log"
-      params:
-        message: "Hello World!"
+description: "Start -> Log -> End"
+inputs: {}
+nodes:
+  start:
+    id: "start"
+    name: "开始"
+    type: "start"
+    config: {}
+    metadata:
+      x: 80
+      y: 120
+    inputs: []
+    outputs:
+      - id: "message"
+        name: "Message"
+        type: "string"
+  log_hello:
+    id: "log_hello"
+    name: "Hello World"
+    type: "action"
+    config:
+      action_type: "core.log"
+      level: "info"
+    metadata:
+      x: 380
+      y: 120
+    inputs:
+      - id: "input"
+        name: "Input"
+        type: "any"
+        required: true
+    outputs:
+      - id: "output"
+        name: "Output"
+        type: "any"
+    error_port:
+      id: "error"
+      name: "Error"
+      type: "any"
+      required: false
+  end:
+    id: "end"
+    name: "结束"
+    type: "end"
+    config: {}
+    metadata:
+      x: 680
+      y: 120
+    inputs:
+      - id: "input"
+        name: "Input"
+        type: "any"
+        required: true
+    outputs: []
+edges:
+  - id: "e1"
+    source: "start.message"
+    target: "log_hello.input"
+  - id: "e2"
+    source: "log_hello.output"
+    target: "end.input"
 `,
   },
+  // ── Example 2: If Condition ─────────────────────────────────
   {
-    id: "open-baidu",
-    name: "打开百度并截图",
-    description: "打开百度首页并保存截图",
-    category: "browser",
-    tags: ["浏览器", "截图", "导航"],
-    difficulty: "beginner",
-    author: "AutoFlow Team",
-    createdAt: new Date("2024-01-05"),
-    updatedAt: new Date("2024-01-05"),
-    isOfficial: true,
-    isFavorite: false,
-    usageCount: 890,
-    rating: 4.7,
-    yamlContent: `version: "1"
-name: "baidu-screenshot"
-steps:
-  - id: "navigate"
-    action:
-      type: "browser.navigate"
-      params:
-        url: "https://www.baidu.com"
-  - id: "wait"
-    action:
-      type: "core.wait"
-      params:
-        duration: 2000
-  - id: "screenshot"
-    action:
-      type: "browser.screenshot"
-      params:
-        name: "baidu-homepage"
-`,
-  },
-  {
-    id: "http-get-request",
-    name: "HTTP GET请求",
-    description: "发送HTTP GET请求并查看响应",
-    category: "api",
-    tags: ["API", "HTTP", "网络"],
-    difficulty: "beginner",
-    author: "AutoFlow Team",
-    createdAt: new Date("2024-01-10"),
-    updatedAt: new Date("2024-01-10"),
-    isOfficial: true,
-    isFavorite: false,
-    usageCount: 650,
-    rating: 4.6,
-    yamlContent: `version: "1"
-name: "http-request"
-steps:
-  - id: "request"
-    action:
-      type: "tool.http_request"
-      params:
-        method: "GET"
-        url: "https://httpbin.org/get"
-  - id: "log-response"
-    action:
-      type: "core.log"
-      params:
-        message: "{{steps.request.output}}"
-`,
-  },
-  {
-    id: "simple-condition",
-    name: "简单条件判断",
-    description: "学习如何使用条件节点进行分支判断",
+    id: "if-condition",
+    name: "If 条件判断",
+    description:
+      "开始节点输入一个数字，If 节点判断是否大于 100，分别走不同分支输出日志，最后汇入结束节点。",
     category: "control",
-    tags: ["条件", "分支", "逻辑"],
-    difficulty: "intermediate",
+    tags: ["条件", "分支", "If", "入门"],
+    difficulty: "beginner",
     author: "AutoFlow Team",
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-15"),
+    createdAt: new Date("2024-01-02"),
+    updatedAt: new Date("2024-01-02"),
     isOfficial: true,
     isFavorite: false,
-    usageCount: 420,
-    rating: 4.5,
-    yamlContent: `version: "1"
-name: "simple-condition"
-steps:
-  - id: "set-var"
-    action:
-      type: "core.set_var"
-      params:
-        name: "number"
-        value: 10
-  - id: "condition"
-    action:
-      type: "core.if"
-      params:
-        condition: "{{number}} > 5"
-    on_success:
-      - id: "greater"
-        action:
-          type: "core.log"
-          params:
-            message: "数字大于5"
-    on_failure:
-      - id: "less"
-        action:
-          type: "core.log"
-          params:
-            message: "数字小于等于5"
-`,
-  },
-  {
-    id: "weather-query",
-    name: "天气预报查询",
-    description: "查询天气并保存结果到文件",
-    category: "comprehensive",
-    tags: ["天气", "API", "文件", "综合"],
-    difficulty: "advanced",
-    author: "AutoFlow Team",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-20"),
-    isOfficial: true,
-    isFavorite: false,
-    usageCount: 310,
-    rating: 4.9,
-    yamlContent: `version: "1"
-name: "weather-query"
-steps:
-  - id: "set-city"
-    action:
-      type: "core.set_var"
-      params:
-        name: "city"
-        value: "北京"
-  - id: "fetch-weather"
-    action:
-      type: "tool.http_request"
-      params:
-        method: "GET"
-        url: "https://wttr.in/{{city}}?format=j1"
-  - id: "save-to-file"
-    action:
-      type: "tool.write_file"
-      params:
-        path: "./weather-result.json"
-        content: "{{steps.fetch-weather.output}}"
-  - id: "log-success"
-    action:
-      type: "core.log"
-      params:
-        message: "天气数据已保存！"
+    usageCount: 860,
+    rating: 4.7,
+    yamlContent: `version: "2.0"
+name: "if-condition"
+description: "Start -> If(>100) -> Log(大于100) / Log(小于等于100) -> End"
+inputs: {}
+nodes:
+  start:
+    id: "start"
+    name: "开始"
+    type: "start"
+    config: {}
+    metadata:
+      x: 80
+      y: 200
+    inputs: []
+    outputs:
+      - id: "number"
+        name: "Number"
+        type: "number"
+  check:
+    id: "check"
+    name: "判断 > 100"
+    type: "if"
+    config: {}
+    metadata:
+      x: 380
+      y: 200
+    inputs:
+      - id: "input"
+        name: "Input"
+        type: "any"
+        required: true
+    outputs:
+      - id: "true"
+        name: "大于100"
+        type: "any"
+        condition: "input > 100"
+      - id: "false"
+        name: "小于等于100"
+        type: "any"
+  log_gt:
+    id: "log_gt"
+    name: "输出 大于100"
+    type: "action"
+    config:
+      action_type: "core.log"
+      level: "info"
+    metadata:
+      x: 680
+      y: 80
+    inputs:
+      - id: "input"
+        name: "Input"
+        type: "any"
+        required: true
+    outputs:
+      - id: "output"
+        name: "Output"
+        type: "any"
+    error_port:
+      id: "error"
+      name: "Error"
+      type: "any"
+      required: false
+  log_lt:
+    id: "log_lt"
+    name: "输出 小于等于100"
+    type: "action"
+    config:
+      action_type: "core.log"
+      level: "info"
+    metadata:
+      x: 680
+      y: 320
+    inputs:
+      - id: "input"
+        name: "Input"
+        type: "any"
+        required: true
+    outputs:
+      - id: "output"
+        name: "Output"
+        type: "any"
+    error_port:
+      id: "error"
+      name: "Error"
+      type: "any"
+      required: false
+  end:
+    id: "end"
+    name: "结束"
+    type: "end"
+    config: {}
+    metadata:
+      x: 980
+      y: 200
+    inputs:
+      - id: "input"
+        name: "Input"
+        type: "any"
+        required: true
+    outputs: []
+edges:
+  - id: "e1"
+    source: "start.number"
+    target: "check.input"
+  - id: "e2"
+    source: "check.true"
+    target: "log_gt.input"
+  - id: "e3"
+    source: "check.false"
+    target: "log_lt.input"
+  - id: "e4"
+    source: "log_gt.output"
+    target: "end.input"
+  - id: "e5"
+    source: "log_lt.output"
+    target: "end.input"
 `,
   },
 ];
