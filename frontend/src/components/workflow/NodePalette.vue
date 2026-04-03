@@ -160,7 +160,6 @@ const addNodeToCenter = (template: NodeTemplate) => {
         : undefined,
   };
   store.addNode(newNode as any);
-  store.selectNode(nodeId);
 };
 </script>
 

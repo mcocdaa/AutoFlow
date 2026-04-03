@@ -18,7 +18,7 @@ import type { InputPort, OutputPort } from "../../types/dag-workflow";
 const store = useDAGWorkflowStore();
 const executionStore = useExecutionStore();
 
-const selectedNode = computed(() => store.selectedNode as any);
+const selectedNode = computed(() => store.configNode as any);
 
 const mergeStrategies = [
   { label: "列表拼接", value: "list_concat" },
@@ -63,7 +63,7 @@ const handleRetryBackoffChange = (value: any) => {
 };
 
 const handleClose = () => {
-  store.selectNode(null);
+  store.closeConfig();
 };
 
 const getNodeError = computed(() => {

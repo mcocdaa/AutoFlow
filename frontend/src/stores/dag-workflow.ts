@@ -22,6 +22,7 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
     edges: [] as EdgeData[],
     selectedNodeId: null as string | null,
     selectedEdgeId: null as string | null,
+    configNodeId: null as string | null,
     history: [] as WorkflowState[],
     future: [] as WorkflowState[],
     name: "Untitled DAG Workflow",
@@ -46,6 +47,8 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
         : undefined,
     canUndo: (state): boolean => state.history.length > 0,
     canRedo: (state): boolean => state.future.length > 0,
+    configNode: (state): NodeData | undefined =>
+      state.configNodeId ? state.nodes[state.configNodeId] : undefined,
   },
 
   actions: {
@@ -121,6 +124,9 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
       if (this.selectedNodeId === id) {
         this.selectedNodeId = null;
       }
+      if (this.configNodeId === id) {
+        this.configNodeId = null;
+      }
     },
 
     addEdge(edge: EdgeData) {
@@ -144,6 +150,14 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
       if (this.selectedEdgeId === id) {
         this.selectedEdgeId = null;
       }
+    },
+
+    openConfig(id: string | null) {
+      this.configNodeId = id;
+    },
+
+    closeConfig() {
+      this.configNodeId = null;
     },
 
     selectNode(id: string | null) {
@@ -345,8 +359,54 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
       }
     },
 
+    convertV1ToV2(v1: any): DAGWorkflow {
+      const steps: any[] = v1.steps || [];
+      const nodes: Record<string, NodeData> = {};
+      const edges: EdgeData[] = [];
+      const xStep = 260;
+      let x = 80;
+      const y = 120;
+
+      const startId = "start";
+      nodes[startId] = {
+        id: startId, name: "开始", type: "start" as any,
+        config: {}, metadata: { x, y },
+        inputs: [], outputs: [{ id: "output", name: "Output", type: "any" }],
+      } as any;
+      x += xStep;
+
+      let prevId = startId;
+      for (const step of steps) {
+        const nodeId = step.id || `node_${x}`;
+        const type = step.action?.type || "action";
+        nodes[nodeId] = {
+          id: nodeId, name: step.name || step.id || type, type: type as any,
+          config: step.action?.params || {}, metadata: { x, y },
+          inputs: [{ id: "input", name: "Input", type: "any", required: true }],
+          outputs: [{ id: "output", name: "Output", type: "any" }],
+          error_port: { id: "error", name: "Error", type: "any" },
+        } as any;
+        edges.push({ id: `${prevId}-${nodeId}`, source: `${prevId}.output`, target: `${nodeId}.input` });
+        prevId = nodeId;
+        x += xStep;
+      }
+
+      const endId = "end";
+      nodes[endId] = {
+        id: endId, name: "结束", type: "end" as any,
+        config: {}, metadata: { x, y },
+        inputs: [{ id: "input", name: "Input", type: "any", required: true }], outputs: [],
+      } as any;
+      edges.push({ id: `${prevId}-end`, source: `${prevId}.output`, target: `${endId}.input` });
+
+      return { version: "2.0", name: v1.name || "Imported Workflow", description: v1.description, inputs: {}, nodes, edges };
+    },
+
     loadFromExample(yaml: string, mode: "overwrite" | "append" = "overwrite") {
-      const workflow = jsYaml.load(yaml) as DAGWorkflow;
+      let workflow = jsYaml.load(yaml) as any;
+      if (!workflow.nodes && workflow.steps) {
+        workflow = this.convertV1ToV2(workflow);
+      }
       if (mode === "overwrite") {
         this.loadFromDAGWorkflow(workflow);
       } else {

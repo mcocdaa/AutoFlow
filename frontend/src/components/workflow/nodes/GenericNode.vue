@@ -3,6 +3,8 @@ import { ref, computed } from "vue";
 import { Handle, Position } from "@vue-flow/core";
 import { NODE_TEMPLATES } from "../../../constants/node-templates";
 import { useExecutionStore } from "../../../stores/execution";
+import { useDAGWorkflowStore } from "../../../stores/dag-workflow";
+import { generateId } from "../../../utils/id";
 import type { BaseNodeData, Breakpoint } from "../../../types/dag-workflow";
 
 const props = defineProps<{
@@ -20,6 +22,7 @@ const emit = defineEmits<{
 }>();
 
 const executionStore = useExecutionStore();
+const dagStore = useDAGWorkflowStore();
 const showDetail = ref(true);
 
 const getNodeTemplate = (type: string) => {
@@ -32,16 +35,42 @@ const nodeIcon = computed(() => template.value?.icon || "\u{1F4E6}");
 const nodeLabel = computed(
   () => props.data?.name || template.value?.label || "Node",
 );
-const attrRows = computed(() => {
-  const rows: Array<{ label: string; value: string; isInput?: boolean; isOutput?: boolean; portId?: string }> = [];
-  (props.data.inputs || []).forEach((p) => {
-    rows.push({ label: p.name, value: p.type, isInput: true, portId: p.id });
-  });
-  (props.data.outputs || []).forEach((p) => {
-    rows.push({ label: p.name, value: p.type, isOutput: true, portId: p.id });
-  });
-  return rows;
-});
+const inputPorts = computed(() => props.data.inputs || []);
+const outputPorts = computed(() => props.data.outputs || []);
+
+const addInputPort = (event: MouseEvent) => {
+  event.stopPropagation();
+  if (!props.id) return;
+  const node = dagStore.nodes[props.id];
+  if (!node) return;
+  const newPort = { id: generateId(), name: `in_${(node.inputs || []).length + 1}`, type: "any", required: false };
+  dagStore.updateNode(props.id, { inputs: [...(node.inputs || []), newPort] });
+};
+
+const addOutputPort = (event: MouseEvent) => {
+  event.stopPropagation();
+  if (!props.id) return;
+  const node = dagStore.nodes[props.id];
+  if (!node) return;
+  const newPort = { id: generateId(), name: `out_${(node.outputs || []).length + 1}`, type: "any" };
+  dagStore.updateNode(props.id, { outputs: [...(node.outputs || []), newPort] });
+};
+
+const removeInputPort = (event: MouseEvent, portId: string) => {
+  event.stopPropagation();
+  if (!props.id) return;
+  const node = dagStore.nodes[props.id];
+  if (!node) return;
+  dagStore.updateNode(props.id, { inputs: (node.inputs || []).filter((p) => p.id !== portId) });
+};
+
+const removeOutputPort = (event: MouseEvent, portId: string) => {
+  event.stopPropagation();
+  if (!props.id) return;
+  const node = dagStore.nodes[props.id];
+  if (!node) return;
+  dagStore.updateNode(props.id, { outputs: (node.outputs || []).filter((p) => p.id !== portId) });
+};
 
 const executionState = computed(() => {
   if (!props.id) return null;
@@ -127,6 +156,11 @@ const handleNodeDoubleClick = () => {
   if (props.id) emit("node-double-click", props.id);
 };
 
+const handleTitleClick = (event: MouseEvent) => {
+  event.stopPropagation();
+  if (props.id) dagStore.openConfig(props.id);
+};
+
 const handlePortHover = (portId: string, isHovered: boolean) => {
   emit("port-hover", portId, isHovered);
 };
@@ -186,7 +220,7 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
     <div class="browser-titlebar" :class="{ 'titlebar-rounded-bottom': !showDetail }">
       <div class="titlebar-left">
         <span class="node-icon">{{ nodeIcon }}</span>
-        <span class="node-title" :title="template?.description">{{ nodeLabel }}</span>
+        <span class="node-title" :title="template?.description" @click="handleTitleClick">{{ nodeLabel }}</span>
       </div>
       <div class="titlebar-right">
         <span
@@ -217,11 +251,29 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
     </div>
 
     <div class="browser-content" v-show="showDetail">
-      <div class="content-row" v-for="(row, idx) in attrRows" :key="idx">
-        <span class="row-label">{{ row.label }}</span>
-        <span class="row-value" :class="{ 'row-input': row.isInput, 'row-output': row.isOutput }">
-          {{ row.value }}
-        </span>
+      <div v-if="inputPorts.length > 0 || outputPorts.length > 0" class="ports-section">
+        <div v-if="inputPorts.length > 0" class="port-group">
+          <div class="port-group-label">输入</div>
+          <div class="content-row" v-for="port in inputPorts" :key="port.id">
+            <span class="row-label row-input">{{ port.name }}</span>
+            <span class="row-value">{{ port.type }}</span>
+            <span class="port-remove-btn" @click="removeInputPort($event, port.id)" title="删除端口">×</span>
+          </div>
+          <div class="add-port-btn" @click="addInputPort($event)" title="添加输入端口">+ 输入</div>
+        </div>
+        <div v-if="outputPorts.length > 0" class="port-group">
+          <div class="port-group-label">输出</div>
+          <div class="content-row" v-for="port in outputPorts" :key="port.id">
+            <span class="row-label row-output">{{ port.name }}</span>
+            <span class="row-value">{{ port.type }}</span>
+            <span class="port-remove-btn" @click="removeOutputPort($event, port.id)" title="删除端口">×</span>
+          </div>
+          <div class="add-port-btn" @click="addOutputPort($event)" title="添加输出端口">+ 输出</div>
+        </div>
+      </div>
+      <div v-else class="add-ports-row">
+        <div class="add-port-btn" @click="addInputPort($event)">+ 输入</div>
+        <div class="add-port-btn" @click="addOutputPort($event)">+ 输出</div>
       </div>
 
       <div v-if="isFailed && executionState?.error" class="error-row">
@@ -403,6 +455,11 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   font-weight: 500;
   font-size: 11px;
   letter-spacing: 0.2px;
+  cursor: pointer;
+}
+.node-title:hover {
+  color: #6366f1;
+  text-decoration: underline dotted;
 }
 
 .titlebar-right {
@@ -509,6 +566,71 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
 }
 .browser-content::-webkit-scrollbar-track {
   background: #1a1b1f;
+}
+
+.ports-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.port-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.port-group-label {
+  font-size: 9px;
+  color: #5a5f6e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 3px 0;
+}
+
+.add-port-btn {
+  font-size: 10px;
+  color: #5a5f6e;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px dashed #3a3d47;
+  text-align: center;
+  margin-top: 2px;
+  transition: all 0.15s;
+  user-select: none;
+}
+.add-port-btn:hover {
+  color: #6366f1;
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.add-ports-row {
+  display: flex;
+  gap: 4px;
+}
+.add-ports-row .add-port-btn {
+  flex: 1;
+}
+
+.port-remove-btn {
+  font-size: 10px;
+  color: #5a5f6e;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  flex-shrink: 0;
+  transition: all 0.1s;
+  line-height: 1;
+}
+.port-remove-btn:hover {
+  color: #d94a4a;
+  background: rgba(217, 74, 74, 0.12);
 }
 
 .content-row {

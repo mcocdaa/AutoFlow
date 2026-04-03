@@ -178,14 +178,13 @@ const onPaneClick = () => {
   store.clearSelection();
 };
 
-const onNodeDragStop = (event: any) => {
-  const { node, position } = event;
-  if (!store.nodes[node.id]) return;
+const onNodeDragStop = ({ node }: { node: any }) => {
+  if (!node || !store.nodes[node.id]) return;
   store.updateNode(node.id, {
     metadata: {
       ...store.nodes[node.id].metadata,
-      x: position.x,
-      y: position.y,
+      x: node.position.x,
+      y: node.position.y,
     },
   });
 };
@@ -275,7 +274,6 @@ const onDrop = (event: DragEvent) => {
     } as any;
 
     store.addNode(newNode);
-    store.selectNode(nodeId);
   } catch (error) {
     console.error("Failed to add node:", error);
   }
