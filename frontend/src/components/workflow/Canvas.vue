@@ -11,9 +11,9 @@ import { MiniMap } from "@vue-flow/minimap";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/controls/dist/style.css";
 import "@vue-flow/minimap/dist/style.css";
-import { useWorkflowStore } from "../../stores/workflow";
-import { onMounted, onUnmounted, ref } from "vue";
-import type { NodeType, WorkflowNode } from "../../types/workflow";
+import { useDAGWorkflowStore } from "../../stores/dag-workflow";
+import { onMounted, onUnmounted, ref, computed } from "vue";
+import type { NodeData } from "../../types/dag-workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
 
 const props = defineProps<{
@@ -21,29 +21,40 @@ const props = defineProps<{
   edgeTypes?: Record<string, any>;
 }>();
 
-const store = useWorkflowStore();
+const store = useDAGWorkflowStore();
 const isDragging = ref(false);
 const spacePressed = ref(false);
 
 const { fitView, setViewport } = useVueFlow();
 
-const getNodeColor = (type: NodeType) => {
-  switch (type) {
-    case "start":
-    case "output":
-      return "#10b981";
-    case "llm":
-      return "#10b981";
-    case "python":
-      return "#f59e0b";
-    case "api":
-      return "#6366f1";
-    case "condition":
-    case "loop":
-      return "#8b5cf6";
-    default:
-      return "#64748b";
-  }
+const vueFlowNodes = computed(() =>
+  Object.entries(store.nodes).map(([id, node]) => ({
+    id,
+    type: node.type,
+    position: {
+      x: node.metadata?.x ?? 0,
+      y: node.metadata?.y ?? 0,
+    },
+    data: node,
+    selected: store.selectedNodeId === id,
+  })),
+);
+
+const vueFlowEdges = computed(() =>
+  store.edges.map((edge) => ({
+    id: edge.id,
+    source: edge.source.split(".")[0],
+    sourceHandle: edge.source.split(".")[1],
+    target: edge.target.split(".")[0],
+    targetHandle: edge.target.split(".")[1],
+    selected: store.selectedEdgeId === edge.id,
+    animated: true,
+  })),
+);
+
+const getNodeColor = (type: string) => {
+  const template = NODE_TEMPLATES.find((t) => t.type === type);
+  return template?.color || "#64748b";
 };
 
 const handleKeyDown = (event: KeyboardEvent) => {
@@ -66,13 +77,16 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 
   if (event.key === "Delete" || event.key === "Backspace") {
-    if (store.hasSelectedNodes) {
-      store.deleteSelectedNodes();
+    if (store.selectedNodeId) {
+      store.removeNode(store.selectedNodeId);
       event.preventDefault();
     } else if (store.selectedEdgeId) {
-      store.deleteEdge(store.selectedEdgeId);
+      store.removeEdge(store.selectedEdgeId);
       event.preventDefault();
     }
+  } else if (event.key === "Escape") {
+    store.clearSelection();
+    event.preventDefault();
   } else if (event.key.toLowerCase() === "f") {
     fitView({ padding: 0.2, duration: 300 });
     event.preventDefault();
@@ -81,37 +95,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
     event.preventDefault();
   } else if (event.ctrlKey || event.metaKey) {
     switch (event.key.toLowerCase()) {
-      case "c":
-        if (store.hasSelectedNodes) {
-          store.copySelectedNodes();
-          event.preventDefault();
-        }
-        break;
-      case "v":
-        store.pasteNodes();
-        event.preventDefault();
-        break;
-      case "x":
-        if (store.hasSelectedNodes) {
-          store.copySelectedNodes();
-          store.deleteSelectedNodes();
-          event.preventDefault();
-        }
-        break;
-      case "d":
-        if (store.selectedNode) {
-          store.duplicateSelectedNode();
-          event.preventDefault();
-        }
-        break;
-      case "a":
-        store.selectAllNodes();
-        event.preventDefault();
-        break;
-      case "s":
-        store.saveToLocalStorage();
-        event.preventDefault();
-        break;
       case "z":
         if (event.shiftKey) {
           store.redo();
@@ -122,6 +105,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
         break;
       case "y":
         store.redo();
+        event.preventDefault();
+        break;
+      case "a":
+        // Select all: select first node visually
+        {
+          const ids = Object.keys(store.nodes);
+          if (ids.length > 0) store.selectNode(ids[0]);
+        }
         event.preventDefault();
         break;
     }
@@ -144,20 +135,39 @@ onUnmounted(() => {
   window.removeEventListener("keyup", handleKeyUp);
 });
 
+const isValidConnection = (params: any): boolean => {
+  const { source, target, targetHandle } = params;
+  if (source === target) return false;
+
+  const targetPortKey = `${target}.${targetHandle}`;
+  if (store.edges.some((e) => e.target === targetPortKey)) return false;
+
+  const hasPath = (start: string, end: string, visited = new Set<string>()): boolean => {
+    if (start === end) return true;
+    if (visited.has(start)) return false;
+    visited.add(start);
+    for (const edge of store.edges) {
+      if (edge.source.startsWith(`${start}.`)) {
+        if (hasPath(edge.target.split(".")[0], end, visited)) return true;
+      }
+    }
+    return false;
+  };
+
+  if (hasPath(target, source)) return false;
+  return true;
+};
+
 const onConnect = (params: any) => {
+  if (!isValidConnection(params)) return;
   const id = crypto.randomUUID();
-  store.addEdge({
-    id,
-    source: params.source,
-    target: params.target,
-    animated: true,
-  });
+  const source = `${params.source}.${params.sourceHandle || "output"}`;
+  const target = `${params.target}.${params.targetHandle || "input"}`;
+  store.addEdge({ id, source, target });
 };
 
 const onNodeClick = (nodeMouseEvent: NodeMouseEvent) => {
-  const addToSelection =
-    nodeMouseEvent.event.ctrlKey || nodeMouseEvent.event.metaKey;
-  store.selectNode(nodeMouseEvent.node.id, addToSelection);
+  store.selectNode(nodeMouseEvent.node.id);
 };
 
 const onEdgeClick = (edgeMouseEvent: EdgeMouseEvent) => {
@@ -166,6 +176,18 @@ const onEdgeClick = (edgeMouseEvent: EdgeMouseEvent) => {
 
 const onPaneClick = () => {
   store.clearSelection();
+};
+
+const onNodeDragStop = (event: any) => {
+  const { node, position } = event;
+  if (!store.nodes[node.id]) return;
+  store.updateNode(node.id, {
+    metadata: {
+      ...store.nodes[node.id].metadata,
+      x: position.x,
+      y: position.y,
+    },
+  });
 };
 
 const onDragOver = (event: DragEvent) => {
@@ -192,6 +214,7 @@ const onDrop = (event: DragEvent) => {
   try {
     const { type, label } = JSON.parse(data);
     const template = NODE_TEMPLATES.find((t) => t.type === type);
+    const nodeId = crypto.randomUUID();
 
     let inputs: any[] = [];
     let outputs: any[] = [];
@@ -229,40 +252,30 @@ const onDrop = (event: DragEvent) => {
           { id: "output2", name: "Output 2", type: "any" },
         ];
         break;
-      case "for":
-      case "while":
-      case "loop":
-        inputs = [{ id: "input", name: "Input", type: "any", required: true }];
-        outputs = [{ id: "output", name: "Output", type: "any" }];
-        break;
       default:
         inputs = [{ id: "input", name: "Input", type: "any", required: true }];
         outputs = [{ id: "output", name: "Output", type: "any" }];
     }
 
-    const newNode: WorkflowNode = {
-      id: crypto.randomUUID(),
-      type: type as NodeType,
-      position: {
+    const newNode: NodeData = {
+      id: nodeId,
+      name: label || template?.label || type,
+      type: type as any,
+      config: {},
+      metadata: {
         x: event.clientX - 300,
         y: event.clientY - 150,
       },
-      data: {
-        id: crypto.randomUUID(),
-        name: label || template?.label || type,
-        type: type,
-        config: {},
-        metadata: {},
-        inputs,
-        outputs,
-        error_port:
-          type !== "start" && type !== "end"
-            ? { id: "error", name: "Error", type: "any" }
-            : undefined,
-      } as any,
-    };
+      inputs,
+      outputs,
+      error_port:
+        type !== "start" && type !== "end"
+          ? { id: "error", name: "Error", type: "any" }
+          : undefined,
+    } as any;
 
     store.addNode(newNode);
+    store.selectNode(nodeId);
   } catch (error) {
     console.error("Failed to add node:", error);
   }
@@ -278,8 +291,8 @@ const onDrop = (event: DragEvent) => {
     @drop="onDrop"
   >
     <VueFlow
-      v-model:nodes="store.nodes"
-      v-model:edges="store.edges"
+      :nodes="vueFlowNodes"
+      :edges="vueFlowEdges"
       :node-types="props.nodeTypes"
       :edge-types="props.edgeTypes"
       :default-edge-options="{ type: 'custom', animated: true } as any"
@@ -290,13 +303,14 @@ const onDrop = (event: DragEvent) => {
       @node-click="onNodeClick"
       @edge-click="onEdgeClick"
       @pane-click="onPaneClick"
+      @node-drag-stop="onNodeDragStop"
       class="vue-flow-container"
     >
       <Background :gap="20" patternColor="#1e293b" :size="20" />
       <Controls class="controls" />
       <MiniMap
-        :node-stroke-color="(node) => getNodeColor(node.type as NodeType)"
-        :node-color="(node) => getNodeColor(node.type as NodeType) + '40'"
+        :node-stroke-color="(node: any) => getNodeColor(node.type)"
+        :node-color="(node: any) => getNodeColor(node.type) + '40'"
         :width="100"
         :height="70"
         class="minimap"
@@ -404,25 +418,24 @@ const onDrop = (event: DragEvent) => {
 }
 
 :deep(.vue-flow__handle) {
-  width: 8px !important;
-  height: 8px !important;
-  background: #3d4a5c !important;
-  border: 2px solid #1a1f2e !important;
-  border-radius: 50% !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 2px !important;
   transition: all 0.15s ease !important;
-  z-index: 10 !important;
+  z-index: 20 !important;
+  cursor: crosshair !important;
 }
 
 :deep(.vue-flow__handle:hover) {
-  width: 12px !important;
-  height: 12px !important;
-  background: #6366f1 !important;
-  border-color: #818cf8 !important;
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4) !important;
+  width: 14px !important;
+  height: 14px !important;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.5) !important;
 }
 
 :deep(.vue-flow__handle.source) {
   background: #10b981 !important;
+  border: 2px solid #065f46 !important;
+  right: -5px !important;
 }
 
 :deep(.vue-flow__handle.source:hover) {
@@ -430,10 +443,17 @@ const onDrop = (event: DragEvent) => {
 }
 
 :deep(.vue-flow__handle.target) {
-  background: #f59e0b !important;
+  background: #6366f1 !important;
+  border: 2px solid #3730a3 !important;
+  left: -5px !important;
 }
 
 :deep(.vue-flow__handle.target:hover) {
-  background: #fbbf24 !important;
+  background: #818cf8 !important;
+}
+
+:deep(.vue-flow__connection-line) {
+  stroke: #6366f1 !important;
+  stroke-width: 2 !important;
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useExecutionStore } from "../../stores/execution";
-import { useWorkflowStore } from "../../stores/workflow";
+import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 
 const props = defineProps<{
   id?: string;
@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 const executionStore = useExecutionStore();
-const workflowStore = useWorkflowStore();
+const dagStore = useDAGWorkflowStore();
 
 const executionState = computed(() => {
   if (!props.id) return null;
@@ -26,7 +26,7 @@ const isActive = computed(() => executionState.value?.status === "active");
 const isSuccess = computed(() => executionState.value?.status === "success");
 const isFailed = computed(() => executionState.value?.status === "failed");
 const isSelected = computed(() =>
-  props.id ? workflowStore.selectedEdgeId === props.id : false,
+  props.id ? dagStore.selectedEdgeId === props.id : false,
 );
 
 const strokeColor = computed(() => {

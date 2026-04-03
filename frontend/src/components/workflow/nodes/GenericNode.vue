@@ -20,7 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const executionStore = useExecutionStore();
-const showDetail = ref(false);
+const showDetail = ref(true);
 
 const getNodeTemplate = (type: string) => {
   return NODE_TEMPLATES.find((t) => t.type === type);
@@ -33,16 +33,12 @@ const nodeLabel = computed(
   () => props.data?.name || template.value?.label || "Node",
 );
 const attrRows = computed(() => {
-  const rows: Array<{ label: string; value: string; isInput?: boolean; isOutput?: boolean }> = [];
-  rows.push({ label: "类型", value: props.data.type });
-  if (template.value?.description) {
-    rows.push({ label: "描述", value: template.value.description });
-  }
+  const rows: Array<{ label: string; value: string; isInput?: boolean; isOutput?: boolean; portId?: string }> = [];
   (props.data.inputs || []).forEach((p) => {
-    rows.push({ label: p.name, value: p.type, isInput: true });
+    rows.push({ label: p.name, value: p.type, isInput: true, portId: p.id });
   });
   (props.data.outputs || []).forEach((p) => {
-    rows.push({ label: p.name, value: p.type, isOutput: true });
+    rows.push({ label: p.name, value: p.type, isOutput: true, portId: p.id });
   });
   return rows;
 });
@@ -169,9 +165,6 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
     @click="handleNodeClick"
     @dblclick="handleNodeDoubleClick"
   >
-    <div v-if="isCompleted && !isFailed" class="success-badge">&#x2713;</div>
-    <div v-if="isFailed" class="error-badge">&#x2715;</div>
-
     <div class="input-ports">
       <div
         v-for="port in (data.inputs || [])"
@@ -190,12 +183,22 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
       </div>
     </div>
 
-    <div class="browser-titlebar">
+    <div class="browser-titlebar" :class="{ 'titlebar-rounded-bottom': !showDetail }">
       <div class="titlebar-left">
         <span class="node-icon">{{ nodeIcon }}</span>
-        <span class="node-title">{{ nodeLabel }}</span>
+        <span class="node-title" :title="template?.description">{{ nodeLabel }}</span>
       </div>
       <div class="titlebar-right">
+        <span
+          class="status-indicator"
+          :class="{
+            'status-running': isRunning,
+            'status-completed': isCompleted && !isFailed,
+            'status-failed': isFailed,
+            'status-skipped': isSkipped,
+          }"
+          :title="isRunning ? '运行中' : isCompleted ? '已完成' : isFailed ? '失败' : isSkipped ? '已跳过' : '等待'"
+        >{{ getStatusIcon() }}</span>
         <span
           class="breakpoint-dot-wrap"
           :class="{
@@ -203,19 +206,17 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
             enabled: isBreakpointEnabled,
             disabled: hasBreakpoint && !isBreakpointEnabled,
           }"
+          :title="hasBreakpoint ? (isBreakpointEnabled ? '断点已启用（右键删除）' : '断点已禁用') : '添加断点'"
           @click="handleBreakpointClick"
           @contextmenu="handleBreakpointRightClick"
         ></span>
-        <span class="status-indicator" :class="{ active: isRunning }">
-          {{ getStatusIcon() }}
-        </span>
-        <button class="more-btn" @click="toggleDetail" :title="showDetail ? '收起' : '更多'">
+        <button class="more-btn" @click="toggleDetail" :title="showDetail ? '收起' : '展开'">
           {{ showDetail ? '\u25B2' : '\u25BC' }}
         </button>
       </div>
     </div>
 
-    <div class="browser-content">
+    <div class="browser-content" v-show="showDetail">
       <div class="content-row" v-for="(row, idx) in attrRows" :key="idx">
         <span class="row-label">{{ row.label }}</span>
         <span class="row-value" :class="{ 'row-input': row.isInput, 'row-output': row.isOutput }">
@@ -272,7 +273,6 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   max-width: 280px;
   border: 1px solid #2a2d37;
   border-radius: 4px;
-  overflow: hidden;
   background: #1a1b1f;
   transition: all 0.15s ease;
   position: relative;
@@ -303,41 +303,6 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   border-width: 1px;
 }
 .node-skipped { opacity: 0.6; }
-
-.success-badge {
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  width: 12px;
-  height: 12px;
-  background: #3a925a;
-  color: white;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  font-weight: bold;
-  z-index: 10;
-  line-height: 1;
-}
-.error-badge {
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  width: 12px;
-  height: 12px;
-  background: #d94a4a;
-  color: white;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8px;
-  font-weight: bold;
-  z-index: 10;
-  line-height: 1;
-}
 
 .input-ports,
 .output-ports {
@@ -410,6 +375,11 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   position: relative;
   background: #2a2d37;
   border-bottom: 1px solid #1f2128;
+  border-radius: 4px 4px 0 0;
+}
+.browser-titlebar.titlebar-rounded-bottom {
+  border-radius: 4px;
+  border-bottom: none;
 }
 
 .titlebar-left {
@@ -466,8 +436,8 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
 }
 
 .status-indicator {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 2px;
   display: flex;
   align-items: center;
@@ -476,11 +446,21 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   color: #1a1b1f;
   font-weight: bold;
   flex-shrink: 0;
-  background: #5a5f6e;
+  background: #3a3d47;
+  cursor: default;
 }
-.status-indicator.active {
-  background: #4a90d9;
+.status-indicator.status-running {
+  background: #3b82f6;
   animation: status-blink 1s ease-in-out infinite;
+}
+.status-indicator.status-completed {
+  background: #10b981;
+}
+.status-indicator.status-failed {
+  background: #ef4444;
+}
+.status-indicator.status-skipped {
+  background: #f59e0b;
 }
 
 @keyframes status-blink {
@@ -517,6 +497,7 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
   background: #1a1b1f;
   max-height: 160px;
   overflow-y: auto;
+  border-radius: 0 0 4px 4px;
 }
 
 .browser-content::-webkit-scrollbar {

@@ -87,12 +87,12 @@ import {
   CaretRightOutlined,
 } from "@ant-design/icons-vue";
 import { message } from "ant-design-vue";
-import { useWorkflowStore } from "../../stores/workflow";
+import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import { useExecutionStore } from "../../stores/execution";
 import SaveExampleModal from "./SaveExampleModal.vue";
 import ExportYamlModal from "./ExportYamlModal.vue";
 
-const workflowStore = useWorkflowStore();
+const workflowStore = useDAGWorkflowStore();
 const executionStore = useExecutionStore();
 
 const workflowName = ref(workflowStore.name);
@@ -100,7 +100,7 @@ const showSaveExampleModal = ref(false);
 const showExportModal = ref(false);
 
 const currentYamlContent = computed(() => {
-  return workflowStore.toYAML();
+  return workflowStore.exportToYAML();
 });
 
 interface Emits {
@@ -118,8 +118,7 @@ const handleLoadExample = () => {
 };
 
 const handleSaveAsExample = () => {
-  const nodes = workflowStore.nodes;
-  if (nodes.length === 0) {
+  if (Object.keys(workflowStore.nodes).length === 0) {
     message.warning("请先添加节点再保存为示例");
     return;
   }
@@ -131,8 +130,7 @@ const handleExampleSaved = () => {
 };
 
 const handleExportYaml = () => {
-  const nodes = workflowStore.nodes;
-  if (nodes.length === 0) {
+  if (Object.keys(workflowStore.nodes).length === 0) {
     message.warning("请先添加节点再导出YAML");
     return;
   }
@@ -180,47 +178,41 @@ const waitIfPaused = async () => {
 };
 
 const simulateExecution = async () => {
-  const nodes = workflowStore.nodes;
+  const nodesRecord = workflowStore.nodes;
+  const nodeIds = Object.keys(nodesRecord);
   const edges = workflowStore.edges;
 
-  if (nodes.length === 0) {
+  if (nodeIds.length === 0) {
     message.warning("请先添加节点");
     return;
   }
 
-  const startNode = nodes.find((n) => n.type === "start");
-  if (!startNode) {
+  const startNodeEntry = Object.entries(nodesRecord).find(([, n]) => n.type === "start");
+  if (!startNodeEntry) {
     message.warning("请先添加开始节点");
     return;
   }
+  const startNodeId = startNodeEntry[0];
 
-  const nodeMap = new Map<string, (typeof nodes)[0]>();
-  nodes.forEach((node) => nodeMap.set(node.id, node));
-
-  const inDegree = new Map<string, number>();
-  nodes.forEach((node) => inDegree.set(node.id, 0));
-
-  const adjacencyList = new Map<string, string[]>();
-  nodes.forEach((node) => adjacencyList.set(node.id, []));
-
-  const inputEdgesMap = new Map<string, string[]>();
-  nodes.forEach((node) => inputEdgesMap.set(node.id, []));
-
-  const outputEdgesMap = new Map<string, string[]>();
-  nodes.forEach((node) => outputEdgesMap.set(node.id, []));
+  const inDegree = new Map<string, number>(nodeIds.map((id) => [id, 0]));
+  const adjacencyList = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
+  const inputEdgesMap = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
+  const outputEdgesMap = new Map<string, string[]>(nodeIds.map((id) => [id, []]));
 
   edges.forEach((edge) => {
-    adjacencyList.get(edge.source)?.push(edge.target);
-    inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
-    inputEdgesMap.get(edge.target)?.push(edge.id);
-    outputEdgesMap.get(edge.source)?.push(edge.id);
+    const src = edge.source.split(".")[0];
+    const tgt = edge.target.split(".")[0];
+    adjacencyList.get(src)?.push(tgt);
+    inDegree.set(tgt, (inDegree.get(tgt) || 0) + 1);
+    inputEdgesMap.get(tgt)?.push(edge.id);
+    outputEdgesMap.get(src)?.push(edge.id);
   });
 
   const queue: string[] = [];
   const topoOrder: string[] = [];
 
   inDegree.forEach((degree, nodeId) => {
-    if (degree === 0 && nodeId === startNode.id) {
+    if (degree === 0 && nodeId === startNodeId) {
       queue.push(nodeId);
     }
   });
@@ -228,68 +220,52 @@ const simulateExecution = async () => {
   while (queue.length > 0) {
     const current = queue.shift()!;
     topoOrder.push(current);
-
     const neighbors = adjacencyList.get(current) || [];
     for (const neighbor of neighbors) {
       const newDegree = (inDegree.get(neighbor) || 0) - 1;
       inDegree.set(neighbor, newDegree);
-      if (newDegree === 0) {
-        queue.push(neighbor);
-      }
+      if (newDegree === 0) queue.push(neighbor);
     }
   }
 
-  if (topoOrder.length !== nodes.length) {
+  if (topoOrder.length !== nodeIds.length) {
     message.error("检测到循环依赖，无法执行工作流");
     return;
   }
 
-  executionStore.startExecution({
-    nodeIds: nodes.map((n) => n.id),
-  });
+  executionStore.startExecution({ nodeIds });
 
   for (const nodeId of topoOrder) {
     if (!executionStore.isRunning && !executionStore.isPaused) break;
 
     await waitIfPaused();
-
     if (!executionStore.isRunning) break;
 
-    const node = nodeMap.get(nodeId)!;
-
+    const node = nodesRecord[nodeId];
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     await waitIfPaused();
     if (!executionStore.isRunning) break;
 
-    const inputEdges = inputEdgesMap.get(nodeId) || [];
-    inputEdges.forEach((edgeId) => {
-      executionStore.activateEdge(edgeId);
-    });
+    inputEdgesMap.get(nodeId)?.forEach((edgeId) => executionStore.activateEdge(edgeId));
+    executionStore.startNode(node.id, node.name || node.type);
 
-    executionStore.startNode(node.id, node.data.label || node.type);
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, 1000 + Math.random() * 1000),
-    );
+    await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000));
 
     await waitIfPaused();
     if (!executionStore.isRunning) break;
 
     if (node.type === "output") {
-      executionStore.completeNode(node.id, node.data.label || node.type, {
+      executionStore.completeNode(node.id, node.name || node.type, {
         result: "执行完成",
         timestamp: new Date().toISOString(),
         data: { message: "Hello from AutoFlow!" },
       });
     } else {
-      executionStore.completeNode(node.id, node.data.label || node.type);
+      executionStore.completeNode(node.id, node.name || node.type);
     }
 
-    const outputEdges = outputEdgesMap.get(nodeId) || [];
-    outputEdges.forEach((edgeId) => {
-      executionStore.completeEdge(edgeId);
-    });
+    outputEdgesMap.get(nodeId)?.forEach((edgeId) => executionStore.completeEdge(edgeId));
   }
 
   if (executionStore.isRunning) {

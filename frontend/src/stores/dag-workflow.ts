@@ -186,8 +186,8 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
     loadFromDAGWorkflow(workflow: DAGWorkflow) {
       this.saveHistory();
       this.name = workflow.name;
-      this.nodes = { ...workflow.nodes };
-      this.edges = [...workflow.edges];
+      this.nodes = { ...(workflow.nodes || {}) };
+      this.edges = [...(workflow.edges || [])];
       this.selectedNodeId = null;
       this.selectedEdgeId = null;
       this.history = [];
@@ -314,6 +314,66 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
             y,
           },
         };
+      }
+    },
+
+    saveToLocalStorage() {
+      const data = {
+        name: this.name,
+        nodes: this.nodes,
+        edges: this.edges,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("autoflow_dag_workflow", JSON.stringify(data));
+    },
+
+    loadFromLocalStorage(): boolean {
+      const stored = localStorage.getItem("autoflow_dag_workflow");
+      if (!stored) return false;
+      try {
+        const data = JSON.parse(stored);
+        this.name = data.name || "Untitled Workflow";
+        this.nodes = data.nodes || {};
+        this.edges = data.edges || [];
+        this.selectedNodeId = null;
+        this.selectedEdgeId = null;
+        this.history = [];
+        this.future = [];
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    loadFromExample(yaml: string, mode: "overwrite" | "append" = "overwrite") {
+      const workflow = jsYaml.load(yaml) as DAGWorkflow;
+      if (mode === "overwrite") {
+        this.loadFromDAGWorkflow(workflow);
+      } else {
+        const maxX = Object.values(this.nodes).reduce(
+          (max, n) => Math.max(max, n.metadata?.x || 0), 0,
+        );
+        const offsetX = maxX + 300;
+        const newNodes: Record<string, NodeData> = {};
+        const idMap = new Map<string, string>();
+        for (const [id, node] of Object.entries(workflow.nodes || {})) {
+          const newId = crypto.randomUUID();
+          idMap.set(id, newId);
+          newNodes[newId] = {
+            ...node,
+            id: newId,
+            metadata: { ...(node.metadata || {}), x: (node.metadata?.x || 0) + offsetX },
+          };
+        }
+        const newEdges = (workflow.edges || []).map((e) => ({
+          ...e,
+          id: crypto.randomUUID(),
+          source: e.source.replace(/^([^.]+)/, (m: string) => idMap.get(m) || m),
+          target: e.target.replace(/^([^.]+)/, (m: string) => idMap.get(m) || m),
+        }));
+        this.saveHistory();
+        this.nodes = { ...this.nodes, ...newNodes };
+        this.edges = [...this.edges, ...newEdges];
       }
     },
   },

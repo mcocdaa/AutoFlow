@@ -138,7 +138,7 @@ import {
   ToolOutlined as DebugIcon,
 } from "@ant-design/icons-vue";
 import ResultsPanel from "../components/run/ResultsPanel.vue";
-import { useWorkflowStore } from "../stores/workflow";
+import { useDAGWorkflowStore } from "../stores/dag-workflow";
 import { useRunsStore } from "../stores/runs";
 import { useExecutionStore } from "../stores/execution";
 import type { Example } from "../types/workflow";
@@ -148,7 +148,7 @@ import DebugPanelContent from "./_DebugPanelPanelContent.vue";
 
 type ViewMode = "visual" | "yaml" | "split";
 
-const workflowStore = useWorkflowStore();
+const workflowStore = useDAGWorkflowStore();
 const runsStore = useRunsStore();
 const executionStore = useExecutionStore();
 
@@ -254,9 +254,7 @@ const handleImportExample = (example: Example) => {
 watch(
   () => [workflowStore.nodes, workflowStore.edges],
   () => {
-    if (workflowStore.isDirty) {
-      workflowStore.saveToLocalStorage();
-    }
+    workflowStore.saveToLocalStorage();
   },
   { deep: true },
 );

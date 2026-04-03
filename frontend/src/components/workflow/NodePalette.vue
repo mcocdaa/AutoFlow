@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useWorkflowStore } from "../../stores/workflow";
+import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
 import type {
   NodeTemplate,
@@ -18,7 +18,7 @@ const props = defineProps<{
   collapsed?: boolean;
 }>();
 
-const store = useWorkflowStore();
+const store = useDAGWorkflowStore();
 
 const searchQuery = ref("");
 const expandedCategories = ref<Set<NodeCategory>>(new Set(["start", "core"]));
@@ -119,21 +119,48 @@ const onDragStart = (event: DragEvent, template: NodeTemplate) => {
 };
 
 const addNodeToCenter = (template: NodeTemplate) => {
+  const nodeId = crypto.randomUUID();
+  let inputs: any[] = [];
+  let outputs: any[] = [];
+  switch (template.type) {
+    case "start":
+      outputs = [{ id: "output", name: "Output", type: "any" }];
+      break;
+    case "end":
+    case "output":
+      inputs = [{ id: "input", name: "Input", type: "any", required: true }];
+      break;
+    case "if":
+    case "switch":
+    case "condition":
+      inputs = [{ id: "input", name: "Input", type: "any", required: true }];
+      outputs = [
+        { id: "true", name: "True", type: "any" },
+        { id: "false", name: "False", type: "any" },
+      ];
+      break;
+    default:
+      inputs = [{ id: "input", name: "Input", type: "any", required: true }];
+      outputs = [{ id: "output", name: "Output", type: "any" }];
+  }
   const newNode = {
-    id: crypto.randomUUID(),
+    id: nodeId,
+    name: template.label,
     type: template.type as any,
-    position: {
+    config: {},
+    metadata: {
       x: 300 + Math.random() * 100,
       y: 200 + Math.random() * 100,
     },
-    data: {
-      type: template.type,
-      label: template.label,
-      config: {},
-    },
+    inputs,
+    outputs,
+    error_port:
+      template.type !== "start" && template.type !== "end"
+        ? { id: "error", name: "Error", type: "any" }
+        : undefined,
   };
-  store.addNode(newNode);
-  store.selectNode(newNode.id);
+  store.addNode(newNode as any);
+  store.selectNode(nodeId);
 };
 </script>
 

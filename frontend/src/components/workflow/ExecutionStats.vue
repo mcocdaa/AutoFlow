@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useExecutionStore } from "../../stores/execution";
-import { useWorkflowStore } from "../../stores/workflow";
+import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import type { ExecutionStatus } from "../../types/dag-workflow";
 
 const executionStore = useExecutionStore();
-const workflowStore = useWorkflowStore();
+const workflowStore = useDAGWorkflowStore();
 
 const currentTime = ref(Date.now());
 let timer: number | null = null;
