@@ -11,9 +11,17 @@ from app.core.registry import Registry
 from app.runtime.actions import ActionRegistry, get_action_registry
 from app.runtime.dag_models import DAGWorkflow
 from app.runtime.data_router import DataRouter
-from app.runtime.execution_state import ExecutionState, WorkflowStatus
+from app.runtime.execution_state import ExecutionState, NodeStatus, WorkflowStatus
 from app.runtime.executor import NodeExecutor
 from app.runtime.scheduler import DAGScheduler
+
+
+class WaitingForInputError(Exception):
+    """到达 InputNode 但尚无外部数据注入时抛出"""
+
+    def __init__(self, node_id: str) -> None:
+        self.node_id = node_id
+        super().__init__(f"Waiting for input on node: {node_id}")
 
 
 class WorkflowRunner:
@@ -42,27 +50,85 @@ class WorkflowRunner:
         )
         self.data_router = DataRouter(workflow, self.state)
 
+    # ── Public API ──────────────────────────────────────────────────────────
+
     def run(self, inputs: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         inputs = inputs or {}
         self._initialize_workflow(inputs)
         self.state.workflow_status = WorkflowStatus.RUNNING
 
         try:
-            while not self.scheduler.is_all_nodes_processed():
-                node_id = self.scheduler.get_ready_node()
-                if node_id is None:
-                    if self.scheduler.has_ready_nodes():
-                        continue
-                    break
-
-                self._process_node(node_id)
-
+            self._run_loop()
             self._finalize_workflow()
             return self._get_workflow_output()
+        except WaitingForInputError as e:
+            self.state.workflow_status = WorkflowStatus.WAITING
+            self.state.waiting_node_id = e.node_id
+            return {"status": "waiting", "waiting_node_id": e.node_id}
         except Exception as e:
             self.state.workflow_status = WorkflowStatus.FAILED
             self.state.history.add_log(f"Workflow failed: {str(e)}")
             raise
+
+    def resume(self) -> Dict[str, Any]:
+        """继续执行（外部输入已注入 state.available_inputs）"""
+        self.state.workflow_status = WorkflowStatus.RUNNING
+        self.state.waiting_node_id = None
+
+        try:
+            self._run_loop()
+            self._finalize_workflow()
+            return self._get_workflow_output()
+        except WaitingForInputError as e:
+            self.state.workflow_status = WorkflowStatus.WAITING
+            self.state.waiting_node_id = e.node_id
+            return {"status": "waiting", "waiting_node_id": e.node_id}
+        except Exception as e:
+            self.state.workflow_status = WorkflowStatus.FAILED
+            self.state.history.add_log(f"Workflow failed on resume: {str(e)}")
+            raise
+
+    def serialize_state(self) -> Dict[str, Any]:
+        """序列化当前执行状态，用于持久化到数据库"""
+        return {
+            "available_inputs": self.state.available_inputs,
+            "history": {
+                node_id: {
+                    "status": rec.status,
+                    "inputs": rec.inputs,
+                    "outputs": rec.outputs,
+                    "retry_count": rec.retry_count,
+                }
+                for node_id, rec in self.state.history.records.items()
+            },
+            "waiting_node_id": self.state.waiting_node_id,
+        }
+
+    def restore_state(self, state_data: Dict[str, Any]) -> None:
+        """从序列化数据恢复执行状态，并重建调度器"""
+        self.state.available_inputs = dict(state_data.get("available_inputs", {}))
+        self.state.waiting_node_id = state_data.get("waiting_node_id")
+
+        for node_id, rec_data in state_data.get("history", {}).items():
+            rec = self.state.history.get_record(node_id)
+            rec.status = NodeStatus(rec_data["status"])
+            rec.inputs = rec_data.get("inputs", {})
+            rec.outputs = rec_data.get("outputs", {})
+            rec.retry_count = rec_data.get("retry_count", 0)
+
+        # 根据已恢复的历史重建调度器（仅 PENDING 节点会进入就绪队列）
+        self.scheduler = DAGScheduler(self.workflow, self.state)
+
+    # ── Internal helpers ────────────────────────────────────────────────────
+
+    def _run_loop(self) -> None:
+        while not self.scheduler.is_all_nodes_processed():
+            node_id = self.scheduler.get_ready_node()
+            if node_id is None:
+                if self.scheduler.has_ready_nodes():
+                    continue
+                break
+            self._process_node(node_id)
 
     def _initialize_workflow(self, inputs: Dict[str, Any]) -> None:
         self.state.reset()
@@ -82,13 +148,20 @@ class WorkflowRunner:
 
     def _process_node(self, node_id: str) -> None:
         node = self.workflow.nodes[node_id]
-        self.executor.before_execute(node)
 
+        if node.type == "input":
+            ext_key = f"{node_id}.__ext__"
+            if ext_key not in self.state.available_inputs:
+                raise WaitingForInputError(node_id)
+
+        self.executor.before_execute(node)
         try:
             outputs = self.executor.execute_node(node)
             self.executor.after_execute(node, outputs)
             self.data_router.distribute_outputs(node, outputs)
             self.scheduler.mark_node_completed(node_id)
+        except WaitingForInputError:
+            raise
         except Exception as e:
             self.executor.on_error(node, str(e))
             self.data_router.distribute_outputs(node, {})
@@ -118,12 +191,10 @@ class WorkflowRunner:
 
     def _get_workflow_output(self) -> Dict[str, Any]:
         output = {}
-
         for node_id, node in self.workflow.nodes.items():
             if node.type == "end":
                 record = self.state.history.get_record(node_id)
                 output.update(record.outputs)
-
         return output
 
     def get_execution_history(self) -> Dict[str, Any]:

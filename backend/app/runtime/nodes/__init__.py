@@ -8,6 +8,7 @@ from app.runtime.nodes.control import (
     WhileNode,
 )
 from app.runtime.nodes.data import MergeNode, SplitNode
+from app.runtime.nodes.input import InputNode
 
 __all__ = [
     "StartNode",
@@ -23,4 +24,5 @@ __all__ = [
     "RetryNode",
     "GroupNode",
     "SubflowNode",
+    "InputNode",
 ]

@@ -137,7 +137,7 @@ class TestExecuteNode:
                     name="Output",
                     type="any",
                     required=True,
-                    default="test_value"
+                    default="test_value",
                 ),
             ],
         )

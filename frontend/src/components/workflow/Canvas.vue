@@ -15,7 +15,7 @@ import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import { onMounted, onUnmounted, ref, computed } from "vue";
 import type { NodeData } from "../../types/dag-workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
-import { getDefaultPorts } from "../../utils/node-defaults";
+import { getDefaultPorts, getDefaultConfig } from "../../utils/node-defaults";
 
 const props = defineProps<{
   nodeTypes: Record<string, any>;
@@ -53,10 +53,8 @@ const vueFlowEdges = computed(() =>
   })),
 );
 
-const getNodeColor = (type: string) => {
-  const template = NODE_TEMPLATES.find((t) => t.type === type);
-  return template?.color || "#64748b";
-};
+const NODE_COLOR_MAP = new Map(NODE_TEMPLATES.map((t) => [t.type, t.color]));
+const getNodeColor = (type: string) => NODE_COLOR_MAP.get(type) ?? "#64748b";
 
 const handleKeyDown = (event: KeyboardEvent) => {
   const target = event.target as HTMLElement;
@@ -221,7 +219,7 @@ const onDrop = (event: DragEvent) => {
       id: nodeId,
       name: label || template?.label || type,
       type: type as any,
-      config: type === "core.log" ? { action_type: "core.log" } : {},
+      config: getDefaultConfig(type),
       metadata: {
         x: event.clientX - 300,
         y: event.clientY - 150,

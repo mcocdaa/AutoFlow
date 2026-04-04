@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.core.database_manager import database_manager
 from app.runtime.models import RunSpec
+
+logger = logging.getLogger(__name__)
 
 
 class RunStore:
@@ -234,5 +237,32 @@ class RunStore:
         except Exception:
             session.rollback()
             raise
+        finally:
+            session.close()
+
+    def save_execution_state(self, run_id: str, state_data: dict | None) -> None:
+        """持久化执行状态（available_inputs、history、waiting_node_id）"""
+        session = self._get_session()
+        try:
+            run = session.query(RunSpec).filter(RunSpec.id == run_id).first()
+            if run:
+                run.execution_state = state_data
+                session.commit()
+            else:
+                logger.warning("save_execution_state: run %s not found", run_id)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def get_execution_state(self, run_id: str) -> dict | None:
+        """读取已持久化的执行状态"""
+        session = self._get_session()
+        try:
+            run = session.query(RunSpec).filter(RunSpec.id == run_id).first()
+            if run:
+                return run.execution_state
+            return None
         finally:
             session.close()

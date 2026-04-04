@@ -111,7 +111,9 @@ class TestConditionEvaluator:
     def test_evaluate_with_variables(self):
         """测试带变量的条件"""
         variables = {"threshold": 10}
-        result = ConditionEvaluator.evaluate("data > variables.threshold", 15, variables)
+        result = ConditionEvaluator.evaluate(
+            "data > variables.threshold", 15, variables
+        )
         assert result is True
 
     def test_evaluate_complex_expression(self):

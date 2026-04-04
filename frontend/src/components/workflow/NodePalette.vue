@@ -2,7 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import { NODE_TEMPLATES } from "../../constants/node-templates";
-import { getDefaultPorts } from "../../utils/node-defaults";
+import { getDefaultPorts, getDefaultConfig } from "../../utils/node-defaults";
 import type {
   NodeTemplate,
   NodeCategory,
@@ -23,14 +23,12 @@ const store = useDAGWorkflowStore();
 
 const searchQuery = ref("");
 const expandedCategories = ref<Set<NodeCategory>>(new Set(["start", "core"]));
-const activeCategory = ref<NodeCategory | null>(null);
 
 watch(
   () => props.collapsed,
   (collapsed) => {
     if (collapsed) {
       expandedCategories.value.clear();
-      activeCategory.value = null;
     } else {
       expandedCategories.value = new Set(["start", "core"]);
     }
@@ -89,12 +87,8 @@ const filteredCategories = computed<CategoryGroup[]>(() => {
 const toggleCategory = (categoryId: NodeCategory) => {
   if (expandedCategories.value.has(categoryId)) {
     expandedCategories.value.delete(categoryId);
-    if (activeCategory.value === categoryId) {
-      activeCategory.value = null;
-    }
   } else {
     expandedCategories.value.add(categoryId);
-    activeCategory.value = categoryId;
   }
 };
 
@@ -126,7 +120,7 @@ const addNodeToCenter = (template: NodeTemplate) => {
     id: nodeId,
     name: template.label,
     type: template.type as any,
-    config: template.type === "core.log" ? { action_type: "core.log" } : {},
+    config: getDefaultConfig(template.type),
     metadata: {
       x: 300 + Math.random() * 100,
       y: 200 + Math.random() * 100,

@@ -116,6 +116,9 @@ import {
   BarChartOutlined as VarIcon,
   ToolOutlined as DebugIcon,
 } from "@ant-design/icons-vue";
+const LOG_ICON = markRaw(LogIcon);
+const VAR_ICON = markRaw(VarIcon);
+const DEBUG_ICON = markRaw(DebugIcon);
 import ResultsPanel from "../components/run/ResultsPanel.vue";
 import { useDAGWorkflowStore } from "../stores/dag-workflow";
 import { useRunsStore } from "../stores/runs";
@@ -140,19 +143,19 @@ const sidePanels = computed(() => [
   {
     key: "logs",
     label: "执行日志",
-    icon: markRaw(LogIcon),
+    icon: LOG_ICON,
     badge: executionStore.logs.length,
   },
   {
     key: "variables",
     label: "变量面板",
-    icon: markRaw(VarIcon),
+    icon: VAR_ICON,
     badge: Object.keys(executionStore.variables).length,
   },
   {
     key: "debug",
     label: "调试面板",
-    icon: markRaw(DebugIcon),
+    icon: DEBUG_ICON,
     badge: executionStore.isDebugMode ? 1 : 0,
   },
 ]);
@@ -175,22 +178,22 @@ const edgeTypes = {
 // All node types render as GenericNode — the card reads node.data for display.
 // Plugin-provided action types (not in this map) also fall back to GenericNode
 // via VueFlow's default node type.
-const G = markRaw(GenericNode);
+const GenericNodeRaw = markRaw(GenericNode);
 const nodeTypes: Record<string, any> = {
-  start: G,
-  end: G,
-  action: G,
-  pass: G,
-  if: G,
-  switch: G,
-  for: G,
-  while: G,
-  retry: G,
-  merge: G,
-  split: G,
-  group: G,
-  subflow: G,
-  "core.log": G,
+  start: GenericNodeRaw,
+  end: GenericNodeRaw,
+  action: GenericNodeRaw,
+  pass: GenericNodeRaw,
+  if: GenericNodeRaw,
+  switch: GenericNodeRaw,
+  for: GenericNodeRaw,
+  while: GenericNodeRaw,
+  retry: GenericNodeRaw,
+  merge: GenericNodeRaw,
+  split: GenericNodeRaw,
+  group: GenericNodeRaw,
+  subflow: GenericNodeRaw,
+  "core.log": GenericNodeRaw,
 };
 
 const handleImportExample = (example: Example) => {

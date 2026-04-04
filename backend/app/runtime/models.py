@@ -83,6 +83,7 @@ class RunSpec(Base):
     status = Column(String(32), nullable=False, default=RunStatus.PENDING.value)
     inputs = Column(JSON, nullable=False)
     node_states = Column(JSON, nullable=False)
+    execution_state = Column(JSON, nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)
     duration_ms = Column(Integer, nullable=True)
@@ -129,6 +130,10 @@ class V2RunTriggerRequest(_Base):
     inputs: Dict[str, Any] = Field(default_factory=dict)
 
 
+class V2InputSubmitRequest(_Base):
+    data: Any = None
+
+
 class V2RunResponse(_Base):
     run_id: str
     workflow_id: str
@@ -138,6 +143,7 @@ class V2RunResponse(_Base):
     duration_ms: Optional[int] = None
     node_states: Dict[str, NodeState] = Field(default_factory=dict)
     error: Optional[str] = None
+    waiting_node_id: Optional[str] = None
 
 
 class V2RunListItem(_Base):

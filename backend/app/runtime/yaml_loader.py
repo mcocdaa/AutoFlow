@@ -23,6 +23,7 @@ from app.runtime.nodes import (
     ForNode,
     GroupNode,
     IfNode,
+    InputNode,
     MergeNode,
     PassNode,
     RetryNode,
@@ -55,6 +56,7 @@ class YAMLLoader:
         "retry": RetryNode,
         "group": GroupNode,
         "subflow": SubflowNode,
+        "input": InputNode,
     }
 
     @classmethod

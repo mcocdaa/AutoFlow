@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 class WorkflowStatus(str, Enum):
     IDLE = "idle"
     RUNNING = "running"
+    WAITING = "waiting"
     COMPLETED = "completed"
     FAILED = "failed"
     STOPPED = "stopped"
@@ -20,6 +21,7 @@ class WorkflowStatus(str, Enum):
 class NodeStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
+    WAITING = "waiting"
     COMPLETED = "completed"
     FAILED = "failed"
     SKIPPED = "skipped"
@@ -113,9 +115,11 @@ class ExecutionState:
         self.history = ExecutionHistory()
         self.variables = VariableScope()
         self.available_inputs: Dict[str, Any] = {}
+        self.waiting_node_id: Optional[str] = None
 
     def reset(self) -> None:
         self.workflow_status = WorkflowStatus.IDLE
         self.history = ExecutionHistory()
         self.variables = VariableScope()
         self.available_inputs = {}
+        self.waiting_node_id = None

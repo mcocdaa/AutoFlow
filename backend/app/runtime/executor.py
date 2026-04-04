@@ -122,7 +122,15 @@ class NodeExecutor:
                 vars=self.state.variables.all(),
                 artifacts_dir=self.artifacts_dir,
             )
-            return node.execute(inputs, action_handler=handler, ctx=ctx, config={**node.config, **inputs})
+            return node.execute(
+                inputs,
+                action_handler=handler,
+                ctx=ctx,
+                config={**node.config, **inputs},
+            )
+        elif node.type == "input":
+            inputs["__ext__"] = self.state.available_inputs.get(f"{node.id}.__ext__")
+            return node.execute(inputs)
         else:
             raise ValueError(f"Unknown node type: {node.type}")
 

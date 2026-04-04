@@ -153,12 +153,7 @@ export const customExamplesStorage = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────
-//  Official examples — v2 DAG format, backend-compatible
-// ─────────────────────────────────────────────────────────────
-
 export const OFFICIAL_EXAMPLES: Example[] = [
-  // ── Example 1: Hello World ──────────────────────────────────
   {
     id: "hello-world",
     name: "Hello World",
@@ -239,7 +234,6 @@ edges:
     target: "end.input"
 `,
   },
-  // ── Example 2: If Condition ─────────────────────────────────
   {
     id: "if-condition",
     name: "If 条件判断",

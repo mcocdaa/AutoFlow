@@ -170,13 +170,13 @@ class DAGWorkflow(_Base):
                 )
 
     def _check_start_end_nodes(self) -> None:
-        has_start = any(node.type == "start" for node in self.nodes.values())
-        has_end = any(node.type == "end" for node in self.nodes.values())
+        starts = [n for n in self.nodes.values() if n.type == "start"]
+        ends = [n for n in self.nodes.values() if n.type == "end"]
 
-        if not has_start:
-            raise ValueError("DAG must contain a Start node")
-        if not has_end:
-            raise ValueError("DAG must contain an End node")
+        if len(starts) != 1:
+            raise ValueError(f"DAG must have exactly 1 Start node, found {len(starts)}")
+        if len(ends) != 1:
+            raise ValueError(f"DAG must have exactly 1 End node, found {len(ends)}")
 
     def topological_sort(self) -> List[str]:
         in_degree = {node_id: 0 for node_id in self.nodes}
