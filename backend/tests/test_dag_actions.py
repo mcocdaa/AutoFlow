@@ -139,7 +139,7 @@ class TestLogAction:
                 artifacts_dir="/tmp",
             )
             result = log_action(ctx, {})
-            output = captured_output.getvalue().strip()
+            output = captured_output.getvalue()
             assert "[info] " in output
             assert result["message"] == ""
         finally:
