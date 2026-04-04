@@ -53,7 +53,7 @@ const vueFlowEdges = computed(() =>
   })),
 );
 
-const NODE_COLOR_MAP = new Map(NODE_TEMPLATES.map((t) => [t.type, t.color]));
+const NODE_COLOR_MAP = new Map(NODE_TEMPLATES.map((t) => [t.type as string, t.color]));
 const getNodeColor = (type: string) => NODE_COLOR_MAP.get(type) ?? "#64748b";
 
 const handleKeyDown = (event: KeyboardEvent) => {

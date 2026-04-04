@@ -18,6 +18,15 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     icon: "⏹",
     color: "#EF4444",
   },
+  // ── I/O ───────────────────────────────────────────────────
+  {
+    type: "input",
+    category: "io",
+    label: "Input",
+    description: "等待外部数据注入，暂停工作流直到收到输入",
+    icon: "⌨",
+    color: "#F59E0B",
+  },
   // ── Core actions ──────────────────────────────────────────
   {
     type: "action",

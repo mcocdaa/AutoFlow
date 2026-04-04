@@ -9,34 +9,58 @@
         @blur="handleNameChange"
       />
     </div>
-    <div class="header-right">
-      <a-button @click="handleLoadExample" size="small">
-        <FileTextOutlined />
-        导入示例
-      </a-button>
-      <a-button @click="handleSaveAsExample" size="small">
-        <BookOutlined />
-        保存为示例
-      </a-button>
-      <a-button @click="handleExportYaml" size="small">
-        <DownloadOutlined />
-        导出YAML
-      </a-button>
-      <a-button @click="handleSave" size="small">
-        <SaveOutlined />
-        保存
-      </a-button>
+    <div class="header-center">
+      <a-dropdown :trigger="['click']">
+        <a-button size="small">
+          <FolderOpenOutlined /> 文件 <DownOutlined />
+        </a-button>
+        <template #overlay>
+          <a-menu>
+            <a-menu-item @click="handleLoadExample">
+              <FileTextOutlined /> 导入示例
+            </a-menu-item>
+            <a-menu-item @click="handleExportYaml">
+              <DownloadOutlined /> 导出 YAML
+            </a-menu-item>
+          </a-menu>
+        </template>
+      </a-dropdown>
+      <a-dropdown :trigger="['click']">
+        <a-button size="small">
+          <SaveOutlined /> 保存 <DownOutlined />
+        </a-button>
+        <template #overlay>
+          <a-menu>
+            <a-menu-item @click="handleSave">
+              <SaveOutlined /> 保存
+            </a-menu-item>
+            <a-menu-item @click="handleSaveAsExample">
+              <BookOutlined /> 保存为示例
+            </a-menu-item>
+          </a-menu>
+        </template>
+      </a-dropdown>
       <a-button @click="handleReset" size="small">
-        <ClearOutlined />
-        重置
+        <ClearOutlined /> 重置
       </a-button>
+    </div>
+    <div class="header-right">
+      <a-radio-group :value="viewMode" @change="(e: any) => emit('view-change', e.target.value)" button-style="solid" size="small" class="view-switcher">
+        <a-radio-button value="visual">
+          <EyeOutlined /> 可视化
+        </a-radio-button>
+        <a-radio-button value="yaml">
+          <FileTextOutlined /> YAML
+        </a-radio-button>
+        <a-radio-button value="split">
+          <AppstoreOutlined /> 分屏
+        </a-radio-button>
+      </a-radio-group>
       <a-button v-if="executionStore.isRunning" danger size="small" @click="handleStop">
-        <StopOutlined />
-        停止
+        <StopOutlined /> 停止
       </a-button>
       <a-button v-if="executionStore.isRunning" size="small" @click="handlePause">
-        <PauseCircleOutlined />
-        暂停
+        <PauseCircleOutlined /> 暂停
       </a-button>
       <a-button
         v-if="executionStore.isPaused"
@@ -44,8 +68,7 @@
         size="small"
         @click="handleResume"
       >
-        <CaretRightOutlined />
-        继续
+        <CaretRightOutlined /> 继续
       </a-button>
       <a-button
         v-if="!executionStore.isRunning && !executionStore.isPaused"
@@ -53,8 +76,7 @@
         size="small"
         @click="handleExecute"
       >
-        <PlayCircleOutlined />
-        执行
+        <PlayCircleOutlined /> 执行
       </a-button>
     </div>
 
@@ -85,6 +107,10 @@ import {
   DownloadOutlined,
   PauseCircleOutlined,
   CaretRightOutlined,
+  FolderOpenOutlined,
+  DownOutlined,
+  EyeOutlined,
+  AppstoreOutlined,
 } from "@ant-design/icons-vue";
 import { message } from "ant-design-vue";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
@@ -92,6 +118,7 @@ import { useExecutionStore } from "../../stores/execution";
 import SaveExampleModal from "./SaveExampleModal.vue";
 import ExportYamlModal from "./ExportYamlModal.vue";
 
+const props = defineProps<{ viewMode: string }>();
 const workflowStore = useDAGWorkflowStore();
 const executionStore = useExecutionStore();
 
@@ -105,6 +132,7 @@ const currentYamlContent = computed(() => {
 
 interface Emits {
   (e: "open-example-selector"): void;
+  (e: "view-change", mode: string): void;
 }
 
 const emit = defineEmits<Emits>();
@@ -255,7 +283,7 @@ const simulateExecution = async () => {
     await waitIfPaused();
     if (!executionStore.isRunning) break;
 
-    if (node.type === "output") {
+    if (node.type === "end") {
       executionStore.completeNode(node.id, node.name || node.type, {
         result: "执行完成",
         timestamp: new Date().toISOString(),
@@ -328,10 +356,43 @@ watch(
   border-radius: 6px;
 }
 
+.header-center {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
 .header-right {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.view-switcher :deep(.ant-radio-button-wrapper) {
+  background: transparent;
+  border-color: #334155;
+  color: #94a3b8;
+  font-size: 12px;
+  height: 30px;
+  line-height: 28px;
+  padding: 0 10px;
+}
+
+.view-switcher :deep(.ant-radio-button-wrapper:hover) {
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+.view-switcher :deep(.ant-radio-button-wrapper-checked) {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+  color: white !important;
+}
+
+.view-switcher :deep(.ant-radio-button-wrapper-checked::before) {
+  background: #6366f1 !important;
 }
 
 .header-right :deep(.ant-btn) {

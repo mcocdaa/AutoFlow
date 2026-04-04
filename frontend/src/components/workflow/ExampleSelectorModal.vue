@@ -139,6 +139,7 @@ watch(
     width="900px"
     @cancel="handleClose"
     :mask-closable="true"
+    class="dark-modal"
   >
     <div class="example-selector">
       <div class="left-sidebar">
@@ -443,10 +444,41 @@ watch(
   overflow: hidden;
 }
 
+.dark-modal :deep(.ant-modal-content) {
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+.dark-modal :deep(.ant-modal-header) {
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+}
+.dark-modal :deep(.ant-modal-title) {
+  color: #e2e8f0;
+}
+.dark-modal :deep(.ant-modal-close) {
+  color: #64748b;
+}
+.dark-modal :deep(.ant-modal-close:hover) {
+  color: #e2e8f0;
+  background: rgba(255,255,255,0.08);
+}
+.dark-modal :deep(.ant-input) {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+.dark-modal :deep(.ant-input::placeholder) {
+  color: #64748b;
+}
+.dark-modal :deep(.ant-input:focus),
+.dark-modal :deep(.ant-input:hover) {
+  border-color: #6366f1;
+}
+
 .left-sidebar {
   width: 220px;
-  background: #f8fafc;
-  border-right: 1px solid #e2e8f0;
+  background: #1e293b;
+  border-right: 1px solid #334155;
   display: flex;
   flex-direction: column;
   padding: 16px 0;
@@ -477,17 +509,19 @@ watch(
   padding: 10px 16px;
   cursor: pointer;
   transition: all 0.2s;
+  color: #94a3b8;
 }
 
 .category-item:hover,
 .difficulty-item:hover {
-  background: #e2e8f0;
+  background: #334155;
+  color: #e2e8f0;
 }
 
 .category-item.active,
 .difficulty-item.active {
-  background: #dbeafe;
-  color: #3b82f6;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
   font-weight: 500;
 }
 
@@ -503,15 +537,15 @@ watch(
 
 .category-count {
   font-size: 12px;
-  color: #94a3b8;
-  background: #e2e8f0;
+  color: #64748b;
+  background: #334155;
   padding: 2px 8px;
   border-radius: 10px;
 }
 
 .category-item.active .category-count,
 .difficulty-item.active .difficulty-count {
-  background: #3b82f6;
+  background: #6366f1;
   color: white;
 }
 
@@ -523,7 +557,7 @@ watch(
 
 .divider {
   height: 1px;
-  background: #e2e8f0;
+  background: #334155;
   margin: 16px 0;
 }
 
@@ -531,13 +565,13 @@ watch(
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: #0f172a;
   overflow: hidden;
 }
 
 .search-section {
   padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #334155;
 }
 
 .examples-grid {
@@ -551,8 +585,8 @@ watch(
 }
 
 .example-card {
-  background: white;
-  border: 2px solid #e2e8f0;
+  background: #1e293b;
+  border: 2px solid #334155;
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -562,9 +596,9 @@ watch(
 }
 
 .example-card:hover {
-  border-color: #3b82f6;
+  border-color: #6366f1;
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
 }
 
 .card-header {
@@ -616,7 +650,7 @@ watch(
 .example-name {
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: #e2e8f0;
   margin: 0 0 6px;
   display: flex;
   align-items: center;
@@ -624,7 +658,7 @@ watch(
 
 .example-description {
   font-size: 13px;
-  color: #64748b;
+  color: #94a3b8;
   margin: 0 0 10px;
   line-height: 1.5;
   display: -webkit-box;
@@ -641,8 +675,8 @@ watch(
 
 .tag {
   font-size: 11px;
-  color: #475569;
-  background: #f1f5f9;
+  color: #94a3b8;
+  background: #334155;
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -652,8 +686,8 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-top: 1px solid #f1f5f9;
-  background: #fafafa;
+  border-top: 1px solid #334155;
+  background: #0f172a;
 }
 
 .diff-badge {
@@ -725,7 +759,7 @@ watch(
 .detail-name {
   font-size: 22px;
   font-weight: 700;
-  color: #1e293b;
+  color: #e2e8f0;
   margin: 0;
   display: flex;
   align-items: center;
@@ -733,7 +767,7 @@ watch(
 
 .detail-description {
   font-size: 14px;
-  color: #64748b;
+  color: #94a3b8;
   margin: 0;
   line-height: 1.6;
 }
@@ -746,8 +780,8 @@ watch(
 
 .detail-tag {
   font-size: 12px;
-  color: #475569;
-  background: #f1f5f9;
+  color: #94a3b8;
+  background: #334155;
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -772,7 +806,7 @@ watch(
 .info-value {
   font-size: 14px;
   font-weight: 500;
-  color: #1e293b;
+  color: #e2e8f0;
 }
 
 .yaml-preview {

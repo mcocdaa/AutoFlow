@@ -1,6 +1,7 @@
 export type NodeType =
   | "start"
   | "end"
+  | "input"
   | "action"
   | "pass"
   | "if"
@@ -41,6 +42,7 @@ export type NodeType =
 export type NodeCategory =
   | "start"
   | "end"
+  | "io"
   | "basic"
   | "control"
   | "data"

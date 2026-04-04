@@ -79,6 +79,8 @@ import { EditorState } from "@codemirror/state";
 import { yaml } from "@codemirror/lang-yaml";
 import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 import jsYaml from "js-yaml";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
 import type {
@@ -139,6 +141,17 @@ const theme = EditorView.theme({
   },
 });
 
+const yamlHighlight = HighlightStyle.define([
+  { tag: tags.propertyName, color: "#e5c07b" },       // YAML key → 金黄
+  { tag: tags.string, color: "#98c379" },              // 字符串 → 绿
+  { tag: tags.number, color: "#d19a66" },              // 数字 → 橙
+  { tag: tags.bool, color: "#d19a66" },                // 布尔 → 橙
+  { tag: tags.null, color: "#d19a66" },                // null → 橙
+  { tag: tags.comment, color: "#5c6370", fontStyle: "italic" }, // 注释 → 灰
+  { tag: tags.keyword, color: "#c678dd" },             // 关键字 → 紫
+  { tag: tags.punctuation, color: "#abb2bf" },         // 标点 → 浅灰
+]);
+
 function initEditor() {
   if (!editorContainer.value) return;
 
@@ -171,6 +184,7 @@ function initEditor() {
         basicSetup,
         yaml(),
         theme,
+        syntaxHighlighting(yamlHighlight),
         updateListener,
         applyKeymap,
         EditorView.lineWrapping,

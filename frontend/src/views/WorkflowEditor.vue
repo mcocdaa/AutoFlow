@@ -1,6 +1,10 @@
 <template>
   <div class="workflow-editor">
-    <Toolbar @open-example-selector="showExampleSelector = true" />
+    <Toolbar
+      :view-mode="viewMode"
+      @open-example-selector="showExampleSelector = true"
+      @view-change="(mode) => (viewMode = mode as ViewMode)"
+    />
 
     <div class="editor-body">
       <aside class="editor-sidebar" :class="{ collapsed: paletteCollapsed }">
@@ -61,19 +65,7 @@
           <WorkflowYamlEditor />
         </div>
 
-        <div class="view-switcher-float">
-          <a-radio-group v-model:value="viewMode" button-style="solid" size="small">
-            <a-radio-button value="visual">
-              <EyeOutlined /> 可视化
-            </a-radio-button>
-            <a-radio-button value="yaml">
-              <FileTextOutlined /> YAML
-            </a-radio-button>
-            <a-radio-button value="split">
-              <AppstoreOutlined /> 分屏
-            </a-radio-button>
-          </a-radio-group>
-        </div>
+
       </main>
     </div>
 
@@ -106,9 +98,6 @@ import {
 } from "../components/workflow";
 import { GenericNode } from "../components/workflow/nodes";
 import {
-  EyeOutlined,
-  FileTextOutlined,
-  AppstoreOutlined,
   LeftOutlined,
   RightOutlined,
   CloseOutlined,
@@ -182,6 +171,7 @@ const GenericNodeRaw = markRaw(GenericNode);
 const nodeTypes: Record<string, any> = {
   start: GenericNodeRaw,
   end: GenericNodeRaw,
+  input: GenericNodeRaw,
   action: GenericNodeRaw,
   pass: GenericNodeRaw,
   if: GenericNodeRaw,
@@ -466,49 +456,6 @@ onUnmounted(() => {
   overflow: auto;
 }
 
-.view-switcher-float {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  background: #1e293b;
-  border-radius: 8px;
-  padding: 8px 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  opacity: 0.85;
-  transition: opacity 0.2s ease;
-  pointer-events: auto;
-}
-
-.view-switcher-float:hover {
-  opacity: 1;
-}
-
-.view-switcher-float :deep(.ant-radio-group) {
-  background: transparent;
-}
-
-.view-switcher-float :deep(.ant-radio-button-wrapper) {
-  background: transparent;
-  border-color: #334155;
-  color: #94a3b8;
-  font-size: 12px;
-  height: 30px;
-  line-height: 28px;
-  padding: 0 10px;
-}
-
-.view-switcher-float :deep(.ant-radio-button-wrapper:hover) {
-  color: #e2e8f0;
-  border-color: #475569;
-}
-
-.view-switcher-float :deep(.ant-radio-button-wrapper-checked) {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: white;
-}
 
 .results-section {
   margin-top: 20px;

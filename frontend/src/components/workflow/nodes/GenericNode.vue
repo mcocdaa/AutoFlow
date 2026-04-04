@@ -30,7 +30,6 @@ const getNodeTemplate = (type: string) => {
 };
 
 const template = computed(() => getNodeTemplate(props.data?.type || ""));
-const nodeColor = computed(() => template.value?.color || "#64748b");
 const nodeIcon = computed(() => template.value?.icon || "\u{1F4E6}");
 const nodeLabel = computed(
   () => props.data?.name || template.value?.label || "Node",
@@ -43,7 +42,7 @@ const addInputPort = (event: MouseEvent) => {
   if (!props.id) return;
   const node = dagStore.nodes[props.id];
   if (!node) return;
-  const newPort = { id: generateId(), name: `in_${(node.inputs || []).length + 1}`, type: "any", required: false };
+  const newPort = { id: generateId(), name: `in_${(node.inputs || []).length + 1}`, type: "any" as const, required: false };
   dagStore.updateNode(props.id, { inputs: [...(node.inputs || []), newPort] });
 };
 
@@ -52,7 +51,7 @@ const addOutputPort = (event: MouseEvent) => {
   if (!props.id) return;
   const node = dagStore.nodes[props.id];
   if (!node) return;
-  const newPort = { id: generateId(), name: `out_${(node.outputs || []).length + 1}`, type: "any" };
+  const newPort = { id: generateId(), name: `out_${(node.outputs || []).length + 1}`, type: "any" as const };
   dagStore.updateNode(props.id, { outputs: [...(node.outputs || []), newPort] });
 };
 
@@ -203,7 +202,7 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
       <div
         v-for="port in (data.inputs || [])"
         :key="port.id"
-        class="port-container"
+        class="port-container port-container-input"
         @mouseenter="handlePortHover(port.id, true)"
         @mouseleave="handlePortHover(port.id, false)"
       >
@@ -214,6 +213,7 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
           class="port-handle"
           :class="{ 'port-required': port.required }"
         />
+        <span class="port-label port-label-input">{{ port.name }}</span>
       </div>
     </div>
 
@@ -291,10 +291,11 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
       <div
         v-for="port in (data.outputs || [])"
         :key="port.id"
-        class="port-container"
+        class="port-container port-container-output"
         @mouseenter="handlePortHover(port.id, true)"
         @mouseleave="handlePortHover(port.id, false)"
       >
+        <span class="port-label port-label-output">{{ port.name }}</span>
         <Handle
           type="source"
           :position="Position.Right"
@@ -304,10 +305,11 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
       </div>
       <div
         v-if="data.error_port && isErrorPortVisible"
-        class="port-container error-port"
+        class="port-container port-container-output error-port"
         @mouseenter="handlePortHover('error', true)"
         @mouseleave="handlePortHover('error', false)"
       >
+        <span class="port-label port-label-output">Error</span>
         <Handle
           type="source"
           :position="Position.Right"
@@ -377,23 +379,47 @@ const handleBreakpointRightClick = (event: MouseEvent) => {
 .port-container {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 2px;
+  gap: 4px;
+  padding: 2px 0;
   border-radius: 2px;
   transition: background-color 0.1s ease;
+  position: relative;
+}
+.port-container-input {
+  flex-direction: row;
+  padding-left: 2px;
+}
+.port-container-output {
+  flex-direction: row-reverse;
+  padding-right: 2px;
 }
 .port-container:hover {
   background-color: rgba(74, 144, 217, 0.1);
 }
 
+.port-label {
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  font-size: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+.port-container:hover .port-label {
+  opacity: 1;
+}
+
 .port-handle {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border: 2px solid #5a5f6e;
   background: #1a1b1f;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: all 0.1s ease;
   z-index: 5;
+  flex-shrink: 0;
 }
 .port-handle:hover {
   border-color: #4a90d9;

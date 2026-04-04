@@ -416,7 +416,7 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
         const offsetX = maxX + 300;
         const newNodes: Record<string, NodeData> = {};
         const idMap = new Map<string, string>();
-        for (const [id, node] of Object.entries(workflow.nodes || {})) {
+        for (const [id, node] of Object.entries(workflow.nodes || {}) as [string, NodeData][]) {
           const newId = crypto.randomUUID();
           idMap.set(id, newId);
           newNodes[newId] = {
@@ -425,7 +425,7 @@ export const useDAGWorkflowStore = defineStore("dag-workflow", {
             metadata: { ...(node.metadata || {}), x: (node.metadata?.x || 0) + offsetX },
           };
         }
-        const newEdges = (workflow.edges || []).map((e) => ({
+        const newEdges = (workflow.edges || []).map((e: EdgeData) => ({
           ...e,
           id: crypto.randomUUID(),
           source: e.source.replace(/^([^.]+)/, (m: string) => idMap.get(m) || m),

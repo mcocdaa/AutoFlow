@@ -550,6 +550,38 @@ const handleSubflowIdChange = (value: string) => {
             </div>
           </div>
 
+          <div
+            v-else-if="selectedNode?.type === 'input'"
+            class="type-specific-config"
+          >
+            <div class="config-field">
+              <label class="field-label">输入模式</label>
+              <a-select
+                :value="selectedNode.config?.mode || 'api'"
+                @change="(v: string) => store.updateNode(selectedNode!.id, { config: { ...selectedNode!.config, mode: v } })"
+                style="width: 100%"
+              >
+                <a-select-option value="api">API 注入</a-select-option>
+                <a-select-option value="webhook">Webhook</a-select-option>
+                <a-select-option value="form">表单</a-select-option>
+                <a-select-option value="watch">监听文件</a-select-option>
+              </a-select>
+            </div>
+            <div class="config-field">
+              <label class="field-label">超时（秒）</label>
+              <a-input-number
+                :value="selectedNode.config?.timeout_seconds ?? 300"
+                :min="1"
+                :max="86400"
+                @change="(v: number) => store.updateNode(selectedNode!.id, { config: { ...selectedNode!.config, timeout_seconds: v } })"
+                style="width: 100%"
+              />
+            </div>
+            <div class="config-notice input-node-notice">
+              运行时工作流在此节点暂停，等待通过 API 提交数据后继续
+            </div>
+          </div>
+
           <div v-else class="config-placeholder">
             <div class="placeholder-icon">📝</div>
             <p>该节点类型暂无配置表单</p>
@@ -577,13 +609,27 @@ export default {
 
 :deep(.ant-drawer-content) {
   border-radius: 12px 0 0 12px;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+  background: #1e293b;
+}
+
+:deep(.ant-drawer-body) {
+  background: #1e293b;
+  padding: 0;
 }
 
 :deep(.ant-drawer-header) {
   padding: 20px 24px;
-  border-bottom: 1px solid #f1f5f9;
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid #334155;
+  background: #1e293b;
+}
+
+:deep(.ant-drawer-close) {
+  color: #64748b;
+}
+:deep(.ant-drawer-close:hover) {
+  color: #e2e8f0;
+  background: rgba(255,255,255,0.08);
 }
 
 .drawer-header {
@@ -614,7 +660,7 @@ export default {
 .drawer-title {
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: #e2e8f0;
   margin: 0;
 }
 
@@ -631,7 +677,7 @@ export default {
   align-items: center;
   justify-content: center;
   border: none;
-  background: #f1f5f9;
+  background: #334155;
   border-radius: 8px;
   cursor: pointer;
   color: #64748b;
@@ -639,8 +685,8 @@ export default {
 }
 
 .close-button:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: #475569;
+  color: #e2e8f0;
 }
 
 .config-content {
@@ -651,8 +697,8 @@ export default {
 }
 
 .error-detail-section {
-  background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
-  border: 1px solid #fecaca;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.3);
   border-radius: 12px;
   padding: 20px;
 }
@@ -692,12 +738,12 @@ export default {
 }
 
 .error-message {
-  background: white;
-  border: 1px solid #fee2e2;
+  background: #1e293b;
+  border: 1px solid rgba(220, 38, 38, 0.3);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  color: #991b1b;
+  color: #fca5a5;
   font-size: 14px;
   line-height: 1.6;
 }
@@ -759,15 +805,15 @@ export default {
 }
 
 .skip-button {
-  background: white;
-  border: 1px solid #e5e7eb;
-  color: #4b5563;
+  background: #334155;
+  border: 1px solid #475569;
+  color: #94a3b8;
 }
 
 .skip-button:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
-  color: #374151;
+  border-color: #6366f1;
+  background: #3d4a5c;
+  color: #e2e8f0;
 }
 
 .config-section {
@@ -779,7 +825,7 @@ export default {
 .section-label {
   font-size: 14px;
   font-weight: 600;
-  color: #475569;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -830,10 +876,10 @@ export default {
 }
 
 .form-container {
-  background: #f8fafc;
+  background: #0f172a;
   border-radius: 12px;
   padding: 16px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #334155;
 }
 
 .config-placeholder {
@@ -860,10 +906,10 @@ export default {
 .node-type-tag {
   display: inline-block;
   padding: 4px 12px;
-  background: #e2e8f0;
+  background: #334155;
   border-radius: 20px;
   font-size: 12px;
-  color: #475569;
+  color: #94a3b8;
   font-family: monospace;
 }
 
@@ -891,10 +937,22 @@ export default {
 
 .config-notice {
   padding: 12px;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.3);
   border-radius: 8px;
-  color: #92400e;
+  color: #fbbf24;
   font-size: 13px;
+}
+
+.input-node-notice {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+}
+
+.config-field .field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
 }
 </style>

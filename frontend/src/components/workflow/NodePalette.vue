@@ -38,6 +38,7 @@ watch(
 const CATEGORY_INFO: Record<NodeCategory, { name: string; icon: string }> = {
   start: { name: "入口/出口", icon: "▶" },
   end: { name: "结束", icon: "⏹" },
+  io: { name: "输入/输出", icon: "⌨" },
   basic: { name: "基础节点", icon: "📦" },
   control: { name: "控制流", icon: "🔀" },
   data: { name: "数据处理", icon: "📊" },

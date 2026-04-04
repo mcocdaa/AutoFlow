@@ -83,6 +83,13 @@ export function getDefaultPorts(type: string): {
         error_port: ERR_PORT,
       };
 
+    case "input":
+      return {
+        inputs: [],
+        outputs: [{ id: "output", name: "Output", type: "any" }],
+        error_port: undefined,
+      };
+
     case "group":
     case "subflow":
       return { inputs: [], outputs: [], error_port: ERR_PORT };
