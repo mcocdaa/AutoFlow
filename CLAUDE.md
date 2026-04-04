@@ -24,33 +24,6 @@ cp .env.example .env
 ./scripts/stop.sh dev
 ```
 
-## Backend Commands
-
-```bash
-cd backend
-
-# Install dependencies
-poetry install
-
-# Run tests (217 tests, all passing)
-poetry run pytest
-poetry run pytest tests/path/to/test_file.py  # single test file
-
-# Lint & format
-poetry run black .
-poetry run isort .
-poetry run mypy app
-```
-
-## Frontend Commands
-
-```bash
-cd frontend
-npm run dev       # Vite dev server (use start.sh instead for normal dev)
-npm run build     # TypeScript check (vue-tsc) + Vite build + Electron build
-npx vue-tsc --noEmit  # TypeScript-only check
-```
-
 ## Architecture Overview
 
 AutoFlow is a **visual DAG workflow automation platform** with three main components:

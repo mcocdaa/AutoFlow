@@ -12,6 +12,7 @@ import "@vue-flow/core/dist/style.css";
 import "@vue-flow/controls/dist/style.css";
 import "@vue-flow/minimap/dist/style.css";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
+import { useNodeMetaStore } from "../../stores/node-meta";
 import { onMounted, onUnmounted, ref, computed } from "vue";
 import type { NodeData } from "../../types/dag-workflow";
 import {
@@ -29,8 +30,7 @@ import {
   DAGGroupNode,
   DAGSubflowNode,
 } from "./nodes";
-import { NODE_TEMPLATES } from "../../constants/node-templates";
-import { getDefaultPorts, getDefaultConfig } from "../../utils/node-defaults";
+import { getDefaultConfig } from "../../utils/node-defaults";
 
 const nodeTypes: any = {
   start: DAGStartNode,
@@ -53,6 +53,7 @@ const props = defineProps<{
 }>();
 
 const store = useDAGWorkflowStore();
+const nodeMetaStore = useNodeMetaStore();
 const isDragging = ref(false);
 const spacePressed = ref(false);
 const selectedNodeIds = ref<string[]>([]);
@@ -84,8 +85,7 @@ const vueFlowEdges = computed(() => {
   }));
 });
 
-const NODE_COLOR_MAP = new Map(NODE_TEMPLATES.map((t) => [t.type as string, t.color]));
-const getNodeColor = (type: string) => NODE_COLOR_MAP.get(type) ?? "#6B7280";
+const getNodeColor = (type: string) => nodeMetaStore.colorMap.get(type) ?? "#6B7280";
 
 const handleKeyDown = (event: KeyboardEvent) => {
   const target = event.target as HTMLElement;
@@ -280,14 +280,12 @@ const onDrop = (event: DragEvent) => {
 
   try {
     const { type, label } = JSON.parse(data);
-
     const nodeId = crypto.randomUUID();
-    const template = NODE_TEMPLATES.find((t) => t.type === type);
-    const { inputs, outputs, error_port } = getDefaultPorts(type);
+    const { inputs, outputs, error_port } = nodeMetaStore.getPortsForType(type);
 
     const newNode: NodeData = {
       id: nodeId,
-      name: label || template?.label || type,
+      name: label || nodeMetaStore.getMeta(type)?.label || type,
       type: type as any,
       retry: { attempts: 0, backoff_seconds: 0 },
       config: getDefaultConfig(type),

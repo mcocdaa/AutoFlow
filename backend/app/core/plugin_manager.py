@@ -66,9 +66,14 @@ class PluginManager:
         self._initialized = True
 
     def _run_plugin_registration_hook(self):
-        """运行插件注册钩子 - 让插件注册 actions/checks"""
+        """运行插件注册钩子 - 让插件注册 actions/checks 和节点元数据"""
         self.logger.info("[PluginManager] 触发插件注册钩子: registry_register")
         hook_manager.run_sync("registry_register", registry)
+
+        # 让插件注册自定义节点元数据（图标、颜色、端口等）
+        from app.core.node_registry import node_registry
+        self.logger.info("[PluginManager] 触发节点元数据注册钩子: node_meta_register")
+        hook_manager.run_sync("node_meta_register", node_registry)
 
     def register_hooks(self):
         """注册插件钩子 - 直接从文件路径动态导入插件"""

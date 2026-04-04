@@ -30,7 +30,16 @@ def init_services():
     # 使用空的 Namespace，配置通过环境变量和 .env 文件处理
     args = argparse.Namespace()
     setting_manager.init(args)
+
+    # 注册内置节点元数据（在插件加载之前，插件可覆盖内置展示信息）
+    from app.core.node_registry import node_registry
+    from app.runtime.node_meta_defaults import register_default_nodes
+    register_default_nodes(node_registry)
+    logger.info(f"节点元数据注册完成，共 {len(node_registry)} 种节点类型")
+
+    # 加载插件（插件加载后会触发 node_meta_register hook）
     plugin_manager.init(args)
+
     # 在测试环境下不初始化数据库
     import sys
 

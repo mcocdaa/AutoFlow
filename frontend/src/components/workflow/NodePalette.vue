@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useDAGWorkflowStore } from "../../stores/dag-workflow";
-import { NODE_TEMPLATES } from "../../constants/node-templates";
-import { getDefaultPorts, getDefaultConfig } from "../../utils/node-defaults";
-import type {
-  NodeTemplate,
-  NodeCategory,
-} from "../../types/workflow";
+import { useNodeMetaStore } from "../../stores/node-meta";
+import type { NodeTemplate } from "../../stores/node-meta";
+import { getDefaultConfig } from "../../utils/node-defaults";
+import type { NodeCategory } from "../../types/workflow";
 
 interface CategoryGroup {
   id: NodeCategory;
@@ -20,6 +18,7 @@ const props = defineProps<{
 }>();
 
 const store = useDAGWorkflowStore();
+const nodeMetaStore = useNodeMetaStore();
 
 const searchQuery = ref("");
 const expandedCategories = ref<Set<NodeCategory>>(new Set(["start", "core"]));
@@ -50,9 +49,9 @@ const CATEGORY_INFO: Record<NodeCategory, { name: string; icon: string }> = {
 };
 
 const categories = computed<CategoryGroup[]>(() => {
-  const groups: Record<NodeCategory, NodeTemplate[]> = {} as any;
+  const groups: Record<string, NodeTemplate[]> = {};
 
-  NODE_TEMPLATES.forEach((template) => {
+  nodeMetaStore.templates.forEach((template) => {
     if (!groups[template.category]) {
       groups[template.category] = [];
     }
@@ -116,7 +115,7 @@ const onDragStart = (event: DragEvent, template: NodeTemplate) => {
 
 const addNodeToCenter = (template: NodeTemplate) => {
   const nodeId = crypto.randomUUID();
-  const { inputs, outputs, error_port } = getDefaultPorts(template.type);
+  const { inputs, outputs, error_port } = nodeMetaStore.getPortsForType(template.type);
   const newNode = {
     id: nodeId,
     name: template.label,

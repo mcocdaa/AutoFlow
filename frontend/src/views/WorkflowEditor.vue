@@ -112,6 +112,7 @@ import ResultsPanel from "../components/run/ResultsPanel.vue";
 import { useDAGWorkflowStore } from "../stores/dag-workflow";
 import { useRunsStore } from "../stores/runs";
 import { useExecutionStore } from "../stores/execution";
+import { useNodeMetaStore } from "../stores/node-meta";
 import type { Example } from "../types/workflow";
 import ExecutionLogPanelContent from "./_ExecutionLogPanelContent.vue";
 import VariablePanelContent from "./_VariablePanelContent.vue";
@@ -122,6 +123,7 @@ type ViewMode = "visual" | "yaml" | "split";
 const workflowStore = useDAGWorkflowStore();
 const runsStore = useRunsStore();
 const executionStore = useExecutionStore();
+const nodeMetaStore = useNodeMetaStore();
 
 const viewMode = ref<ViewMode>("visual");
 const showExampleSelector = ref(false);
@@ -212,6 +214,7 @@ watch(
 );
 
 onMounted(() => {
+  nodeMetaStore.fetchMetas();
   workflowStore.loadFromLocalStorage();
   window.addEventListener("keydown", handleGlobalKeyDown);
 });
