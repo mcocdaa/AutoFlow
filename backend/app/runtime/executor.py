@@ -131,6 +131,8 @@ class NodeExecutor:
         elif node.type == "input":
             inputs["__ext__"] = self.state.available_inputs.get(f"{node.id}.__ext__")
             return node.execute(inputs)
+        elif node.type in ("if", "switch", "for", "while", "merge", "split", "retry"):
+            return node.execute(inputs)
         else:
             raise ValueError(f"Unknown node type: {node.type}")
 
