@@ -3,7 +3,6 @@
 # @create 2026-03-10
 import importlib
 from pathlib import Path
-from typing import List, Optional
 
 from fastapi import APIRouter
 
@@ -13,7 +12,7 @@ def include_routers_from_directory(
     package_name: str,
     directory_path: Path,
     *,
-    skip_modules: Optional[List[str]] = None,
+    skip_modules: list[str] | None = None,
     auto_tag: bool = False,
     auto_prefix: bool = False,
 ) -> None:
@@ -48,7 +47,7 @@ def include_routers_from_directory(
 
             # 4. 检查并挂载 router
             if hasattr(module, "router"):
-                sub_router = getattr(module, "router")
+                sub_router = module.router
 
                 kwargs = {"prefix": f"/{base_name}"}
                 if auto_tag:

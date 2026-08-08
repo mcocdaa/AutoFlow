@@ -3,9 +3,8 @@
 # @create 2026-03-14
 
 import pytest
-
-from app.runtime.models import ActionSpec, FlowSpec, StepSpec
-from app.runtime.runner.runner import evaluate_condition, resolve_templates
+from app.runtime.models import ActionSpec, StepSpec
+from app.runtime.utils import evaluate_condition, resolve_templates
 
 
 class TestEvaluateCondition:
@@ -111,9 +110,8 @@ class TestConditionIntegration:
 
     def test_condition_true_executes_step(self):
         """条件为 true 时，step 正常执行"""
-        from fastapi.testclient import TestClient
-
         from app.main import app
+        from fastapi.testclient import TestClient
 
         flow_yaml = """
 version: "1"
@@ -138,9 +136,8 @@ steps:
 
     def test_condition_false_skips_step(self):
         """条件为 false 时，step 被跳过"""
-        from fastapi.testclient import TestClient
-
         from app.main import app
+        from fastapi.testclient import TestClient
 
         flow_yaml = """
 version: "1"
@@ -166,9 +163,8 @@ steps:
 
     def test_condition_with_var(self):
         """条件引用变量 {{vars.x}}"""
-        from fastapi.testclient import TestClient
-
         from app.main import app
+        from fastapi.testclient import TestClient
 
         # 测试条件为 true 的情况
         flow_yaml = """

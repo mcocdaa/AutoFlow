@@ -7,14 +7,13 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 from typing import Any
-from unittest.mock import Mock
 
 import pytest
-
 from app.core.registry import ActionContext, Registry
 from app.runtime.models import ActionSpec, FlowSpec, StepSpec
-from app.runtime.runner.runner import Runner, evaluate_condition, resolve_templates
+from app.runtime.runner import Runner
 from app.runtime.storage.store import RunStore
+from app.runtime.utils import evaluate_condition
 
 
 class TestConditionEvaluation:

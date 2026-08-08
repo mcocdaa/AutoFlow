@@ -21,7 +21,7 @@ export default defineConfig({
       vue(),
       electron([
         {
-          entry: 'electron/main.ts',
+          entry: 'src/electron/main.ts',
         },
       ]),
       renderer(),

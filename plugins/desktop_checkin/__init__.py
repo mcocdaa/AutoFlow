@@ -2,4 +2,6 @@
 # @brief 桌面打卡插件入口
 # @create 2026-03-27
 
-from plugins.desktop_checkin.hooks import *
+from plugins.desktop_checkin.hooks import register
+
+__all__ = ["register"]

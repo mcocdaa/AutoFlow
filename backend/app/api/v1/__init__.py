@@ -4,9 +4,8 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter
-
 from app.core.router_loader import include_routers_from_directory
+from fastapi import APIRouter
 
 # 1. 创建父路由
 router = APIRouter()

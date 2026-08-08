@@ -2,4 +2,6 @@
 # @brief AI DeepSeek 插件入口
 # @create 2026-03-27
 
-from plugins.ai_deepseek.hooks import *
+from plugins.ai_deepseek.hooks import register
+
+__all__ = ["register"]
