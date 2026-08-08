@@ -30,3 +30,6 @@ backend/app/artifacts/
 # OS
 .DS_Store
 Thumbs.db
+
+# gstack local tool state
+.gstack/
