@@ -19,7 +19,7 @@
     "@vitejs/plugin-vue": "^4.2.3",
     "electron": "^26.1.0",
     "electron-builder": "^24.6.4",
-    "typescript": "^5.0.2",
+    "typescript": "~5.4.5",
     "vite": "^4.4.5",
     "vite-plugin-electron": "^0.14.0",
     "vite-plugin-electron-renderer": "^0.14.5",

@@ -48,4 +48,3 @@ The system SHALL document when to use AutoFlow instead of plain dialogue.
 - GIVEN a task has multiple deterministic steps
 - WHEN Agent evaluates execution strategy
 - THEN the guide recommends converting it into an AutoFlow flow instead of repeated chat turns
-

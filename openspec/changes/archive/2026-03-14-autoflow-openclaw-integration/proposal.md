@@ -1,8 +1,8 @@
 # AutoFlow × OpenClaw 深度融合需求提案
 
-> 文档类型: OpenSpec Proposal  
-> 作者: 需求虾 (req_analyst)  
-> 创建时间: 2026-03-14  
+> 文档类型: OpenSpec Proposal
+> 作者: 需求虾 (req_analyst)
+> 创建时间: 2026-03-14
 > 状态: Draft
 
 ---
@@ -90,7 +90,7 @@ steps:
     action:
       type: http.request
     # 结果无法传递给下一步
-  
+
   - id: process-data
     action:
       type: ai.summarize
@@ -665,7 +665,7 @@ capabilities:
       schema: schemas/wait_for_response.json
     - type: openclaw.run_flow
       schema: schemas/run_flow.json
-  
+
   checks:
     - type: openclaw.agent_completed
       schema: schemas/check_agent_completed.json
@@ -686,23 +686,23 @@ from app.runtime.plugin import ActionHandler, ExecutionContext
 
 class SpawnAgentHandler(ActionHandler):
     action_type = "openclaw.spawn_agent"
-    
+
     async def execute(self, params: dict, ctx: ExecutionContext) -> dict:
         client = OpenClawClient(
             api_key=ctx.secrets.get("openclaw.api_key"),
             gateway_url=ctx.config.get("openclaw.gateway_url")
         )
-        
+
         # 渲染模板参数
         task = self.render_template(params["task"], ctx.variables)
-        
+
         # 调用 OpenClaw API
         result = await client.spawn_agent(
             agent=params.get("agent"),
             task=task,
             timeout_ms=params.get("timeout_ms", 300000)
         )
-        
+
         return {
             "agent_id": result.agent_id,
             "status": result.status,
@@ -727,26 +727,26 @@ def autoflow_run_flow(
 ) -> dict:
     """
     运行 AutoFlow 流程
-    
+
     Args:
         flow_ref: Flow 文件路径或名称
         params: 注入到 Flow 的参数
         wait_for_completion: 是否等待完成
         timeout_seconds: 超时时间
-    
+
     Returns:
         RunResult 字典
     """
     runtime = AutoFlowRuntime(base_url=CONFIG["autoflow_api_url"])
-    
+
     run = runtime.start_flow(
         flow_ref=flow_ref,
         params=params or {}
     )
-    
+
     if wait_for_completion:
         return runtime.wait_for_completion(run.run_id, timeout_seconds)
-    
+
     return {"run_id": run.run_id, "status": "started"}
 
 @tool
@@ -769,14 +769,14 @@ def autoflow_get_run_status(run_id: str) -> dict:
 async def handle_user_request(task: str):
     # 1. 分析任务，选择合适的 Flow
     flow = await analyze_and_select_flow(task)
-    
+
     # 2. 运行 Flow
     result = await autoflow_run_flow(
         flow_ref=flow.ref,
         params={"user_task": task},
         wait_for_completion=True
     )
-    
+
     # 3. 根据结果决定下一步
     if result["status"] == "success":
         return f"任务完成: {result['steps'][-1]['action_output']}"
@@ -797,7 +797,7 @@ async def handle_user_request(task: str):
 openclaw:
   gateway_url: "ws://localhost:8080/ws"
   api_key: "${secrets.openclaw.api_key}"
-  
+
   # 回调配置（OpenClaw 通知 AutoFlow）
   webhook_url: "http://autoflow-backend:8000/webhooks/openclaw"
 ```

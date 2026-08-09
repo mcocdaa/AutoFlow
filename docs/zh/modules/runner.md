@@ -20,4 +20,3 @@ Step 级也应有对应状态，便于断点续跑。
 
 - Runner 不理解具体业务，只按 `type` 分发到注册的 Action/Check 实现。
 - Runner 提供统一上下文：`triggerContext`、`flowParams`、`secrets`、`runMeta`。
-

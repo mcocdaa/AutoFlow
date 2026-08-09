@@ -42,4 +42,3 @@ The runner SHALL support iterating over a list via a forEach field on StepSpec.
 - GIVEN a step has forEach: "{{vars.items}}" and vars.items is ["a","b","c"]
 - WHEN the runner processes this step
 - THEN the step executes 3 times with {{item}} bound to each value
-
