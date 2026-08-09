@@ -191,13 +191,13 @@ steps:
         path: "{{project_path}}/{{project_name}}/README.md"
         content: |
           # {{project_name}}
-          
+
           ## 项目说明
-          
+
           ## 快速开始
-          
+
           ## 目录结构
-          
+
           ## 维护者
 
   - id: "verify-structure"
@@ -371,15 +371,15 @@ steps:
       params:
         template: |
           # OpenSpec 变更归档: {{change_id}}
-          
+
           ## 基本信息
           - **变更ID**: {{change_id}}
           - **归档时间**: {{timestamp}}
           - **状态**: {{status}}
-          
+
           ## 摘要
           {{summary}}
-          
+
           ## 相关链接
           - [原始变更](./openspec/changes/{{change_id}})
 
@@ -481,17 +481,17 @@ steps:
         path: "./security-reports/{{skill_name}}-{{date}}.md"
         content: |
           # 技能安全审查报告
-          
+
           **技能名称**: {{skill_name}}
           **审查时间**: {{timestamp}}
           **路径**: {{skill_path}}
-          
+
           ## 检查结果
           - [x] 结构检查
           - [x] 敏感信息扫描
           - [x] 权限声明
           - [x] 功能测试
-          
+
           ## 结论
           技能已通过安全审查，可以发布。
 ```

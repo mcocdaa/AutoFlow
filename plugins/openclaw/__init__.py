@@ -2,4 +2,6 @@
 # @brief OpenClaw 插件入口
 # @create 2026-03-27
 
-from plugins.openclaw.hooks import *
+from plugins.openclaw.hooks import register
+
+__all__ = ["register"]

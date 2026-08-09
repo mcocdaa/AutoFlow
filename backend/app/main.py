@@ -4,16 +4,16 @@
 # @update 2026-03-27 集成新的插件管理器系统
 
 import argparse
+import importlib
 import logging
 from contextlib import asynccontextmanager
 
+from app.api import register_routers
+from app.core.env_secrets import apply_file_env
+from app.core.setting_manager import setting_manager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
-from app.api import register_routers
-from app.core.plugin_manager import plugin_manager
-from app.core.setting_manager import setting_manager
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,6 @@ def parse_args():
         return argparse.Namespace()
     parser = argparse.ArgumentParser(description="AutoFlow Backend")
     setting_manager.register_arguments(parser)
-    plugin_manager.register_arguments(parser)
     return parser.parse_args()
 
 
@@ -41,9 +40,9 @@ def init_services():
     global _services_initialized
     if _services_initialized:
         return
+    apply_file_env()
     args = parse_args()
     setting_manager.init(args)
-    plugin_manager.init(args)
     _services_initialized = True
 
 
@@ -62,24 +61,22 @@ app = FastAPI(
 )
 
 # 确保在导入模块时也初始化（用于 TestClient 场景）
-try:
-    import pytest
-
+if importlib.util.find_spec("pytest") is not None:
     init_services()
-except ImportError:
-    pass
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=setting_manager.CORS_ORIGINS or ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
 
 register_routers(app)
 
@@ -94,7 +91,8 @@ if (
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
     else:
         logger.warning(
-            f"Static files directory {static_dir} not found. Skipping static file serving."
+            f"Static files directory {static_dir} not found. "
+            "Skipping static file serving."
         )
 else:
 

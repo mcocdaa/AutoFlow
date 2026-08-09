@@ -4,9 +4,8 @@
 
 import importlib
 
-from fastapi import FastAPI
-
 from app.core.setting_manager import setting_manager
+from fastapi import FastAPI
 
 
 def register_routers(app: FastAPI):
@@ -22,12 +21,12 @@ def register_routers(app: FastAPI):
 
     try:
         version_package = importlib.import_module(version_package_name)
-    except ModuleNotFoundError:
-        raise RuntimeError(f"API 版本模块不存在: {version_package_name}")
+    except ModuleNotFoundError as e:
+        raise RuntimeError(f"API 版本模块不存在: {version_package_name}") from e
 
     if hasattr(version_package, "router"):
         app.include_router(
-            version_package.router, prefix=f"/api", tags=[api_version.upper()]
+            version_package.router, prefix="/api", tags=[api_version.upper()]
         )
         print(f"[Route] 已注册 API 版本: {api_version}, 前缀: /api")
     else:

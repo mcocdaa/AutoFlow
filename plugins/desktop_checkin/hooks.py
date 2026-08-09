@@ -2,12 +2,10 @@
 # @brief 桌面打卡插件 hooks
 # @create 2026-03-27
 
-from app.core.hook_manager import hook_manager
 from plugins.desktop_checkin.backend import DesktopCheckinPlugin
 
 
-@hook_manager.hook("registry_register")
-def desktop_checkin_register(registry):
+def register(registry):
     """桌面打卡插件注册钩子"""
     plugin = DesktopCheckinPlugin()
     registry.register_plugin(plugin.name, plugin.version)

@@ -51,7 +51,7 @@ import {
 } from '@ant-design/icons-vue'
 import { FLOW_EXAMPLES, DEFAULT_FLOW_YAML } from '../../constants/flow-examples'
 
-const props = defineProps<{
+defineProps<{
   loading: boolean
 }>()
 

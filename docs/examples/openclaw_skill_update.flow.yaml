@@ -6,7 +6,7 @@
 #   2. 检查每个技能的更新版本
 #   3. 对新版本进行安全审查
 #   4. 执行批量更新
-#   
+#
 #   触发方式：建议配置为每周检查一次 (cron: "0 3 * * 1")
 # @create 2026-03-14
 
@@ -79,7 +79,7 @@ steps:
       type: "openclaw.exec"
       params:
         command: |
-          echo "{{steps.security-review.output.safe_skills}}" | jq -r '.[] | .name' | 
+          echo "{{steps.security-review.output.safe_skills}}" | jq -r '.[] | .name' |
           while read skill; do
             echo "Updating $skill..."
             clawhub update "$skill" --yes || echo "Failed to update $skill"

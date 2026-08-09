@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
-
 from app.plugin.models import PluginErrorItem, PluginItem, PluginsResponse
 from app.runtime import get_registry
+from fastapi import APIRouter
 
 router = APIRouter()
 

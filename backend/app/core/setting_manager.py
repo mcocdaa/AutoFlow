@@ -6,11 +6,9 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from dotenv import load_dotenv
-
-from app.core.hook_manager import hook_manager
 
 ROOT_DIR = Path(__file__).parent.parent.parent.parent
 BACKEND_DIR = ROOT_DIR / "backend"
@@ -30,11 +28,8 @@ class SettingManager:
     3. init(args) 解析参数
     """
 
-    @hook_manager.wrap_hooks(
-        "setting_manager_construct_before", "setting_manager_construct_after"
-    )
     def __init__(self):
-        self.config: Dict[str, Any] = {}
+        self.config: dict[str, Any] = {}
         self._log_config_called = False
         self._load_env()
 
@@ -53,8 +48,6 @@ class SettingManager:
         self.config.setdefault("BACKEND_EXTERNAL_PORT", 3001)
         self.config.setdefault("FRONTEND_INTERNAL_PORT", 8000)
         self.config.setdefault("FRONTEND_EXTERNAL_PORT", 8001)
-        self.config.setdefault("BACKEND_PORT", 8000)
-        self.config.setdefault("FRONTEND_PORT", 3001)
         self.config.setdefault("DB_EXTERNAL_PORT", 3306)
         self.config.setdefault("REDIS_EXTERNAL_PORT", 6379)
         self.config.setdefault("LOG_LEVEL", "INFO")
@@ -63,6 +56,7 @@ class SettingManager:
         self.config.setdefault("REDIS_DB", 0)
         self.config.setdefault("SERVE_STATIC_FILES", "False")
         self.config.setdefault("STATIC_FILES_DIR", "/app/static")
+        self.config.setdefault("CORS_ORIGINS", os.getenv("CORS_ORIGINS", "*"))
         self.config.setdefault("DB_HOST", "mysql")
         self.config.setdefault("DB_PORT", 3306)
         self.config.setdefault("REDIS_HOST", "redis")
@@ -81,7 +75,6 @@ class SettingManager:
             os.getenv("PORT", self.config["BACKEND_INTERNAL_PORT"])
         )
 
-    @hook_manager.wrap_hooks(after="setting_manager_register_arguments")
     def register_arguments(self, parser: argparse.ArgumentParser):
         """注册核心参数
 
@@ -119,9 +112,6 @@ class SettingManager:
             help="CORS 允许的源，逗号分隔 (默认: *)",
         )
 
-    @hook_manager.wrap_hooks(
-        "setting_manager_init_before", "setting_manager_init_after"
-    )
     def init(self, args: argparse.Namespace):
         """解析并设置配置
 

@@ -10,25 +10,17 @@ python = ">=3.10"
 fastapi = ">=0.100.0"
 uvicorn = ">=0.23.0"
 pydantic = ">=2.0.0"
-pydantic-settings = ">=2.0.0"
-sqlalchemy = ">=2.0.0"
-alembic = ">=1.11.0"
 python-dotenv = ">=1.0.0"
 pyyaml = ">=6.0.0"
 httpx = ">=0.24.0"
-redis = ">=5.0.0"
-celery = ">=5.3.0"
-playwright = ">=1.36.0"
 pyautogui = ">=0.9.54"
-loguru = ">=0.7.0"
-pymysql = ">=1.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.0"
-pytest-asyncio = ">=0.21.0"
 black = ">=23.7.0"
 isort = ">=5.12.0"
 mypy = ">=1.5.0"
+ruff = ">=0.4.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -36,6 +28,15 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+src = ["app", "../plugins"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]
 
 [tool.mypy]
 python_version = "3.10"

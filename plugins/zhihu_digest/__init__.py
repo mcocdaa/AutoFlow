@@ -2,4 +2,6 @@
 # @brief 知乎摘要插件入口
 # @create 2026-03-27
 
-from plugins.zhihu_digest.hooks import *
+from plugins.zhihu_digest.hooks import register
+
+__all__ = ["register"]

@@ -15,7 +15,6 @@ export const FDS_THEME: ThemeConfig = {
     borderRadius: 6,
     borderRadiusSM: 6,
     borderRadiusLG: 12,
-    borderRadiusXL: 12,
     fontSize: 14,
     fontSizeLG: 16,
     fontSizeHeading3: 24,
@@ -47,11 +46,6 @@ export const FDS_THEME: ThemeConfig = {
       controlHeight: 40,
       controlHeightSM: 32,
       controlHeightLG: 48,
-      primaryColor: '#FFFFFF',
-      fontWeight: 500,
-      paddingInline: 16,
-      paddingInlineSM: 12,
-      paddingInlineLG: 20,
     },
     Card: {
       borderRadiusLG: 12,
@@ -64,10 +58,6 @@ export const FDS_THEME: ThemeConfig = {
     Layout: {
       colorBgHeader: '#FFFFFF',
       colorBgBody: '#F8FAFC',
-      colorBgSider: '#1E293B',
-      headerHeight: 64,
-      headerPadding: '0 24px',
-      siderWidth: 240,
     },
     Menu: {
       colorItemBgSelected: '#2563EB',
@@ -75,7 +65,6 @@ export const FDS_THEME: ThemeConfig = {
       colorItemText: '#94A3B8',
       colorItemTextHover: '#FFFFFF',
       colorItemBgHover: '#334155',
-      itemHeight: 48,
       itemMarginInline: 8,
       borderRadius: 6,
     },
@@ -86,8 +75,6 @@ export const FDS_THEME: ThemeConfig = {
       controlHeight: 40,
       controlHeightSM: 32,
       controlHeightLG: 48,
-      paddingInline: 12,
-      paddingBlock: 8,
     },
     Select: {
       borderRadius: 6,
@@ -98,11 +85,7 @@ export const FDS_THEME: ThemeConfig = {
       controlHeightLG: 48,
     },
     Table: {
-      headerBg: '#F8FAFC',
       borderRadiusLG: 12,
-      cellPaddingBlock: 16,
-      cellPaddingInline: 16,
-      headerSplitColor: 'transparent',
     },
     Tag: {
       borderRadiusSM: 9999,

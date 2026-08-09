@@ -10,14 +10,16 @@ from pathlib import Path
 
 from app.core.registry import registry
 from app.runtime.actions import register_builtins
+from app.runtime.plugin_loader import load_plugins
 from app.runtime.runner import Runner
 from app.runtime.storage import RunStore
 
 
 @lru_cache(maxsize=1)
 def get_registry():
-    """获取全局 registry（已通过 hook 注册了所有插件）"""
+    """获取全局 registry(内置 action/check + plugins.yaml 插件统一在此注册)"""
     register_builtins(registry)
+    load_plugins(registry)
     return registry
 
 

@@ -97,7 +97,7 @@ class ZhihuDigestPlugin:
             raise ValueError("unsupported zhihu answer url")
 
         if _dry_run(ctx, params):
-            answer_text = "点赞后弹出来的\"已赞同\"可以上下拖动。"
+            answer_text = '点赞后弹出来的"已赞同"可以上下拖动。'
             rel = _write_text(ctx, f"zhihu/answers/{answer_id}.txt", answer_text)
             return {
                 "question_id": question_id,
@@ -146,7 +146,9 @@ class ZhihuDigestPlugin:
             if cookie:
                 context.set_extra_http_headers({"Cookie": cookie})
             page = context.new_page()
-            page.goto(url, wait_until="domcontentloaded", timeout=int(timeout_seconds * 1000))
+            page.goto(
+                url, wait_until="domcontentloaded", timeout=int(timeout_seconds * 1000)
+            )
 
             selectors = [
                 "div.RichContent-inner",
@@ -166,7 +168,9 @@ class ZhihuDigestPlugin:
 
             title = None
             try:
-                title = page.locator("h1.QuestionHeader-title").first.inner_text().strip()
+                title = (
+                    page.locator("h1.QuestionHeader-title").first.inner_text().strip()
+                )
             except Exception:
                 title = None
 
@@ -218,12 +222,22 @@ class ZhihuDigestPlugin:
 
         cookie = _get_cookie(params)
         if not cookie:
-            return {"attempted": False, "saved_path": rel, "dry_run": False, "error": "missing ZHIHU_COOKIE"}
+            return {
+                "attempted": False,
+                "saved_path": rel,
+                "dry_run": False,
+                "error": "missing ZHIHU_COOKIE",
+            }
 
         try:
             from playwright.sync_api import sync_playwright
         except Exception as e:
-            return {"attempted": False, "saved_path": rel, "dry_run": False, "error": f"playwright unavailable: {e}"}
+            return {
+                "attempted": False,
+                "saved_path": rel,
+                "dry_run": False,
+                "error": f"playwright unavailable: {e}",
+            }
 
         timeout_seconds = float(params.get("timeout_seconds", 60.0))
         attempted = False
@@ -234,7 +248,11 @@ class ZhihuDigestPlugin:
                 context = browser.new_context()
                 context.set_extra_http_headers({"Cookie": cookie})
                 page = context.new_page()
-                page.goto(question_url, wait_until="domcontentloaded", timeout=int(timeout_seconds * 1000))
+                page.goto(
+                    question_url,
+                    wait_until="domcontentloaded",
+                    timeout=int(timeout_seconds * 1000),
+                )
                 attempted = True
                 try:
                     page.keyboard.insert_text(content_md[:5000])
@@ -245,7 +263,12 @@ class ZhihuDigestPlugin:
             except Exception as e:
                 error = str(e)
 
-        return {"attempted": attempted, "saved_path": rel, "dry_run": False, "error": error}
+        return {
+            "attempted": attempted,
+            "saved_path": rel,
+            "dry_run": False,
+            "error": error,
+        }
 
 
 def register() -> ZhihuDigestPlugin:

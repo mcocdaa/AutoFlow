@@ -279,12 +279,12 @@ def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
 def autoflow_run(flow_id: str, input: Any = None, vars: dict = None) -> RunResult:
     """
     执行一个预定义的 AutoFlow
-    
+
     参数:
       flow_id: Flow 的标识符或 YAML 内容
       input: 传入 Flow 的输入数据
       vars: 运行时变量
-    
+
     返回:
       RunResult (status, steps, output 等)
     """
@@ -297,7 +297,7 @@ def autoflow_run(flow_id: str, input: Any = None, vars: dict = None) -> RunResul
 
 ```
 用户: "帮我运行数据清洗流程"
-Agent: 
+Agent:
   Tool: autoflow_run(flow_id="data-cleanup", input={"raw_data": "..."})
   → 返回 RunResult
 ```
@@ -366,7 +366,7 @@ for step in flow.steps:
             # 跳过或标记为 skipped
             run.steps.append(create_skipped_step(step))
             continue
-    
+
     # 原有执行逻辑...
 ```
 
