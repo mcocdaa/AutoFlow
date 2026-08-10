@@ -68,10 +68,6 @@ const handleLoadExample = (val: string) => {
     yamlContent.value = FLOW_EXAMPLES[val as keyof typeof FLOW_EXAMPLES]
   }
 }
-
-defineExpose({
-  yamlContent
-})
 </script>
 
 <style scoped>

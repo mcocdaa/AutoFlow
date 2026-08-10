@@ -35,9 +35,23 @@
 
     <ErrorsSection v-if="store.errors && store.errors.length > 0" :errors="store.errors" />
 
-    <ActionsSection :actions="store.actions" @copy="copyToClipboard" />
+    <TagSection
+      title="Registered Actions"
+      :icon="ThunderboltOutlined"
+      :items="store.actions"
+      tag-color="blue"
+      search-placeholder="Search actions"
+      @copy="copyToClipboard"
+    />
 
-    <ChecksSection :checks="store.checks" @copy="copyToClipboard" />
+    <TagSection
+      title="Registered Checks"
+      :icon="CheckCircleOutlined"
+      :items="store.checks"
+      tag-color="orange"
+      search-placeholder="Search checks"
+      @copy="copyToClipboard"
+    />
   </div>
 </template>
 
@@ -49,12 +63,13 @@ import {
   AppstoreOutlined,
   ReloadOutlined,
   RightOutlined,
+  ThunderboltOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons-vue'
 import { useClipboard } from '../composables/useClipboard'
 import StatsCard from '../components/plugins/StatsCard.vue'
 import PluginCard from '../components/plugins/PluginCard.vue'
-import ActionsSection from '../components/plugins/ActionsSection.vue'
-import ChecksSection from '../components/plugins/ChecksSection.vue'
+import TagSection from '../components/shared/TagSection.vue'
 import ErrorsSection from '../components/plugins/ErrorsSection.vue'
 
 const store = usePluginsStore()
