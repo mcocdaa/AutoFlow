@@ -1,69 +1,76 @@
-# Docker 部署与 CI/CD 指南（AutoFlow）
+# Docker 部署指南（AutoFlow）
 
-本文面向“生产者/部署者”，总结本项目的 Docker/Compose 结构、敏感变量（secrets）规范，并给出常见部署场景与 CI/CD 落地方式。
+本文面向"生产者/部署者"，总结本项目的 Docker/Compose 结构、敏感变量（secrets）规范，并给出常见部署场景与验证方式。
 
 ## 1. Compose 文件结构（仓库内约定）
 
-- 基础编排入口：`docker-compose.base.yml`
-  - 通过 include 聚合 `backend/docker-compose.base.yml` 与 `frontend/docker-compose.base.yml`
-- 开发覆写：`docker-compose.dev.yml`
-  - 作为 override 文件，需要与 base 叠加使用
-- DevContainer：`.devcontainer/devcontainer.json`
-  - 会叠加 base + dev + `.devcontainer/docker-compose.yml`，提供一个“只用来写代码/跑命令”的开发容器
+```
+docker/
+├── docker-compose.base.yml     # 服务定义层：backend/mysql/redis、secrets、volumes
+├── docker-compose.backend.yml  # 端口映射层：backend (3001 -> 3000)
+├── docker-compose.frontend.yml # 前端服务层：frontend (8001 -> 8000)
+└── docker-compose.full.yml     # 全栈入口：include 上述三层
+docker-compose.yml              # 根目录全栈入口（include docker/ 下三层）
+```
 
-推荐用法：
+分层规则：
+
+- 基础层（base）定义服务，不含端口映射，**不可单独使用**
+- 端口层（backend/frontend）定义对外端口，必须与 base 叠加
+- 全栈入口（full.yml / 根 docker-compose.yml）已 include 全部三层，可直接使用
+
+### 1.1 推荐用法：统一脚本入口
+
+所有启动操作请通过脚本，不要手写 compose 命令：
 
 ```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --build
+bash scripts/start.sh dev full     # 全栈 (前端+后端+MySQL+Redis)
+bash scripts/start.sh dev backend  # 仅后端
+bash scripts/start.sh dev frontend # 仅前端
+bash scripts/start.sh prod full    # 生产模式（与 dev 同用 docker compose）
+bash scripts/stop.sh dev           # 停止
 ```
 
-### 1.1 开发者视角：用 VS Code 启动 Dev Container（推荐）
-
-目标：用 VS Code 一键进入“容器化开发环境”，并让本机（浏览器/调试器）能直接访问容器内服务。
-
-前置条件：
-
-- 本机已安装 Docker（Linux: Docker Engine；Windows/macOS: Docker Desktop）
-- VS Code 已安装扩展 Dev Containers（Microsoft）
-
-启动步骤：
-
-1) 用 VS Code 打开仓库根目录（AutoFlow）
-2) 打开命令面板，执行：
-
-```text
-Dev Containers: Reopen in Container
-```
-
-3) VS Code 会使用 `.devcontainer/devcontainer.json` 进行启动，会叠加：
-
-- `docker-compose.base.yml`（基础编排）
-- `docker-compose.dev.yml`（开发覆写）
-- `.devcontainer/docker-compose.yml`（dev-container 本体）
-
-容器启动后建议做的第一件事（同步本地 `.key` 到运行用 secrets）：
+脚本内部实际执行的等价命令：
 
 ```bash
-bash ./build.sh dev
+docker compose -p autoflow \
+  -f docker/docker-compose.base.yml \
+  -f docker/docker-compose.backend.yml \
+  -f docker/docker-compose.frontend.yml \
+  up -d --build
 ```
 
-常用开发动作（在 VS Code 的容器终端中执行）：
-
-- 启动/重建服务：
+### 1.2 手动使用 compose（与脚本等价）
 
 ```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --build
+# 全栈
+docker compose -f docker/docker-compose.full.yml -p autoflow up -d --build
+
+# 分层（前后端）
+docker compose -f docker/docker-compose.base.yml \
+  -f docker/docker-compose.backend.yml \
+  -f docker/docker-compose.frontend.yml up -d --build
+
+# 仅后端
+docker compose -f docker/docker-compose.base.yml \
+  -f docker/docker-compose.backend.yml up -d --build
 ```
 
-- 查看日志：
+### 1.3 端口约定（单一事实来源）
 
-```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml logs -f backend
-```
+| 服务 | 对外端口 | 容器内端口 | 配置项 |
+|------|---------|-----------|--------|
+| 后端 API | 3001 | 3000 | `BACKEND_EXTERNAL_PORT` / `BACKEND_INTERNAL_PORT` |
+| 前端 Web | 8001 | 8000 | `FRONTEND_EXTERNAL_PORT` / `FRONTEND_INTERNAL_PORT` |
+| MySQL | 不暴露（默认） | 3306 | `EXPOSE_DB_PORT` / `DB_EXTERNAL_PORT` |
+| Redis | 不暴露（默认） | 6379 | `EXPOSE_REDIS_PORT` / `REDIS_EXTERNAL_PORT` |
 
-访问方式说明：
+所有端口在根目录 `.env`（由 `.env.example` 复制）中配置。
 
-- Dev Container 配置了 `network_mode: host`，因此通常可以直接用宿主机 `http://localhost:8000` 访问后端、`http://localhost:3000` 访问前端（取决于你是否启动了对应服务）。
+### 1.4 DevContainer
+
+`.devcontainer/devcontainer.json` 使用独立的 `.devcontainer/docker-compose.yml`（`network_mode: host`，不依赖 docker/ 分层），用于写代码/跑命令的开发容器。
 
 ## 2. 敏感变量与 Docker secrets（必须遵守）
 
@@ -72,87 +79,78 @@ docker compose -f docker-compose.base.yml -f docker-compose.dev.yml logs -f back
 - 所有敏感项不允许写入 `.env` 或任何明文环境变量（例如 `DB_PASSWORD=...`）。
 - 统一使用 Compose secrets（文件挂载到容器内 `/run/secrets/<name>`）+ `*_FILE` 环境变量注入。
 
-当前后端 Compose 已使用的敏感项（示例）：
+当前 Compose 已使用的敏感项：
 
 - `DB_PASSWORD_FILE=/run/secrets/db_password`
 - `SECRET_KEY_FILE=/run/secrets/secret_key`
 - `MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql_root_password`
 
-### 2.2 `.key` 双文件约定（本地可读对照）
+后端在启动时通过 `env_secrets.py` 将 `*_FILE` 对应的文件内容写入环境变量（仅当对应普通变量未设置时，两者同时设置会报错）。
 
-- `secrets/<name>`：运行时真正给 Compose secrets 用的文件（生产只需要这个）
-- `secrets/<name>.key`：仅用于本地查看/编辑的明文对照文件（生产产物不应包含）
+### 2.2 secrets 文件约定
 
-同步脚本：
+- `secrets/<name>`：运行时给 Compose secrets 用的文件
+- `secrets/<name>.key`：仅用于本地查看/编辑的明文对照文件（不入库、不随产物分发）
+
+初始化：
 
 ```bash
-# 开发：从 *.key 同步生成无后缀 secrets
-bash ./build.sh dev
-
-# 生产打包/部署前：同步并清理 *.key（保证产物不携带 .key）
-bash ./build.sh prod
+bash scripts/init-secrets.sh   # 生成缺失的 secrets 文件
+bash scripts/check-secrets.sh  # 校验 required/optional 文件是否存在且非空
 ```
 
 ### 2.3 生产落地建议
 
 - 生产环境不要携带 `secrets/*.key`。
-- secrets 文件建议权限：`chmod 600 secrets/*`，并确保部署机上该目录不被备份到不可信位置。
+- secrets 文件权限建议 `chmod 600 secrets/*`。
 - CI 中不要提交/生成 `.key`；运行时 secrets 应来自 CI Secret/密钥系统，在部署机侧落盘为 `secrets/<name>`。
 
-## 3. 生产部署：Linux（仅后端）
+## 3. 生产部署：后端 + MySQL + Redis（Linux）
 
-目标：在 Linux 上部署 API（通常也包含 MySQL/Redis，或对接外部 MySQL/Redis）。
+1) 拷贝仓库（或仅拷贝 `docker/`、`secrets/`、根 `.env`）
 
-### 3.1 拓扑 A：后端 + MySQL + Redis（最简单）
-
-1) 准备目录（示例）
-
-- 放置 compose 文件（可直接使用仓库内文件，或拷贝到部署目录）
-- 准备 secrets（只放无后缀文件）
-
-2) 需要的 secrets（示例清单）
+2) 准备 secrets（只放无后缀文件）：
 
 - `secrets/mysql_root_password`
 - `secrets/db_password`
 - `secrets/secret_key`
 
-3) 启动（示例）
+3) 配置 `.env`（从 `.env.example` 复制，修改 `BACKEND_EXTERNAL_PORT` 等）
+
+4) 启动：
 
 ```bash
-docker compose --env-file .env -f backend/docker-compose.base.yml up -d --build
+bash scripts/start.sh prod backend
 ```
 
-4) 运维要点
+5) 运维要点
 
-- 健康检查：后端提供 `/health`。
-- 数据持久化：MySQL/Redis 使用 volume（确保不要 `docker compose down -v` 误删数据）。
-- 反向代理：建议用 Nginx/Caddy 暴露 80/443，把后端 8000 端口隐藏在内网。
+- 健康检查：后端提供 `/health`，Compose 已配置 healthcheck
+- 数据持久化：MySQL/Redis 使用 volume（不要 `docker compose down -v` 误删数据）
+- 反向代理：建议用 Nginx/Caddy 暴露 80/443，把后端 3001 端口隐藏在内网
 
-### 3.2 拓扑 B：仅后端容器（外部 MySQL/Redis）
+### 拓扑 B：仅后端容器（外部 MySQL/Redis）
 
 当数据库/缓存由云服务提供时：
 
-- `DB_HOST/DB_PORT/DB_USER/DB_NAME`、`REDIS_HOST/REDIS_PORT` 通过环境变量覆盖
+- 通过 `.env` 覆盖 `DB_HOST/DB_PORT/DB_USER/DB_NAME`、`REDIS_HOST/REDIS_PORT`
 - 密码/密钥仍然只通过 secrets 注入（`DB_PASSWORD_FILE`、`SECRET_KEY_FILE`）
 
-建议做法：在服务器准备一个 override 文件（不必提交到仓库），只写非敏感项覆盖与端口暴露策略。
+## 4. 生产部署：前端 + 后端（Linux）
 
-## 4. 生产部署：Linux（前端 + 后端）
-
-本仓库的前端包含 Electron 桌面端形态，通常不建议“在 Docker 里运行桌面应用”。因此这里按两种更常见的生产形态说明：
+本仓库的前端包含 Electron 桌面端形态，通常不建议"在 Docker 里运行桌面应用"。两种常见生产形态：
 
 ### 4.1 推荐：后端容器 + Web 静态站点（Nginx/Caddy）
 
-- 后端：用 Docker/Compose 部署（同第 3 章）
+- 后端：用 Compose 部署（同第 3 章）
 - 前端：构建为静态资源并由 Nginx/Caddy 提供
-  - 运行时只需要 `VITE_API_URL` 指向后端域名（例如 `https://api.example.com`）
+  - Web 模式构建：`docker compose -f docker/docker-compose.frontend.yml build`（`target: web`）或本地 `npm run build`
+  - 反向代理配置 `/api/` 转发到后端（容器内 `autoflow-backend:3000`）
 
 ### 4.2 备选：前端也用容器跑（仅适合内网演示/调试）
 
-适用于快速演示（不作为长期生产建议）：
-
 ```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --build
+bash scripts/start.sh prod full
 ```
 
 ## 5. 部署：Android（后端 + 前端）
@@ -160,19 +158,15 @@ docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --buil
 ### 5.1 推荐路径（生产）
 
 - 后端：部署在 Linux 服务器（同第 3/4 章）
-- Android：作为客户端
-  - `mobile/`（UniApp）打包为 Android App，或
-  - 使用 Web 前端（H5/WebView）
+- Android：作为客户端（使用 Web 前端 H5/WebView）
 
 Android 端通常只需要配置 API Base URL；任何数据库密码/应用密钥都不应下发到客户端。
 
 ### 5.2 实验路径（不推荐生产）
 
-在 Android 上长期稳定运行 Docker/Compose 通常不可行或成本极高（内核/权限/存储/网络限制）。如必须实验，请把它当作 PoC，并准备好迁回 Linux 的计划。
+在 Android 上长期稳定运行 Docker/Compose 通常不可行（内核/权限/存储/网络限制）。如必须实验，请把它当作 PoC，并准备好迁回 Linux 的计划。
 
 ## 6. Git CI/CD 如何用到 Docker
-
-目标：每次发布自动化产出镜像 → 推送到镜像仓库 → 服务器自动更新。
 
 ### 6.1 典型流水线阶段
 
@@ -184,7 +178,7 @@ Android 端通常只需要配置 API Base URL；任何数据库密码/应用密�
 
 - 不要把 `secrets/*.key` 放入仓库，也不要在 CI 里产出 `.key`。
 - 推荐方式：
-  - CI 里仅保存“密钥内容”作为 CI Secrets（例如 `DB_PASSWORD`、`SECRET_KEY`）
+  - CI 里仅保存"密钥内容"作为 CI Secrets（例如 `DB_PASSWORD`、`SECRET_KEY`）
   - Deploy 阶段通过 SSH 在部署机写入 `secrets/<name>`（注意 `umask 077`，避免日志输出）
   - 或者升级为 Swarm/K8s 等更成熟的 secrets 管理
 
@@ -211,7 +205,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
-          context: .
+          context: backend
           push: true
           tags: ghcr.io/<org>/<image>:${{ github.ref_name }}
 
@@ -237,84 +231,92 @@ jobs:
 - 部署机 SSH：`SSH_HOST`、`SSH_USER`、`SSH_KEY`
 - 运行时 secrets：`DB_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`SECRET_KEY`（用于部署机落盘）
 
-## 7. 快速上手清单（给新人/外包/协作者）
+## 7. 快速上手清单（给新人/协作者）
 
 - 最短启动（开发）：
-  - `bash ./build.sh dev`
-  - `docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --build`
+  - `bash scripts/init-secrets.sh`
+  - `cp .env.example .env`（按需修改端口）
+  - `bash scripts/start.sh dev full`
 - 关键文件：
-  - Compose：`docker-compose.base.yml`、`docker-compose.dev.yml`、`backend/docker-compose.base.yml`
-  - secrets：`tools/secrets/README.md`、`tools/secrets/sync.sh`、`build.sh`
+  - Compose：`docker/docker-compose.{base,backend,frontend,full}.yml`、根 `docker-compose.yml`
+  - 脚本：`scripts/start.sh`、`scripts/stop.sh`、`scripts/init-secrets.sh`、`scripts/check-secrets.sh`
+  - 配置：`.env.example`（→ `.env`）
   - DevContainer：`.devcontainer/devcontainer.json`
 - 常见问题：
-  - 端口冲突（8000/3306/6379/3000）
+  - 端口冲突（3001/8001/3306/6379）
   - secrets 文件权限导致容器读不到 `/run/secrets/*`
   - 浏览器访问 API 地址不要写容器名（应使用域名或 localhost/网关地址）
 
-## 8. 测试与验证（后端/前端/开发）
+## 8. 测试与验证
 
-本章提供“可复制执行”的验证命令，用来确认 Docker 方式能否跑通。
+本章提供"可复制执行"的验证命令，用来确认 Docker 方式能否跑通。
 
 ### 8.1 通用准备
 
 ```bash
 docker version
 docker compose version
-bash ./build.sh dev
+bash scripts/init-secrets.sh
 ```
 
 注意：
 
-- 不要提交/依赖 `backend/.env` 这类明文敏感配置文件；本仓库后端敏感项通过 secrets + `*_FILE` 注入。
-- `backend/docker-compose.base.yml` 单独使用时，建议显式指定 `--env-file .env`（否则 `CONTAINER_PREFIX` 等变量可能取不到）。
+- 不要提交 `.env`；敏感项通过 secrets + `*_FILE` 注入。
 
-### 8.2 测试后端（Backend + MySQL + Redis）
+### 8.2 校验 compose 配置（无需构建）
 
 ```bash
-docker compose --env-file .env -f backend/docker-compose.base.yml config > /dev/null
-docker compose --env-file .env -f backend/docker-compose.base.yml up -d --build
-curl -fsS http://localhost:8000/health
+docker compose config --quiet                                  # 根全栈入口
+docker compose -f docker/docker-compose.full.yml config --quiet
+docker compose -f docker/docker-compose.base.yml \
+  -f docker/docker-compose.backend.yml \
+  -f docker/docker-compose.frontend.yml config --quiet
 ```
 
-预期：
+### 8.3 测试后端（Backend + MySQL + Redis）
 
-- `/health` 返回 `{\"status\":\"ok\"}`
+```bash
+bash scripts/start.sh dev backend
+curl -fsS http://localhost:3001/health
+```
+
+预期：`/health` 返回 `{"status":"healthy"}`
 
 清理（保留数据卷）：
 
 ```bash
-docker compose --env-file .env -f backend/docker-compose.base.yml down
+bash scripts/stop.sh dev
 ```
 
-### 8.3 测试前端 + 后端（base + dev 联动）
+### 8.4 测试前端 + 后端（全栈）
 
 ```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml config > /dev/null
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml up -d --build
-curl -fsS http://localhost:8000/health
-curl -I http://localhost:3000 | head -n 5
+bash scripts/start.sh dev full
+curl -fsS http://localhost:3001/health
+curl -I http://localhost:8001 | head -n 5
 ```
 
 说明：
 
-- 由于前端默认是 Electron 桌面工程，本仓库在容器运行 Vite 时会启用 Web 模式（`DOCKER_WEB=true`），避免 Electron 相关依赖导致启动失败。
+- 前端在容器内以 Web 模式运行（`DOCKER_WEB=true`，由 frontend 层环境变量控制），避免 Electron 相关依赖导致启动失败。
+- 前端容器内 vite 将 `/api` 代理到 `autoflow-backend:3000`（`VITE_API_PROXY_URL`）。
 
 清理（保留数据卷）：
 
 ```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml down
+bash scripts/stop.sh dev
 ```
 
-### 8.4 测试开发环境（DevContainer）
+### 8.5 测试开发环境（DevContainer）
 
 VS Code 推荐路径：
 
 - 命令面板：`Dev Containers: Reopen in Container`
 
-如果需要在命令行验证 dev-container 能否构建/启动（用于排障）：
+命令行验证 dev-container 能否构建/启动（用于排障）：
 
 ```bash
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml -f .devcontainer/docker-compose.yml config > /dev/null
-docker compose -f docker-compose.base.yml -f docker-compose.dev.yml -f .devcontainer/docker-compose.yml up -d --build dev-container
-docker exec autoflow-dev-container-1 bash -lc "docker --version && docker-compose --version"
+docker compose -f .devcontainer/docker-compose.yml config > /dev/null
+docker compose -f .devcontainer/docker-compose.yml up -d --build dev-container
+docker exec autoflow-dev-1 bash -lc "docker --version && docker compose --version"
 ```

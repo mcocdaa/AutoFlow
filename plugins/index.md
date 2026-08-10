@@ -16,40 +16,16 @@ plugins/
 ├── plugins.yaml              # 插件注册表（启用/禁用控制）
 ├── index.md                  # 本文件
 │
-├── core/                     # 核心插件
-│   └── dummy/                # 示例插件
-│
-├── ai/                       # AI 相关插件
-│   └── ai_deepseek/          # DeepSeek AI 集成
-│
-├── integrations/             # 第三方集成插件
-│   ├── zhihu_digest/         # 知乎摘要
-│   └── desktop_checkin/      # 桌面签到
-│
-├── tools/                    # 工具类插件
-│   └── openclaw/             # OpenClaw 自动化
+├── dummy/                    # 示例插件
+├── ai_deepseek/              # DeepSeek AI 集成
+├── zhihu_digest/             # 知乎摘要
+├── desktop_checkin/          # 桌面签到
+├── openclaw/                 # OpenClaw 自动化 (含 openclaw_plugin 子模块)
 │
 └── examples/                 # 插件开发示例
     ├── hello_world.py
     └── dummy_echo.py
 ```
-
-## 🔌 插件类型
-
-### 1. 核心插件 (core/)
-提供 AutoFlow 基础功能的插件。
-
-### 2. AI 插件 (ai/)
-AI 相关的功能集成，如 LLM 调用、文本生成等。
-
-### 3. 集成插件 (integrations/)
-与第三方服务或平台的集成。
-
-### 4. 工具插件 (tools/)
-实用工具类插件，如自动化、数据处理等。
-
-### 5. 示例 (examples/)
-插件开发示例代码，供开发者参考。
 
 ## 📋 插件标准结构
 
@@ -57,10 +33,10 @@ AI 相关的功能集成，如 LLM 调用、文本生成等。
 
 ```
 my_plugin/
-├── __init__.py       # 插件元数据和导出
-├── hooks.py          # 钩子函数
-├── backend.py        # 后端逻辑
-├── plugin.yaml       # 插件配置
+├── __init__.py       # 包入口（导出 register）
+├── hooks.py          # register(registry) 注册函数（推荐放这里）
+├── backend.py        # 后端逻辑实现
+├── plugin.yaml       # 插件元信息与配置 schema
 ├── config.yaml       # 用户配置
 ├── tests/            # 测试目录
 │   └── test_my_plugin.py
@@ -82,12 +58,24 @@ plugins:
 
 ## 🚀 插件加载
 
-AutoFlow 从以下位置加载插件：
+AutoFlow 通过 `backend/app/runtime/plugin_loader.py` 统一加载插件：
 
-1. 仓库中的 `plugins/` 目录（默认）
-2. `AUTOFLOW_PLUGIN_DIRS` 环境变量中列出的额外目录（路径分隔）
+1. 读取 `plugins/plugins.yaml` 中启用的插件
+2. 导入对应包（要求包含 `__init__.py`）
+3. 调用包暴露的 `register(registry)` 函数完成注册
 
-目录插件必须包含 `__init__.py` 并暴露一个 `register()` 函数，该函数返回包含 `name`、`version` 和 `actions` 映射的对象。
+插件约定（**唯一**注册入口）：
+
+```python
+from app.core.registry import Registry
+
+def register(registry: Registry) -> None:
+    registry.register_plugin(name="my-plugin", version="0.1.0")
+    registry.register_action("my.action", handler)
+    registry.register_check("my.check", handler)
+```
+
+单个插件加载失败不影响其他插件，错误会记录到 Registry 的 `list_plugin_errors()`。
 
 ## 📖 开发指南
 
