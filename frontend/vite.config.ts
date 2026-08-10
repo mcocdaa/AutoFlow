@@ -23,6 +23,9 @@ export default defineConfig({
         {
           entry: 'src/electron/main.ts',
         },
+        {
+          entry: 'src/electron/preload.ts',
+        },
       ]),
       renderer(),
     ]
