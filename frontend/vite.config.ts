@@ -3,16 +3,20 @@ import vue from '@vitejs/plugin-vue'
 import electron from 'vite-plugin-electron'
 import renderer from 'vite-plugin-electron-renderer'
 
+const apiProxyConfig = {
+  '/api': {
+    target: process.env.VITE_API_PROXY_URL || 'http://localhost:3001',
+    changeOrigin: true,
+  },
+}
+
 export default defineConfig({
   server: {
     port: 5180,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_PROXY_URL || 'http://localhost:3001',
-        changeOrigin: true,
-        rewrite: (path) => path
-      }
-    }
+    proxy: apiProxyConfig,
+  },
+  preview: {
+    proxy: apiProxyConfig,
   },
   plugins: (() => {
     const dockerWeb = process.env.DOCKER_WEB === 'true' || process.env.DOCKER_WEB === '1'
