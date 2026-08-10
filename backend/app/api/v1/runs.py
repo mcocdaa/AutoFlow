@@ -10,6 +10,7 @@ from app.runtime import get_runner, get_store
 from app.runtime.loaders import FlowLoadError, load_flow_spec_from_yaml_text
 from app.runtime.models import RunResult
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 router = APIRouter()
@@ -44,3 +45,42 @@ def get_run(run_id: str) -> RunResult:
         return store.get_run(run_id)
     except KeyError as e:
         raise HTTPException(status_code=404, detail="run not found") from e
+
+
+@router.get("/runs/{run_id}/artifacts/{file_path:path}")
+def download_artifact(run_id: str, file_path: str) -> FileResponse:
+    """Serve an artifact file from a run's artifacts directory.
+
+    The file_path is resolved relative to the run's artifacts sub-directory
+    and validated against path-traversal attacks.
+    """
+    store = get_store()
+    try:
+        store.get_run(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run not found") from e
+
+    run_artifacts_dir = store.artifacts_dir / run_id
+    resolved = (run_artifacts_dir / file_path).resolve()
+
+    # Prevent path traversal: the resolved path MUST be inside the run's dir
+    try:
+        resolved.relative_to(run_artifacts_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="path traversal denied") from None
+
+    if not resolved.is_file():
+        raise HTTPException(status_code=404, detail="artifact not found")
+
+    return FileResponse(resolved)
+
+
+@router.delete("/runs/{run_id}", status_code=204)
+def delete_run(run_id: str) -> None:
+    """Delete a run and its artifacts directory."""
+    store = get_store()
+    try:
+        store.get_run(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run not found") from e
+    store.delete_run(run_id)

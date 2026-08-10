@@ -4,7 +4,6 @@
 # @update 2026-03-27 集成新的插件管理器系统
 
 import argparse
-import importlib
 import logging
 from contextlib import asynccontextmanager
 
@@ -24,15 +23,14 @@ def parse_args():
     """解析命令行参数"""
     import sys
 
-    # 检查是否是 pytest 或其他不是 uvicorn 的场景
-    if "pytest" in sys.modules or "uvicorn" not in sys.argv[0]:
+    # pytest (TestClient) early‑return: skip argument parsing entirely
+    if "pytest" in sys.modules:
         return argparse.Namespace()
-    # 正常 uvicorn 启动，尝试解析参数
-    if len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1].startswith("-")):
-        return argparse.Namespace()
+
     parser = argparse.ArgumentParser(description="AutoFlow Backend")
     setting_manager.register_arguments(parser)
-    return parser.parse_args()
+    # parse_known_args() tolerates unknown args (e.g. uvicorn's "app.main:app")
+    return parser.parse_known_args()[0]
 
 
 def init_services():
@@ -60,14 +58,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 确保在导入模块时也初始化（用于 TestClient 场景）
-if importlib.util.find_spec("pytest") is not None:
-    init_services()
+# Always call init_services() at module level (idempotent gate)
+init_services()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=setting_manager.CORS_ORIGINS or ["*"],
-    allow_credentials=True,
+    allow_credentials=(False if setting_manager.CORS_ORIGINS == ["*"] else True),
     allow_methods=["*"],
     allow_headers=["*"],
 )

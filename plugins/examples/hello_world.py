@@ -15,7 +15,7 @@ def _hello(ctx: ActionContext, params: dict[str, Any]) -> Any:
     return {"message": f"Hello, {name} from AutoFlow!"}
 
 
-def register(registry: Registry) -> None:
+def register(registry: Registry, config: dict = None) -> None:
     """注册插件信息与 action(新约定: 接收 registry 并直接注册)"""
     registry.register_plugin(name="hello-world", version="1.0.0")
     registry.register_action("core.hello", _hello)

@@ -139,7 +139,10 @@ class ZhihuDigestPlugin:
             raise RuntimeError(f"playwright unavailable: {e}") from e
 
         t0 = time.time()
-        with sync_playwright() as p:
+        browser = None
+        context = None
+        try:
+            p = sync_playwright().__enter__()
             browser = p.chromium.launch(headless=True)
             context = browser.new_context()
             if cookie:
@@ -149,7 +152,10 @@ class ZhihuDigestPlugin:
                 url, wait_until="domcontentloaded", timeout=int(timeout_seconds * 1000)
             )
 
+            # Prepend answer_id‑targeted selectors so the correct answer is picked
             selectors = [
+                f'div[data-aid="{answer_id}"] div.RichContent-inner',
+                f'div[data-aid="{answer_id}"] div.RichContent',
                 "div.RichContent-inner",
                 "div.RichContent",
                 "article",
@@ -172,9 +178,11 @@ class ZhihuDigestPlugin:
                 )
             except Exception:
                 title = None
-
-            context.close()
-            browser.close()
+        finally:
+            if context is not None:
+                context.close()
+            if browser is not None:
+                browser.close()
 
         if not text:
             raise RuntimeError("failed to extract answer text")
@@ -241,26 +249,31 @@ class ZhihuDigestPlugin:
         timeout_seconds = float(params.get("timeout_seconds", 60.0))
         attempted = False
         error: str | None = None
-        with sync_playwright() as p:
+        browser = None
+        context = None
+        try:
+            p = sync_playwright().__enter__()
+            browser = p.chromium.launch(headless=False)
+            context = browser.new_context()
+            context.set_extra_http_headers({"Cookie": cookie})
+            page = context.new_page()
+            page.goto(
+                question_url,
+                wait_until="domcontentloaded",
+                timeout=int(timeout_seconds * 1000),
+            )
+            attempted = True
             try:
-                browser = p.chromium.launch(headless=False)
-                context = browser.new_context()
-                context.set_extra_http_headers({"Cookie": cookie})
-                page = context.new_page()
-                page.goto(
-                    question_url,
-                    wait_until="domcontentloaded",
-                    timeout=int(timeout_seconds * 1000),
-                )
-                attempted = True
-                try:
-                    page.keyboard.insert_text(content_md[:5000])
-                except Exception:
-                    pass
+                page.keyboard.insert_text(content_md[:5000])
+            except Exception:
+                pass
+        except Exception as e:
+            error = str(e)
+        finally:
+            if context is not None:
                 context.close()
+            if browser is not None:
                 browser.close()
-            except Exception as e:
-                error = str(e)
 
         return {
             "attempted": attempted,

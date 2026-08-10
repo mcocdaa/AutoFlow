@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import time
 import uuid
 from datetime import UTC, datetime
@@ -19,6 +20,8 @@ from app.runtime.models import FlowSpec, HookSpec, RunResult, StepResult, StepSp
 from app.runtime.storage.store import RunStore
 from app.runtime.utils import evaluate_condition, resolve_templates
 from app.runtime.utils.output_externalizer import externalize_if_large
+
+logger = logging.getLogger(__name__)
 
 
 def _utc_now() -> datetime:
@@ -86,9 +89,9 @@ class Runner:
                         artifacts_dir=run_artifacts_dir,
                     )
                     handler(ctx, resolved_params)
-            except Exception:
+            except Exception as e:
                 # hook 执行失败不影响主流程状态
-                pass
+                logger.warning(f"Hook {hook_action.type} failed: {e}")
 
     def _execute_once(
         self,
@@ -238,6 +241,8 @@ class Runner:
             )
 
         success = step_error is None
+        if step.for_each is not None:
+            runtime_vars.pop(step.for_item_var, None)
         return iterations, action_output, check_passed, success, step_error
 
     def run_flow(

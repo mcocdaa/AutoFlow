@@ -62,6 +62,17 @@ class TestEvaluateCondition:
         assert evaluate_condition("unknown") is False
         assert evaluate_condition("") is False
 
+    def test_numeric_equality(self):
+        """测试数字相等 == 和 != (float comparison)"""
+        assert evaluate_condition("5 == 5") is True
+        assert evaluate_condition("5 == 5.0") is True
+        assert evaluate_condition("5.0 == 5") is True
+        assert evaluate_condition("1 != 2") is True
+        assert evaluate_condition("1 != 1") is False
+        assert evaluate_condition("1 == 2") is False
+        assert evaluate_condition("5.5 == 5.5") is True
+        assert evaluate_condition("5.5 != 5.6") is True
+
 
 class TestConditionWithTemplates:
     """测试条件中的模板变量解析"""

@@ -40,6 +40,55 @@ jobs:
           ../plugins/desktop_checkin/tests
           -q
 
+  smoke:
+    name: Smoke test (startup + endpoints)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Poetry (pinned)
+        run: pip install poetry==2.3.3
+      - name: Cache Poetry cache dir
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('backend/poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install
+      - name: Start server and smoke test
+        run: |
+          poetry run uvicorn app.main:app --host 127.0.0.1 --port 13999 &
+          UVICORN_PID=$!
+          # Wait for server to be ready (max 15 seconds)
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:13999/health > /dev/null 2>&1; then
+              break
+            fi
+            sleep 0.5
+          done
+          # Health check
+          HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:13999/health)
+          echo "Health: HTTP $HEALTH_CODE"
+          [ "$HEALTH_CODE" = "200" ] || { echo "FAIL: health check"; kill $UVICORN_PID; exit 1; }
+          # Plugins check
+          PLUGINS_BODY=$(curl -s http://127.0.0.1:13999/api/v1/plugins)
+          echo "$PLUGINS_BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); assert 'actions' in d, 'missing actions key'" || {
+            echo "FAIL: plugins response missing actions key"
+            kill $UVICORN_PID
+            exit 1
+          }
+          echo "Smoke test passed"
+          kill $UVICORN_PID
+          wait $UVICORN_PID 2>/dev/null || true
+
   frontend:
     name: Frontend (vue-tsc + build)
     runs-on: ubuntu-latest

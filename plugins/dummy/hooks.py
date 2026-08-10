@@ -5,7 +5,7 @@
 from plugins.dummy.backend import DummyPlugin
 
 
-def register(registry):
+def register(registry, config=None):
     """Dummy 插件注册钩子"""
     plugin = DummyPlugin()
     registry.register_plugin(plugin.name, plugin.version)

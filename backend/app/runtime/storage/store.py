@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,14 @@ def _deep_copy_with_ref_tracking(obj: Any, seen: dict[int, Any] | None = None) -
 
 
 class RunStore:
+    """In-memory run store backed by optional JSON artifacts on disk.
+
+    Important: Runs are stored in a process-local dict and are NOT shared
+    across workers. Runs are also lost on restart. This is acceptable for
+    single-process development and light usage; for production multi-worker
+    deployments, replace with a shared store (e.g. database, Redis, etc.).
+    """
+
     def __init__(self, artifacts_dir: Path) -> None:
         self._runs: dict[str, RunResult] = {}
         self._artifacts_dir = artifacts_dir
@@ -62,6 +71,13 @@ class RunStore:
 
     def list_runs(self) -> list[RunResult]:
         return list(self._runs.values())
+
+    def delete_run(self, run_id: str) -> None:
+        """Delete a run from the in-memory store and its artifacts directory."""
+        self._runs.pop(run_id, None)
+        run_dir = self._artifacts_dir / run_id
+        if run_dir.exists():
+            shutil.rmtree(run_dir, ignore_errors=True)
 
     def _write_run_artifact(self, run: RunResult) -> None:
         run_dir = self._artifacts_dir / run.run_id
