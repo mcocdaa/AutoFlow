@@ -9,15 +9,15 @@ docker/
 ├── docker-compose.base.yml     # 服务定义层：backend/mysql/redis、secrets、volumes
 ├── docker-compose.backend.yml  # 端口映射层：backend (3001 -> 3000)
 ├── docker-compose.frontend.yml # 前端服务层：frontend (8001 -> 8000)
-└── docker-compose.full.yml     # 全栈入口：include 上述三层
-docker-compose.yml              # 根目录全栈入口（include docker/ 下三层）
+└── docker-compose.full.yml     # 全栈入口：自包含全服务定义（可单独使用）
+docker-compose.yml              # 根目录全栈入口（include docker/docker-compose.full.yml）
 ```
 
 分层规则：
 
 - 基础层（base）定义服务，不含端口映射，**不可单独使用**
 - 端口层（backend/frontend）定义对外端口，必须与 base 叠加
-- 全栈入口（full.yml / 根 docker-compose.yml）已 include 全部三层，可直接使用
+- 全栈入口（full.yml）为自包含定义，每个服务只出现一次，可直接使用；根 docker-compose.yml include 之
 
 ### 1.1 推荐用法：统一脚本入口
 

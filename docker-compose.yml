@@ -1,10 +1,8 @@
 # ============================================
 # AutoFlow 默认启动: 全栈模式 (后端 + 前端 + MySQL + Redis)
 # 用法: docker compose -p autoflow up -d --build
-# 分层: base(服务定义) + backend(端口映射) + frontend(前端服务)
+# 自包含定义见 docker/docker-compose.full.yml
 # ============================================
 
 include:
-  - docker/docker-compose.base.yml
-  - docker/docker-compose.backend.yml
-  - docker/docker-compose.frontend.yml
+  - docker/docker-compose.full.yml

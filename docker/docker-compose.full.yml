@@ -1,10 +1,119 @@
 # ============================================
-# AutoFlow 全栈模式 (后端 + 前端 + MySQL + Redis)
+# AutoFlow 全栈模式 (后端 + 前端 + MySQL + Redis) - 自包含
 # 用法: docker compose -f docker/docker-compose.full.yml -p autoflow up -d --build
-# 分层: base(服务定义) + backend(端口映射) + frontend(前端服务)
+#
+# 注意: 本文件为自包含定义(每个 service 只定义一次),
+# 根目录 docker-compose.yml 通过 include 本文件。
+# 分层文件(base/backend/frontend)仅供 scripts/start.sh 以 -f 方式叠加使用。
 # ============================================
 
-include:
-  - docker-compose.base.yml
-  - docker-compose.backend.yml
-  - docker-compose.frontend.yml
+networks:
+  autoflow-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+
+secrets:
+  mysql_root_password:
+    file: ../secrets/mysql_root_password
+  db_password:
+    file: ../secrets/db_password
+  secret_key:
+    file: ../secrets/secret_key
+
+services:
+  autoflow-backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-3001}:3000"
+    environment:
+      - PORT=3000
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_VERSION=v1
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-autoflow}
+      - DB_NAME=${DB_NAME:-autoflow_db}
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - SECRET_KEY_FILE=/run/secrets/secret_key
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=${REDIS_DB:-0}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app/backend
+      - SECRET_FALLBACK_MODE=${SECRET_FALLBACK_MODE:-default}
+    secrets:
+      - db_password
+      - secret_key
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../plugins:/app/plugins:ro
+    networks:
+      - autoflow-network
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_DATABASE: ${DB_NAME:-autoflow_db}
+      MYSQL_USER: ${DB_USER:-autoflow}
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - mysql_root_password
+      - db_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - autoflow-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - autoflow-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  autoflow-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: web
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_EXTERNAL_PORT:-8001}:8000"
+    environment:
+      - VITE_API_PROXY_URL=http://autoflow-backend:3000
+      - DOCKER_WEB=true
+    networks:
+      - autoflow-network
+    depends_on:
+      - autoflow-backend
