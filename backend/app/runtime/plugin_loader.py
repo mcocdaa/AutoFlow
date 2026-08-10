@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,34 @@ def _load_registry_entries(plugins_dir: Path) -> dict[str, dict[str, Any]]:
     return entries
 
 
+def _load_plugin_config(plugin_dir: Path) -> dict[str, Any] | None:
+    """Load and resolve config.yaml from a plugin directory.
+
+    Returns None when no config.yaml is present.
+    Resolves the secrets block by looking up each value in the environment.
+    """
+    config_path = plugin_dir / "config.yaml"
+    if not config_path.exists():
+        return None
+
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = yaml.safe_load(f) or {}
+    except Exception as e:
+        logger.warning(f"Failed to load plugin config {config_path}: {e}")
+        return None
+
+    secrets = config.get("secrets")
+    if isinstance(secrets, dict):
+        resolved: dict[str, str | None] = {}
+        for key, env_var in secrets.items():
+            if isinstance(env_var, str):
+                resolved[key] = os.getenv(env_var)
+        config["secrets"] = resolved
+
+    return config
+
+
 def load_plugins(registry: Registry) -> None:
     """加载 plugins.yaml 中启用的插件,调用其 register(registry) 完成注册
 
@@ -98,7 +127,12 @@ def load_plugins(registry: Registry) -> None:
                     f"插件模块 {module_name} 未暴露 register(registry)"
                 )
 
-            register_fn(registry)
+            # Load config.yaml if the plugin is a directory
+            config = None
+            if path.is_dir():
+                config = _load_plugin_config(path)
+
+            register_fn(registry, config)
             logger.info(f"成功加载插件: {key} ({path})")
         except Exception as e:
             logger.error(f"加载插件 {key} 失败: {e}", exc_info=True)

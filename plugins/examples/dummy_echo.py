@@ -18,7 +18,7 @@ def _echo(ctx: ActionContext, params: dict[str, Any]) -> Any:
     }
 
 
-def register(registry: Registry) -> None:
+def register(registry: Registry, config: dict = None) -> None:
     """注册插件信息与 action(新约定: 接收 registry 并直接注册)"""
     registry.register_plugin(name="dummy-echo", version="0.1.0")
     registry.register_action("dummy.echo", _echo)

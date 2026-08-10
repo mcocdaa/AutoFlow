@@ -5,7 +5,7 @@
 from plugins.zhihu_digest.backend import ZhihuDigestPlugin
 
 
-def register(registry):
+def register(registry, config=None):
     """知乎摘要插件注册钩子"""
     plugin = ZhihuDigestPlugin()
     registry.register_plugin(plugin.name, plugin.version)

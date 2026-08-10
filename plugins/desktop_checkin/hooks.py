@@ -5,7 +5,7 @@
 from plugins.desktop_checkin.backend import DesktopCheckinPlugin
 
 
-def register(registry):
+def register(registry, config=None):
     """桌面打卡插件注册钩子"""
     plugin = DesktopCheckinPlugin()
     registry.register_plugin(plugin.name, plugin.version)

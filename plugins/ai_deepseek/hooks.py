@@ -5,7 +5,7 @@
 from plugins.ai_deepseek.backend import AIDeepSeekPlugin
 
 
-def register(registry):
+def register(registry, config=None):
     """AI DeepSeek 插件注册钩子"""
     plugin = AIDeepSeekPlugin()
     registry.register_plugin(plugin.name, plugin.version)
