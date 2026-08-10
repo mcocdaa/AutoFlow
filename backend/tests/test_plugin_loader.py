@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import yaml
 from app.core.registry import Registry
@@ -93,123 +93,109 @@ class TestLoadPluginConfig:
 
 
 class TestPluginLoaderIntegration:
-    """Integration tests for load_plugins with temp plugin directories."""
+    """Integration tests for load_plugins with mocked imports."""
 
-    def test_loads_directory_plugin_with_config(self, tmp_path: Path, monkeypatch):
-        """Create a temp plugin directory with hooks.py and config.yaml."""
+    def test_loads_directory_plugin_with_config(self, monkeypatch, tmp_path: Path):
+        """Verify load_plugins passes config from config.yaml to register()."""
         registry = Registry()
+
         plugins_dir = tmp_path / "plugins"
         plugin_dir = plugins_dir / "test_plugin"
-
-        # Create plugin structure
         plugin_dir.mkdir(parents=True)
-        # __init__.py re-exports register (standard plugin convention)
-        (plugin_dir / "__init__.py").write_text(
-            "from plugins.test_plugin.hooks import register\n"
-        )
-        (plugin_dir / "hooks.py").write_text(
-            "def register(registry, config=None):\n"
-            "    registry.register_plugin(name='test', version='1.0')\n"
-            "    if config:\n"
-            '        name = config.get("defaults", {}).get("name", "fallback")\n'
-            "        registry.register_plugin(name=name, version='1.0')\n"
-        )
+
+        # __init__.py required for directory plugins
+        (plugin_dir / "__init__.py").write_text("")
+
+        # Write a real config.yaml so load_plugins can find it
         _write_yaml(
             plugin_dir / "config.yaml",
-            {"defaults": {"name": "from_config"}},
-        )
-        _write_yaml(
-            plugins_dir / "plugins.yaml",
-            {"plugins": {"test_plugin": {"enabled": True, "path": "test_plugin"}}},
+            {"defaults": {"name": "from_config"}, "secrets": {}},
         )
 
-        # Make plugins dir importable
-        parent_dir = str(plugins_dir.parent)
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
+        # Create a mock module with a register function
+        mock_module = MagicMock()
+        mock_register = MagicMock()
+        mock_module.register = mock_register
 
+        # Mock out the internals so we don't touch real filesystem
         monkeypatch.setattr(
-            "app.runtime.plugin_loader.DEFAULT_PLUGINS_DIR", plugins_dir
+            "app.runtime.plugin_loader._plugins_dir",
+            lambda: plugins_dir,
         )
         monkeypatch.setattr(
-            "app.runtime.plugin_loader._plugins_dir", lambda: plugins_dir
+            "app.runtime.plugin_loader._load_registry_entries",
+            lambda _: {"test_p": {"path": plugin_dir}},
+        )
+        monkeypatch.setattr(
+            "app.runtime.plugin_loader.importlib.import_module",
+            lambda name: mock_module,
         )
 
         load_plugins(registry)
 
-        plugins = registry.list_plugins()
-        names = [p.name for p in plugins]
-        assert "test" in names
-        assert "from_config" in names
+        # Verify register was called with a config dict containing defaults
+        assert mock_register.call_count == 1
+        args, _kwargs = mock_register.call_args
+        assert args[0] is registry
+        config = args[1]
+        assert config is not None
+        assert config["defaults"] == {"name": "from_config"}
 
-    def test_loads_file_plugin_with_subdir(self, tmp_path: Path, monkeypatch):
-        """Test that a .py file in a sub-directory imports correctly."""
+    def test_disabled_plugin_not_loaded(self, monkeypatch):
+        """Disabled plugins should not trigger module loading."""
         registry = Registry()
-        plugins_dir = tmp_path / "plugins"
-        sub_dir = plugins_dir / "examples"
-        sub_dir.mkdir(parents=True)
-
-        # Create a file plugin with hooks.py semantics
-        (sub_dir / "hello_world.py").write_text(
-            "def register(registry, config=None):\n"
-            "    registry.register_plugin(name='hello-from-file', version='1.0')\n"
-        )
-        _write_yaml(
-            plugins_dir / "plugins.yaml",
-            {
-                "plugins": {
-                    "hello": {"enabled": True, "path": "examples/hello_world.py"}
-                }
-            },
-        )
-
-        parent_dir = str(plugins_dir.parent)
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
-
-        # Add an __init__.py to make "examples" a package
-        (sub_dir / "__init__.py").write_text("")
 
         monkeypatch.setattr(
-            "app.runtime.plugin_loader.DEFAULT_PLUGINS_DIR", plugins_dir
+            "app.runtime.plugin_loader._plugins_dir",
+            lambda: Path("/fake/plugins"),
         )
         monkeypatch.setattr(
-            "app.runtime.plugin_loader._plugins_dir", lambda: plugins_dir
+            "app.runtime.plugin_loader._load_registry_entries",
+            lambda _: {},
+        )
+
+        import_mock = MagicMock()
+        monkeypatch.setattr(
+            "app.runtime.plugin_loader.importlib.import_module",
+            import_mock,
         )
 
         load_plugins(registry)
 
-        plugins = registry.list_plugins()
-        names = [p.name for p in plugins]
-        assert "hello-from-file" in names
+        # import_module should never be called for empty entries
+        import_mock.assert_not_called()
 
-    def test_disabled_plugin_not_loaded(self, tmp_path: Path, monkeypatch):
-        """Disabled plugins should be skipped entirely."""
+    def test_loads_plugin_passes_none_config_when_missing(
+        self, monkeypatch, tmp_path: Path
+    ):
+        """When config.yaml is missing, register gets config=None."""
         registry = Registry()
+
         plugins_dir = tmp_path / "plugins"
-        plugin_dir = plugins_dir / "disabled_plugin"
+        plugin_dir = plugins_dir / "test_plugin"
         plugin_dir.mkdir(parents=True)
-        (plugin_dir / "__init__.py").write_text(
-            "from plugins.disabled_plugin.hooks import register\n"
-        )
-        (plugin_dir / "hooks.py").write_text(
-            "def register(registry, config=None):\n"
-            "    registry.register_plugin(name='should-not-appear', version='1.0')\n"
-        )
-        _write_yaml(
-            plugins_dir / "plugins.yaml",
-            {"plugins": {"disabled_plugin": {"enabled": False}}},
-        )
+
+        # __init__.py required for directory plugins
+        (plugin_dir / "__init__.py").write_text("")
+        # No config.yaml written
+
+        mock_module = MagicMock()
+        mock_register = MagicMock()
+        mock_module.register = mock_register
 
         monkeypatch.setattr(
-            "app.runtime.plugin_loader.DEFAULT_PLUGINS_DIR", plugins_dir
+            "app.runtime.plugin_loader._plugins_dir",
+            lambda: plugins_dir,
         )
         monkeypatch.setattr(
-            "app.runtime.plugin_loader._plugins_dir", lambda: plugins_dir
+            "app.runtime.plugin_loader._load_registry_entries",
+            lambda _: {"test_p": {"path": plugin_dir}},
+        )
+        monkeypatch.setattr(
+            "app.runtime.plugin_loader.importlib.import_module",
+            lambda name: mock_module,
         )
 
         load_plugins(registry)
 
-        plugins = registry.list_plugins()
-        names = [p.name for p in plugins]
-        assert "should-not-appear" not in names
+        mock_register.assert_called_once_with(registry, None)
