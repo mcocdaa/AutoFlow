@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shlex
@@ -15,6 +16,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from app.core.registry import ActionContext, CheckContext
+
+logger = logging.getLogger(__name__)
 
 
 class OpenClawPlugin:
@@ -104,12 +107,31 @@ class OpenClawPlugin:
     def exec_command(
         self, ctx: ActionContext, params: dict[str, Any]
     ) -> dict[str, Any]:
+        """Execute a shell command with optional safety controls.
+
+        Security note: When safe_mode is False, commands run with shell=True,
+        which is vulnerable to command injection. Only disable safe_mode when
+        you fully trust the command source.
+        """
         command = params.get("command")
         args = params.get("args")  # 可选参数列表
         cwd = params.get("cwd")
-        timeout = params.get("timeout") or self.defaults.get("exec_timeout", 60)
+
+        # Convert timeout to float; guard against YAML string values
+        timeout_raw = params.get("timeout") or self.defaults.get("exec_timeout", 60)
+        try:
+            timeout = float(timeout_raw)
+        except (TypeError, ValueError):
+            timeout = 60.0
+
         safe_mode = params.get("safe_mode", self.defaults.get("safe_mode", True))
         allowed_commands = self.defaults.get("allowed_commands", [])
+
+        if not safe_mode:
+            logger.warning(
+                "exec_command running with safe_mode=False — "
+                "command injection risk is present"
+            )
 
         if not command:
             return {
