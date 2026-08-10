@@ -34,7 +34,7 @@ usage() {
     echo "模式说明:"
     echo "  dev    - 开发模式，使用 Docker"
     echo "  local  - 本地模式，不使用 Docker"
-    echo "  prod   - 生产模式，使用 Docker Swarm"
+    echo "  prod   - 生产模式，使用 Docker Compose"
     echo ""
     echo "服务说明:"
     echo "  backend       - 仅后端"
@@ -60,13 +60,9 @@ SERVICE="${2:-full}"
 
 stop_docker_services() {
     echo "停止已有 Docker 服务..."
-    if [ "$MODE" = "prod" ]; then
-        docker stack rm autoflow 2>/dev/null || true
-        echo "等待服务移除..."
-        sleep 5
-    else
-        docker compose -p autoflow -f "$DOCKER_DIR/docker-compose.base.yml" down 2>/dev/null || true
-    fi
+    docker compose -p autoflow -f "$DOCKER_DIR/docker-compose.base.yml" \
+        -f "$DOCKER_DIR/docker-compose.backend.yml" \
+        -f "$DOCKER_DIR/docker-compose.frontend.yml" down 2>/dev/null || true
     echo "✓ Docker 服务已停止"
 }
 
@@ -97,8 +93,8 @@ start_backend_local() {
     echo "安装后端依赖..."
     poetry install
     echo "启动本地后端服务..."
-    cd "$BACKEND_DIR" && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000 &
-    echo "✓ 本地后端已启动 (http://localhost:3000)"
+    cd "$BACKEND_DIR" && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 3001 &
+    echo "✓ 本地后端已启动 (http://localhost:3001)"
 }
 
 start_frontend_local() {
@@ -114,7 +110,10 @@ start_frontend_local() {
 
 load_env() {
     if [ -f "$PROJECT_ROOT/.env" ]; then
-        export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+        set -a
+        # shellcheck disable=SC1091
+        source "$PROJECT_ROOT/.env"
+        set +a
     fi
 }
 
@@ -164,18 +163,17 @@ case "$MODE" in
         esac
         ;;
     prod)
-        COMPOSE_COMMAND="docker stack"
-        STACK_NAME="autoflow"
+        COMPOSE_COMMAND="docker compose"
         case "$SERVICE" in
             backend)
-                COMPOSE_FILES="$DOCKER_DIR/docker-compose.backend.yml"
+                COMPOSE_FILES="-f $DOCKER_DIR/docker-compose.base.yml -f $DOCKER_DIR/docker-compose.backend.yml"
                 ;;
             frontend|frontend-local)
                 echo "生产模式暂不支持仅前端部署"
                 usage
                 ;;
             full)
-                COMPOSE_FILES="$DOCKER_DIR/docker-compose.backend.yml -f $DOCKER_DIR/docker-compose.frontend.yml"
+                COMPOSE_FILES="-f $DOCKER_DIR/docker-compose.base.yml -f $DOCKER_DIR/docker-compose.backend.yml -f $DOCKER_DIR/docker-compose.frontend.yml"
                 ;;
             *)
                 echo "未知服务: $SERVICE"
@@ -204,11 +202,7 @@ echo "服务: $SERVICE"
 echo "命令: $COMPOSE_COMMAND"
 echo "========================================"
 
-if [ "$MODE" = "prod" ]; then
-    $COMPOSE_COMMAND deploy -c "$DOCKER_DIR/docker-compose.base.yml" -c "$COMPOSE_FILES" --composefile "$DOCKER_DIR/docker-compose.backend.yml" "$STACK_NAME"
-else
-    $COMPOSE_COMMAND -p autoflow $COMPOSE_FILES up --build -d
-fi
+$COMPOSE_COMMAND -p autoflow $COMPOSE_FILES up --build -d
 
 echo ""
 echo "✓ 启动完成"

@@ -1,5 +1,6 @@
 # ============================================
-# AutoFlow Docker Compose 基础模板
+# AutoFlow Docker Compose 基础模板 (服务定义层)
+# 不可单独使用,需与 backend/frontend 端口映射层合并
 # ============================================
 
 networks:
@@ -11,7 +12,6 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: autoflow-backend
     restart: unless-stopped
     environment:
       - PORT=3000
@@ -37,7 +37,7 @@ services:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ../plugins:/app/plugins:ro
     networks:
@@ -51,7 +51,6 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: autoflow-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
@@ -73,8 +72,7 @@ services:
       start_period: 30s
 
   redis:
-    image: redis:7.0-alpine
-    container_name: autoflow-redis
+    image: redis:7.4-alpine
     restart: unless-stopped
     volumes:
       - redis_data:/data
