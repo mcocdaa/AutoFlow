@@ -19,12 +19,13 @@ def _repo_root() -> Path:
 
 def _read_text(ctx: ActionContext, path: str) -> str:
     p = Path(path)
-    if p.is_absolute():
-        return p.read_text(encoding="utf-8")
-    candidate = (ctx.artifacts_dir / p).resolve()
-    if candidate.exists():
-        return candidate.read_text(encoding="utf-8")
-    return (_repo_root() / p).resolve().read_text(encoding="utf-8")
+    if not p.is_absolute():
+        p = ctx.artifacts_dir / p
+    p = p.resolve()
+    allowed = {ctx.artifacts_dir.resolve(), _repo_root().resolve()}
+    if not any(p == base or base in p.parents for base in allowed):
+        raise ValueError(f"path outside allowed directories: {path}")
+    return p.read_text(encoding="utf-8")
 
 
 def _write_text(ctx: ActionContext, rel_path: str, text: str) -> str:
@@ -191,7 +192,3 @@ class AIDeepSeekPlugin:
             "dry_run": False,
             "provider": "deepseek",
         }
-
-
-def register() -> AIDeepSeekPlugin:
-    return AIDeepSeekPlugin()

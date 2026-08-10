@@ -10,7 +10,7 @@ import copy
 import json
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,7 @@ from app.runtime.utils.output_externalizer import externalize_if_large
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _to_vars_value(value: Any) -> Any:
@@ -289,7 +289,7 @@ class Runner:
                     self._store.save_run(run)
                     continue
 
-            step_result, action_output, check_passed, success, step_error = (
+            iterations, action_output, check_passed, success, step_error = (
                 self._execute_step(
                     run_id=run_id,
                     step=step,
@@ -320,7 +320,7 @@ class Runner:
                     action_output=action_output,
                     check_passed=check_passed,
                     error=step_error,
-                    iterations=step_result,
+                    iterations=iterations,
                 )
             )
             self._store.save_run(run)

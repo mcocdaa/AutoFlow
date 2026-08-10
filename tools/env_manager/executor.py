@@ -1,6 +1,6 @@
-import subprocess
 import os
 import shutil
+import subprocess
 
 
 class Colors:
@@ -51,7 +51,7 @@ class Executor:
                 env=full_env,
                 shell=True,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,  # Merge stderr to stdout for sequential logging
+                stderr=subprocess.STDOUT,  # 合并 stderr 到 stdout 顺序输出
                 text=True,
                 encoding="utf-8",
                 errors="replace",  # Handle potential encoding issues
@@ -78,10 +78,11 @@ class Executor:
             return process.returncode == 0
 
         except Exception as e:
-            Executor.log(f"Failed to execute command: {str(e)}", level="ERROR")
+            Executor.log(f"Failed to execute command: {e!s}", level="ERROR")
             if not ignore_errors:
                 return False
-            return True
+            Executor.log("Exception ignored, continuing", level="WARN")
+            return False
 
     @staticmethod
     def check_command_exists(cmd: str) -> bool:

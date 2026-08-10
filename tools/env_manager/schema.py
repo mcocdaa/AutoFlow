@@ -1,14 +1,13 @@
 from dataclasses import dataclass, field
-from typing import List, Dict
 
 
 @dataclass
 class SetupConfig:
     name: str = "unknown"
     scan_subdirs: bool = True
-    strategies: Dict[str, str] = field(default_factory=dict)
-    scripts: Dict[str, List[str]] = field(default_factory=dict)
-    system: List[Dict[str, str]] = field(default_factory=list)
+    strategies: dict[str, str] = field(default_factory=dict)
+    scripts: dict[str, list[str]] = field(default_factory=dict)
+    system: list[dict[str, str]] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict):

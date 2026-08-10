@@ -329,7 +329,3 @@ class DesktopCheckinPlugin:
             w = None
         title = getattr(w, "title", "") if w is not None else ""
         return needle in (title or "")
-
-
-def register() -> DesktopCheckinPlugin:
-    return DesktopCheckinPlugin()

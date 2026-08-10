@@ -12,11 +12,6 @@
         <CheckCircleOutlined class="status-icon" />
         <span>Active</span>
       </div>
-      <div class="plugin-actions">
-        <a-button size="small" @click="$emit('configure', plugin)">配置</a-button>
-        <a-button size="small" @click="$emit('disable', plugin)">禁用</a-button>
-        <a-button size="small" type="primary" @click="$emit('viewDocs', plugin)">文档</a-button>
-      </div>
     </div>
   </a-card>
 </template>
@@ -29,12 +24,6 @@ import type { Plugin } from '../../types/plugins'
 
 const props = defineProps<{
   plugin: Plugin
-}>()
-
-defineEmits<{
-  configure: [plugin: Plugin]
-  disable: [plugin: Plugin]
-  viewDocs: [plugin: Plugin]
 }>()
 
 const description = computed(() => getPluginDescription(props.plugin.name))
@@ -84,11 +73,5 @@ const description = computed(() => getPluginDescription(props.plugin.name))
 
 .status-icon {
   font-size: 16px;
-}
-
-.plugin-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 </style>

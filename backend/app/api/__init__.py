@@ -3,9 +3,12 @@
 # @create 2026-03-10
 
 import importlib
+import logging
 
 from app.core.setting_manager import setting_manager
 from fastapi import FastAPI
+
+logger = logging.getLogger(__name__)
 
 
 def register_routers(app: FastAPI):
@@ -28,6 +31,6 @@ def register_routers(app: FastAPI):
         app.include_router(
             version_package.router, prefix="/api", tags=[api_version.upper()]
         )
-        print(f"[Route] 已注册 API 版本: {api_version}, 前缀: /api")
+        logger.info("已注册 API 版本: %s, 前缀: /api", api_version)
     else:
         raise AttributeError(f"模块 {version_package_name} 中未找到 'router' 对象")
