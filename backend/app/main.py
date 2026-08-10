@@ -66,7 +66,7 @@ if importlib.util.find_spec("pytest") is not None:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=setting_manager.CORS_ORIGINS or ["*"],
-    allow_credentials=True,
+    allow_credentials=(False if setting_manager.CORS_ORIGINS == ["*"] else True),
     allow_methods=["*"],
     allow_headers=["*"],
 )

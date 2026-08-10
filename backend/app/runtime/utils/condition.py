@@ -12,6 +12,18 @@ def evaluate_condition(expr: str) -> bool:
     if expr.lower() == "false":
         return False
 
+    # Numeric equality (==, !=) — must be checked before the generic string
+    # comparison to handle cases like 5 == 5.0 correctly as floats.
+    num_eq_match = re.match(r"^(-?\d+\.?\d*)\s*(==|!=)\s*(-?\d+\.?\d*)$", expr)
+    if num_eq_match:
+        left = float(num_eq_match.group(1))
+        op = num_eq_match.group(2)
+        right = float(num_eq_match.group(3))
+        if op == "==":
+            return left == right
+        else:
+            return left != right
+
     str_compare_match = re.match(r"^(.+?)\s*(==|!=)\s*(.+)$", expr)
     if str_compare_match:
         left = str_compare_match.group(1).strip()
