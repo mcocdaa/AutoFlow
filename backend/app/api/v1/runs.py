@@ -73,3 +73,14 @@ def download_artifact(run_id: str, file_path: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="artifact not found")
 
     return FileResponse(resolved)
+
+
+@router.delete("/runs/{run_id}", status_code=204)
+def delete_run(run_id: str) -> None:
+    """Delete a run and its artifacts directory."""
+    store = get_store()
+    try:
+        store.get_run(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run not found") from e
+    store.delete_run(run_id)

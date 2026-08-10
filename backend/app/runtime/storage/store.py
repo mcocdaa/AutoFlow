@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,13 @@ class RunStore:
 
     def list_runs(self) -> list[RunResult]:
         return list(self._runs.values())
+
+    def delete_run(self, run_id: str) -> None:
+        """Delete a run from the in-memory store and its artifacts directory."""
+        self._runs.pop(run_id, None)
+        run_dir = self._artifacts_dir / run_id
+        if run_dir.exists():
+            shutil.rmtree(run_dir, ignore_errors=True)
 
     def _write_run_artifact(self, run: RunResult) -> None:
         run_dir = self._artifacts_dir / run.run_id
