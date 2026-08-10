@@ -118,7 +118,16 @@ def load_plugins(registry: Registry) -> None:
                 raise ValueError(f"插件路径既不是目录也不是 .py 文件: {path}")
 
             # 模块名取解析后路径的目录名/文件名,与 plugins.yaml 的 key 解耦
-            module_name = path.name
+            # For file plugins, compute relative path to support sub-directories
+            # e.g. plugins/examples/hello_world.py → plugins.examples.hello_world
+            if path.is_dir():
+                module_name = path.name
+            else:
+                rel = path.resolve().relative_to(plugins_dir.resolve())
+                # Strip .py suffix and convert path separators to dots
+                module_name = (
+                    str(rel.with_suffix("")).replace("/", ".").replace("\\", ".")
+                )
             module = importlib.import_module(f"plugins.{module_name}")
 
             register_fn = getattr(module, "register", None)
