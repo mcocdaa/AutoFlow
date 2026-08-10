@@ -24,15 +24,14 @@ def parse_args():
     """解析命令行参数"""
     import sys
 
-    # 检查是否是 pytest 或其他不是 uvicorn 的场景
-    if "pytest" in sys.modules or "uvicorn" not in sys.argv[0]:
+    # pytest (TestClient) early‑return: skip argument parsing entirely
+    if "pytest" in sys.modules:
         return argparse.Namespace()
-    # 正常 uvicorn 启动，尝试解析参数
-    if len(sys.argv) == 1 or (len(sys.argv) > 1 and sys.argv[1].startswith("-")):
-        return argparse.Namespace()
+
     parser = argparse.ArgumentParser(description="AutoFlow Backend")
     setting_manager.register_arguments(parser)
-    return parser.parse_args()
+    # parse_known_args() tolerates unknown args (e.g. uvicorn's "app.main:app")
+    return parser.parse_known_args()[0]
 
 
 def init_services():
