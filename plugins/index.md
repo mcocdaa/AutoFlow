@@ -69,6 +69,7 @@ AutoFlow 通过 `backend/app/runtime/plugin_loader.py` 统一加载插件：
 ```python
 from app.core.registry import Registry
 
+
 def register(registry: Registry) -> None:
     registry.register_plugin(name="my-plugin", version="0.1.0")
     registry.register_action("my.action", handler)

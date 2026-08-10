@@ -54,6 +54,7 @@ from fastapi import APIRouter
 
 router = APIRouter(prefix="/something", tags=["something"])
 
+
 @router.get("/")
 async def get_something():
     return {"message": "Something"}
