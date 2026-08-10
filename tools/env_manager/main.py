@@ -1,13 +1,7 @@
 import argparse
 import os
-import sys
 
-# Add the parent directory to sys.path to allow running as script
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
-sys.path.insert(0, parent_dir)
-
-from tools.env_manager.core import EnvManager  # noqa: E402
+from tools.env_manager.core import EnvManager
 
 
 def main():

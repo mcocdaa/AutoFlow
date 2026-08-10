@@ -34,7 +34,10 @@ MODE="$1"
 cd "$DOCKER_DIR"
 
 if [ -f "$PROJECT_ROOT/.env" ]; then
-    export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+    set -a
+    # shellcheck disable=SC1091
+    source "$PROJECT_ROOT/.env"
+    set +a
 fi
 
 echo "========================================"
@@ -43,13 +46,10 @@ echo "========================================"
 echo "模式: $MODE"
 echo "========================================"
 
-if [ "$MODE" = "prod" ]; then
-    docker stack rm autoflow
-    echo "等待服务移除..."
-    sleep 5
-else
-    docker compose -p autoflow -f docker-compose.base.yml -f docker-compose.backend.yml -f docker-compose.frontend.yml down 2>/dev/null || true
-fi
+docker compose -p autoflow \
+    -f docker-compose.base.yml \
+    -f docker-compose.backend.yml \
+    -f docker-compose.frontend.yml down
 
 echo ""
 echo "✓ 停止完成"

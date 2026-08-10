@@ -1,17 +1,18 @@
 import os
+
 import yaml
-from typing import List
-from .schema import SetupConfig
+
 from .executor import Executor
-from .utils import is_docker, is_root, is_linux
+from .schema import SetupConfig
+from .utils import is_docker, is_linux, is_root
 
 
 class EnvManager:
     def __init__(self, root_dir: str, scope: str = "dev"):
         self.root_dir = root_dir
         self.scope = scope
-        self.configs: List[SetupConfig] = []
-        self.system_deps: List[str] = []
+        self.configs: list[SetupConfig] = []
+        self.system_deps: list[str] = []
 
     def scan(self):
         Executor.log(f"Scanning for setup.yaml in {self.root_dir}...", "HEADER")
@@ -19,7 +20,7 @@ class EnvManager:
             if "setup.yaml" in files:
                 file_path = os.path.join(root, "setup.yaml")
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         data = yaml.safe_load(f)
                         if not data:
                             continue
@@ -31,7 +32,7 @@ class EnvManager:
 
                         Executor.log(f"Found config: {config.name} in {root}")
 
-                        # Optimization: if scan_subdirs is False, remove subdirs from walk
+                        # scan_subdirs=False 时不再向下递归
                         if not config.scan_subdirs:
                             dirs[:] = []
 
@@ -94,7 +95,7 @@ class EnvManager:
                 self._run_npm(cwd)
 
         # 2. Script Execution
-        # Execute 'install' scripts by default, or specific lifecycle hooks if we add them later
+        # 默认执行 install 脚本
         scripts = config.scripts.get("install", [])
         if scripts:
             self._run_scripts(scripts, cwd)
@@ -123,7 +124,7 @@ class EnvManager:
         Executor.log(f"Running npm in {cwd}")
         Executor.run_command(cmd, cwd=cwd)
 
-    def _run_scripts(self, scripts: List[str], cwd: str):
+    def _run_scripts(self, scripts: list[str], cwd: str):
         for script in scripts:
             # Check for risk
             if "pip install" in script and not is_docker() and is_root():

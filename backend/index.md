@@ -7,7 +7,7 @@ version: "1.0"
 
 # AutoFlow 后端
 
-AutoFlow 后端核心服务，基于 FastAPI + Python 3.10+。
+AutoFlow 后端核心服务，基于 FastAPI + Python 3.12+。
 
 ## 📁 目录结构
 
@@ -19,13 +19,10 @@ backend/
 │   │   └── v1/           # API v1 版本
 │   │       ├── runs.py   # 运行流 API
 │   │       ├── plugins.py # 插件 API
-│   │       ├── common.py # 通用 API
 │   │       └── __init__.py
 │   │
 │   ├── core/             # 核心模块
 │   │   ├── registry.py       # 注册中心
-│   │   ├── plugin_manager.py # 插件管理器
-│   │   ├── hook_manager.py   # 钩子管理器
 │   │   ├── setting_manager.py # 配置管理器
 │   │   ├── env_secrets.py    # 环境变量和密钥
 │   │   ├── router_loader.py  # 路由加载器
@@ -34,6 +31,7 @@ backend/
 │   ├── runtime/          # 运行时
 │   │   ├── runner/       # 运行器
 │   │   │   └── runner.py
+│   │   ├── plugin_loader.py # 插件加载器
 │   │   ├── actions/      # 动作执行
 │   │   │   └── builtins.py
 │   │   ├── loaders/      # 加载器
@@ -67,10 +65,9 @@ backend/
 │   └── test_output_externalizer.py
 │
 ├── Dockerfile            # Docker 镜像
-├── docker-compose.yml    # Docker Compose 配置
 ├── pyproject.toml        # 项目依赖配置
-├── .gitignore
-└── .env                  # 环境变量（不提交）
+├── poetry.lock           # 锁定依赖版本
+└── .gitignore
 ```
 
 ## 🚀 快速开始
@@ -104,14 +101,13 @@ REST API 接口，分为 v1 版本。
 
 ### 核心层 (core/)
 - **registry**: 动作、触发器、校验器的注册中心
-- **plugin_manager**: 插件加载和管理
-- **hook_manager**: 钩子函数管理
 - **setting_manager**: 配置管理
 - **env_secrets**: 环境变量和密钥管理
 - **router_loader**: 自动加载 API 路由
 
 ### 运行时 (runtime/)
 - **runner**: Flow 运行器，负责执行整个流程
+- **plugin_loader**: 读取 plugins.yaml 并加载插件注册到 Registry
 - **actions**: 内置动作实现
 - **loaders**: Flow 配置加载器
 - **models**: 数据模型定义
@@ -136,9 +132,6 @@ pytest tests/ -v
 HOST=0.0.0.0
 PORT=3001
 
-# 数据库配置
-DATABASE_URL=sqlite:///./autoflow.db
-
 # 插件目录
-AUTOFLOW_PLUGIN_DIRS=../plugins
+PLUGINS_DIR=../plugins
 ```

@@ -32,9 +32,10 @@ import {
   ThunderboltOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons-vue'
+import type { Plugin } from '../../types/plugins'
 
 defineProps<{
-  plugins: any[]
+  plugins: Plugin[]
   actions: string[]
   checks: string[]
 }>()

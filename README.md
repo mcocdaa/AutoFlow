@@ -48,19 +48,18 @@ checks:
 
 ```
 AutoFlow/
-├── backend/               # 🐍 后端核心 (FastAPI + Python 3.10+)
+├── backend/               # 🐍 后端核心 (FastAPI + Python 3.12)
 │   ├── app/               # 业务逻辑与 API
 │   ├── Dockerfile         # 生产环境 Docker 镜像
-│   ├── docker-compose.yml # 后端服务编排（含 MySQL、Redis）
 │   └── tests/             # 单元测试
 ├── frontend/              # 🖥️ 桌面客户端 (Electron + Vue3 + TypeScript)
-│   ├── electron/          # Electron 主进程
-│   └── src/               # Vue3 渲染进程
-├── mobile/                # 📱 移动端 (UniApp)
+│   ├── src/               # Vue3 渲染进程与 Electron 主进程入口
+│   └── dist/              # 构建产物
 ├── plugins/               # 🔌 插件系统 (标准插件示例与文档)
 ├── docs/                  # 📚 项目文档
-├── docker-compose.yml     # 🐳 服务编排入口（include backend/frontend）
-└── build.sh               # 🔧 构建脚本（生成 secrets 文件）
+├── docker/                # 🐳 服务编排 (base/backend/frontend 分层)
+├── scripts/               # 启动/停止/初始化脚本 (start.sh 为统一入口)
+└── secrets/               # 🔐 敏感信息 (本地生成, 不入库)
 ```
 
 ## 🗺️ 路线图（框架 + 两个插件）
@@ -131,23 +130,29 @@ bash scripts/init-secrets.sh
 
 ### 2. 启动服务（选择模式）
 
-**全栈模式**（推荐，前端 + 后端 + 数据库）：
+**全栈模式**（推荐，前端 + 后端 + MySQL + Redis）：
 
 ```bash
-bash scripts/start-fullstack.sh
+bash scripts/start.sh dev full
 ```
 
 **仅后端模式**（API 开发）：
 
 ```bash
-bash scripts/start-backend.sh
+bash scripts/start.sh dev backend
 ```
 
 **仅前端模式**（连接外部后端）：
 
 ```bash
-# 编辑 .env 设置 VITE_API_URL 指向你的后端地址
-bash scripts/start-frontend.sh
+# 编辑 .env 设置 VITE_API_PROXY_URL 指向你的后端地址
+bash scripts/start.sh dev frontend
+```
+
+**本地模式**（不经 Docker，前后端本地进程，适合前端开发）：
+
+```bash
+bash scripts/start.sh local full
 ```
 
 ### 3. 访问服务
@@ -172,8 +177,10 @@ npm run dev
 
 ## 📝 开发指南
 
-*   **插件开发**: 请参考 [plugins/README.md](plugins/README.md)
-*   **架构文档**: 详见 [docs/architecture/README.md](docs/architecture/README.md)
+*   **插件开发**: 请参考 [plugins/index.md](plugins/index.md)
+*   **架构文档**: 详见 [docs/architecture/index.md](docs/architecture/index.md)
+
+> ⚠️ **安全提示**: 当前版本 API 未内置认证。`/api/v1/runs/execute` 可执行任意 Flow（插件动作如 `openclaw.exec` 可执行系统命令），请勿将服务直接暴露到公网；生产部署请置于内网或网关（反向代理 + 认证）之后。
 
 ## 📄 License
 

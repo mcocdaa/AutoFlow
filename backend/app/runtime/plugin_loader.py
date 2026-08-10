@@ -16,7 +16,7 @@ from app.core.setting_manager import setting_manager
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PLUGINS_DIR = Path(__file__).resolve().parents[2] / "plugins"
+DEFAULT_PLUGINS_DIR = Path(__file__).resolve().parents[3] / "plugins"
 
 
 def _plugins_dir() -> Path:
@@ -88,8 +88,9 @@ def load_plugins(registry: Registry) -> None:
             elif not path.is_file() or path.suffix != ".py":
                 raise ValueError(f"插件路径既不是目录也不是 .py 文件: {path}")
 
-            module_name = f"plugins.{key}"
-            module = importlib.import_module(module_name)
+            # 模块名取解析后路径的目录名/文件名,与 plugins.yaml 的 key 解耦
+            module_name = path.name
+            module = importlib.import_module(f"plugins.{module_name}")
 
             register_fn = getattr(module, "register", None)
             if not callable(register_fn):

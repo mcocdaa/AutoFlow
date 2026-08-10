@@ -108,7 +108,7 @@ class OpenClawPlugin:
         args = params.get("args")  # 可选参数列表
         cwd = params.get("cwd")
         timeout = params.get("timeout") or self.defaults.get("exec_timeout", 60)
-        safe_mode = params.get("safe_mode", self.defaults.get("safe_mode", False))
+        safe_mode = params.get("safe_mode", self.defaults.get("safe_mode", True))
         allowed_commands = self.defaults.get("allowed_commands", [])
 
         if not command:
@@ -143,7 +143,7 @@ class OpenClawPlugin:
             cmd = shlex.split(command, posix=not _is_windows)
             use_shell = _is_windows
         else:
-            # 默认：shell=True（向后兼容）
+            # 显式关闭 safe_mode 时才使用 shell=True
             cmd = command
             use_shell = True
 
@@ -304,7 +304,3 @@ class OpenClawPlugin:
 
         exit_code = action_output.get("exit_code")
         return exit_code == 0
-
-
-def register(config: dict = None) -> OpenClawPlugin:
-    return OpenClawPlugin(config=config)

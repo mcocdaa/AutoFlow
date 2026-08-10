@@ -4,11 +4,10 @@
 
 ## 目录
 
-- [1. 快速入门](quickstart.md)
-- [2. Action 开发规范](action-spec.md)
-- [3. Check 开发规范](check-spec.md)
-- [4. 案例分析](examples.md)
-- [5. 完整步骤](step-by-step.md)
+- [1. 快速入门](#1-autoflow-插件开发快速入门)
+- [2. Action 开发规范](#2-action-开发规范)
+- [3. Check 开发规范](#3-check-开发规范)
+- [4. 现有插件示例分析](#4-现有插件示例分析)
 
 ## 1. AutoFlow 插件开发快速入门
 
@@ -18,44 +17,31 @@
 
 ```
 插件目录/
-└── __init__.py  # 核心文件，定义插件类和 register 函数
+├── __init__.py  # 包入口
+├── hooks.py     # register(registry) 注册函数
+└── backend.py   # 业务逻辑
 ```
 
-### register(注册)函数的写法
+目录插件必须包含 `__init__.py`，并被 `backend/app/runtime/plugin_loader.py` 以 `plugins.<目录名>` 导入。
 
-每个插件都必须提供 `register()` 函数，返回插件对象：
+### register 注册函数的写法
+
+每个插件必须提供 `register(registry)` 函数（唯一注册入口），接收 `app.core.registry.Registry` 并直接完成注册：
 
 ```python
-类插件类名：
-    def __init__(self) -> None:
-        self.name = "插件名称"
-        self.version = "0.1.0"
-        self.actions = {
-            "插件指定类型名": 处理函数,
-        }
-        self.checks = {
-            "检查指定类型名": 检查函数,
-        }
+from app.core.registry import Registry
 
-    def register() -> 插件类名：
-        return 插件类名()
+def register(registry: Registry) -> None:
+    registry.register_plugin(name="my-plugin", version="0.1.0")
+    registry.register_action("my.action", my_action)
+    registry.register_check("my.check", my_check)
 ```
 
 ### 如何注册 action 和 check
 
-在插件类的 `__init__` 方法中，通过定义 `actions` 和 `checks` 字典来注册功能：
+通过 `registry.register_action()` / `registry.register_check()` 注册，类型名规则是 `插件名.功能`，例如：`zhihu.fetch_answer`、`desktop.click`。
 
-```python
-self.actions = {
-    "插件指定类型名": 处理函数,
-}
-
-self.checks = {
-    "检查指定类型名": 检查函数,
-}
-```
-
-插件指定类型名的规则是：`插件名-功能指定`，例如：`zhihu.fetch_answer`、`desktop.click`。
+推荐把 `register(registry)` 放在 `hooks.py`，`backend.py` 只放业务实现。插件注册失败不影响其他插件，错误会记录到 Registry（见 `GET /api/v1/plugins` 的 errors 字段）。
 
 ## 2. Action 开发规范
 
@@ -81,13 +67,13 @@ class ActionContext:
     step_id: str             # 步骤 ID
     input: Any | None        # 上一步输入
     vars: dict[str, Any]     # 变量字典
-    artifacts_dir: Path      # 产品目录
+    artifacts_dir: Path      # 产物目录
 ```
 
 常用的内容包括：
 - `input`: 上一步的输入数据
 - `vars`: 全局变量，可以从中读取配置信息
-- `artifacts_dir`: 存储产品的目录，一般建议在此目录下创建子目录
+- `artifacts_dir`: 存储产物的目录，一般建议在此目录下创建子目录
 
 ### 返回值格式
 
@@ -103,7 +89,7 @@ return {
 }
 ```
 
-## 3. Check 开受规范
+## 3. Check 开发规范
 
 ### CheckHandler 接口
 
@@ -116,7 +102,7 @@ CheckHandler = Callable[[CheckContext, dict[str, Any]], bool]
 其中：
 - `CheckContext`: 上下文信息
 - `dict[str, Any]`: 检查参数
-- 返回值: `True`/“False“标识检查结果
+- 返回值: `True`/`False` 标识检查结果
 
 ### CheckContext 包含哪些信息
 
@@ -148,24 +134,21 @@ return False  # 检查失败
 
 ### dummy_echo：最简单的 action
 
+对应文件 `plugins/examples/dummy_echo.py`：
+
 ```python
-class DummyEchoPlugin:
-    def __init__(self) -> None:
-        self.name = "dummy-echo"
-        self.version = "0.1.0"
-        self.actions = {
-            "dummy.echo": self.echo,
-        }
+from app.core.registry import ActionContext, Registry
 
-    def echo(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
-        return {
-            "input": ctx.input,
-            "message": params.get("message"),
-            "vars": ctx.vars,
-        }
+def _echo(ctx: ActionContext, params: dict[str, Any]) -> Any:
+    return {
+        "input": ctx.input,
+        "message": params.get("message"),
+        "vars": ctx.vars,
+    }
 
-    def register() -> DummyEchoPlugin:
-        return DummyEchoPlugin()
+def register(registry: Registry) -> None:
+    registry.register_plugin(name="dummy-echo", version="0.1.0")
+    registry.register_action("dummy.echo", _echo)
 ```
 
 **特点分析**：
@@ -175,62 +158,64 @@ class DummyEchoPlugin:
 
 ### hello_world：带版本信息的插件
 
+对应文件 `plugins/examples/hello_world.py`：
+
 ```python
-class HelloWorldPlugin:
-    def __init__(self):
-        self.name = "Hello World Plugin"
-        self.version = "1.0.0"
+from app.core.registry import ActionContext, Registry
 
-    def execute(self, name: str = "World"):
-        return f"Hello, {name} from AutoFlow!"
+def _hello(ctx: ActionContext, params: dict[str, Any]) -> Any:
+    name = params.get("name", "World")
+    return {"message": f"Hello, {name} from AutoFlow!"}
 
-    def register():
-        return HelloWorldPlugin()
+def register(registry: Registry) -> None:
+    registry.register_plugin(name="hello-world", version="1.0.0")
+    registry.register_action("core.hello", _hello)
 ```
 
 **特点分析**：
-- 使用 `execute` 方法而不是 `actions` 字典
-- 简单的函数调用
-- 不需要 ActionContext
+- 注册插件名称与版本
+- 简单函数调用，不依赖外部依赖
 
 ### desktop_checkin：多 action 注册
 
+`plugins/desktop_checkin/hooks.py` 注册多个 action 和 check：
+
 ```python
-class DesktopCheckinPlugin:
-    def __init__(self) -> None:
-        self.name = "desktop-checkin"
-        self.version = "0.1.0"
-        self.actions = {
-            "desktop.activate_window": self.activate_window,
-            "desktop.click": self.click,
-            # 更多 action...
-        }
-        self.checks = {
-            "desktop.image_exists": self.image_exists,
-            "desktop.window_title_contains": self.window_title_contains,
-        }
+def register(registry: Registry) -> None:
+    registry.register_plugin(name="desktop-checkin", version="0.1.0")
+    registry.register_action("desktop.activate_window", activate_window)
+    registry.register_action("desktop.click", click)
+    registry.register_check("desktop.image_exists", image_exists)
+    registry.register_check("desktop.window_title_contains", window_title_contains)
 ```
 
 **特点分析**：
 - 注册多个 action 和 check
 - 实现高级功能：桌面自动化
-- 包含安全功能：模拟模式支持
+- 包含安全功能：模拟模式支持（dry_run）
 
 ### zhihu_digest：外部 API 调用
 
+`plugins/zhihu_digest/hooks.py` 注册外部 API 相关动作：
+
 ```python
-class ZhihuDigestPlugin:
-    def __init__(self) -> None:
-        self.name = "zhihu-digest"
-        self.version = "0.1.0"
-        self.actions = {
-            "zhihu.fetch_answer": self.fetch_answer,
-            "zhihu.post_answer_draft": self.post_answer_draft,
-        }
+def register(registry: Registry) -> None:
+    registry.register_plugin(name="zhihu-digest", version="0.1.0")
+    registry.register_action("zhihu.fetch_answer", fetch_answer)
+    registry.register_action("zhihu.post_answer_draft", post_answer_draft)
 ```
 
 **特点分析**：
-- 调用外部 API：知乎简介
+- 调用外部 API：知乎
 - 实现数据处理和存储
 - 支持模拟模式
-- 包含错
+- 包含错误处理与返回结构化结果
+
+## 5. 完整开发步骤
+
+1. 在 `plugins/` 下创建插件目录 `my_plugin/`，包含 `__init__.py`
+2. 在 `hooks.py` 中实现 `register(registry)`，注册插件信息与 action/check
+3. 在 `backend.py`（或 hooks.py 内联）实现 handler 函数
+4. 在 `plugins/plugins.yaml` 中登记插件（`enabled: true`）
+5. 编写测试并运行 `pytest plugins/my_plugin/tests` 与 `pytest backend/tests`
+6. 用示例 Flow（`docs/examples/*.flow.yaml`）验证链路，可先配 `vars: { dry_run: true }`

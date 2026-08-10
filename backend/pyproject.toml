@@ -6,7 +6,7 @@ authors = ["AutoFlow Team <team@autoflow.dev>"]
 packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.12"
 fastapi = ">=0.100.0"
 uvicorn = ">=0.23.0"
 pydantic = ">=2.0.0"
@@ -17,29 +17,17 @@ pyautogui = ">=0.9.54"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.0"
-black = ">=23.7.0"
-isort = ">=5.12.0"
-mypy = ">=1.5.0"
 ruff = ">=0.4.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.isort]
-profile = "black"
-
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py312"
 src = ["app", "../plugins"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["B008"]
-
-[tool.mypy]
-python_version = "3.10"
-strict = true
-explicit_package_bases = true
-namespace_packages = false

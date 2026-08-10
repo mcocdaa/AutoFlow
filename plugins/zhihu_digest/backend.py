@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,7 @@ from app.core.registry import ActionContext
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _is_truthy(v: Any) -> bool:
@@ -54,14 +54,13 @@ def _write_text(ctx: ActionContext, rel_path: str, text: str) -> str:
 
 def _read_text(ctx: ActionContext, path: str) -> str:
     p = Path(path)
-    if p.is_absolute():
-        return p.read_text(encoding="utf-8")
-
-    candidate = (ctx.artifacts_dir / p).resolve()
-    if candidate.exists():
-        return candidate.read_text(encoding="utf-8")
-
-    return (_repo_root() / p).resolve().read_text(encoding="utf-8")
+    if not p.is_absolute():
+        p = ctx.artifacts_dir / p
+    p = p.resolve()
+    allowed = {ctx.artifacts_dir.resolve(), _repo_root().resolve()}
+    if not any(p == base or base in p.parents for base in allowed):
+        raise ValueError(f"path outside allowed directories: {path}")
+    return p.read_text(encoding="utf-8")
 
 
 def _get_cookie(params: dict[str, Any]) -> str | None:
@@ -269,7 +268,3 @@ class ZhihuDigestPlugin:
             "dry_run": False,
             "error": error,
         }
-
-
-def register() -> ZhihuDigestPlugin:
-    return ZhihuDigestPlugin()

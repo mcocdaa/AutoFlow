@@ -2,9 +2,12 @@
 # @brief 自动路由加载器 - 非递归版 (分层负责)
 # @create 2026-03-10
 import importlib
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter
+
+logger = logging.getLogger(__name__)
 
 
 def include_routers_from_directory(
@@ -56,9 +59,9 @@ def include_routers_from_directory(
                     kwargs["prefix"] += f"/{module_name}"
 
                 parent_router.include_router(sub_router, **kwargs)
-                print(
-                    f"[RouterLoader] 已挂载: {package_name}.{module_name}, **{kwargs}"
+                logger.info(
+                    "已挂载路由: %s.%s, **%s", package_name, module_name, kwargs
                 )
 
         except Exception as e:
-            print(f"[RouterLoader] 挂载失败 {module_name}: {str(e)}")
+            logger.warning("挂载失败 %s: %s", module_name, e)
