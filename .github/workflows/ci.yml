@@ -9,6 +9,7 @@ jobs:
   backend:
     name: Backend (pytest + ruff)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
@@ -19,13 +20,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - name: Install Poetry
-        run: pip install poetry
+          cache: poetry
+          cache-dependency-path: backend/poetry.lock
+      - name: Install Poetry (pinned)
+        run: pip install poetry==2.3.3
       - name: Install dependencies
         run: poetry install --with dev
       - name: Lint (ruff)
         run: poetry run ruff check app tests ../plugins
+      - name: Format check (ruff)
+        run: poetry run ruff format --check app tests ../plugins
       - name: Run tests
         run: >-
           poetry run pytest tests
@@ -36,6 +40,7 @@ jobs:
   frontend:
     name: Frontend (vue-tsc + build)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -43,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
@@ -52,10 +57,31 @@ jobs:
         run: npx vue-tsc --noEmit
       - name: Build (vite)
         run: npx vite build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  docker-compose:
+    name: Docker compose validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Validate root compose
+        run: docker compose config --quiet
+      - name: Validate full compose
+        run: docker compose -f docker/docker-compose.full.yml config --quiet
+      - name: Validate layered dev compose
+        run: docker compose -f docker/docker-compose.base.yml -f docker/docker-compose.backend.yml -f docker/docker-compose.frontend.yml config --quiet
 
   pre-commit:
     name: Pre-commit checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

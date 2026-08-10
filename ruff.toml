@@ -1,0 +1,8 @@
+# 根目录 ruff 配置: 统一 pre-commit / CI / 本地的规则集
+# backend/pyproject.toml 中 [tool.ruff] 为后端专属配置(作用范围更具体,优先级更高)
+line-length = 88
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]

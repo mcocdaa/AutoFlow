@@ -3,7 +3,7 @@
 # 内部端口: 3000
 # ============================================
 
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 ENV PORT=3000
 EXPOSE 3000
@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Poetry
-RUN pip install poetry
+# 安装 Poetry (版本与 backend/poetry.lock 生成环境保持一致)
+RUN pip install poetry==2.3.3
 
 # 复制依赖文件
 COPY pyproject.toml poetry.lock* ./

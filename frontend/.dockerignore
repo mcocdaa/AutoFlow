@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-electron
+.env
+.env.*
+!.env.example
+*.md
+Dockerfile
+Dockerfile.build
+docker-compose*.yml
