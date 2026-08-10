@@ -15,36 +15,29 @@ src/
 ├── main.ts                    # 应用入口文件
 │
 ├── api/                       # API 接口层
-│   └── index.ts              # 所有 API 请求定义
-│
-├── assets/                    # 静态资源
-│   ├── images/               # 图片资源
-│   ├── fonts/                # 字体资源
-│   └── README.md             # 资源使用说明
+│   └── index.ts              # API 客户端（Electron 下自动切换后端地址）
 │
 ├── components/                # Vue 组件
 │   ├── plugins/              # 插件管理相关组件
 │   │   ├── PluginCard.vue
 │   │   ├── StatsCard.vue
-│   │   ├── ActionsSection.vue
-│   │   ├── ChecksSection.vue
 │   │   └── ErrorsSection.vue
 │   ├── run/                  # 运行流相关组件
 │   │   ├── YamlEditor.vue
 │   │   └── ResultsPanel.vue
 │   └── shared/               # 跨页面复用的通用组件
-│       └── README.md         # 共享组件开发规范
+│       └── TagSection.vue   # Actions/Checks 标签分组列表
 │
 ├── composables/               # 可复用组合式函数
-│   ├── useClipboard.ts       # 剪贴板功能
-│   └── useMobile.ts          # 移动端检测
+│   └── useClipboard.ts       # 剪贴板功能（含降级方案）
 │
 ├── constants/                 # 常量定义
 │   ├── plugins.ts            # 插件相关常量
 │   └── flow-examples.ts      # 流程示例
 │
-├── layouts/                   # 布局组件
-│   └── README.md
+├── electron/                  # Electron 主进程/预加载脚本
+│   ├── main.ts              # 主进程（安全加固的 webPreferences）
+│   └── preload.ts           # contextBridge 预加载脚本
 │
 ├── router/                    # 路由配置
 │   └── index.ts
@@ -56,15 +49,9 @@ src/
 ├── theme/                     # Flow Design System 主题
 │   └── flow-design-theme.ts  # FDS v1.0 完整主题配置
 │
-├── types/                     # TypeScript 类型定义
+├── types/                     # TypeScript 类型定义（对齐后端模型）
 │   ├── plugins.ts
 │   └── runs.ts
-│
-├── utils/                     # 工具函数
-│   ├── index.ts              # 统一导出入口
-│   ├── format.ts             # 格式化工具
-│   ├── storage.ts            # 本地存储工具
-│   └── README.md             # 工具函数开发规范
 │
 └── views/                     # 页面视图
     ├── PluginsView.vue       # 插件管理页面

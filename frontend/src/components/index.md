@@ -16,20 +16,18 @@ components/
 ├── plugins/          # 插件管理相关组件
 │   ├── PluginCard.vue
 │   ├── StatsCard.vue
-│   ├── ActionsSection.vue
-│   ├── ChecksSection.vue
 │   └── ErrorsSection.vue
 ├── run/              # 运行流相关组件
 │   ├── YamlEditor.vue
 │   └── ResultsPanel.vue
 └── shared/           # 跨页面复用的通用组件
-    └── README.md
+    └── TagSection.vue
 ```
 
 ## 📋 组件分类
 
 - **业务组件**：按业务模块组织在子目录中（如 `plugins/`, `run/`）
-- **通用组件**：跨页面复用的组件放在 `shared/` 目录
+- **通用组件**：跨页面复用的组件放在 `shared/` 目录（如 `TagSection.vue`，Actions/Checks 列表共用）
 
 ## 🎨 组件开发规范
 
