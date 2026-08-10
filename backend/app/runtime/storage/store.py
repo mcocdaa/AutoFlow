@@ -46,6 +46,14 @@ def _deep_copy_with_ref_tracking(obj: Any, seen: dict[int, Any] | None = None) -
 
 
 class RunStore:
+    """In-memory run store backed by optional JSON artifacts on disk.
+
+    Important: Runs are stored in a process-local dict and are NOT shared
+    across workers. Runs are also lost on restart. This is acceptable for
+    single-process development and light usage; for production multi-worker
+    deployments, replace with a shared store (e.g. database, Redis, etc.).
+    """
+
     def __init__(self, artifacts_dir: Path) -> None:
         self._runs: dict[str, RunResult] = {}
         self._artifacts_dir = artifacts_dir

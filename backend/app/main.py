@@ -4,7 +4,6 @@
 # @update 2026-03-27 集成新的插件管理器系统
 
 import argparse
-import importlib
 import logging
 from contextlib import asynccontextmanager
 
@@ -59,9 +58,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 确保在导入模块时也初始化（用于 TestClient 场景）
-if importlib.util.find_spec("pytest") is not None:
-    init_services()
+# Always call init_services() at module level (idempotent gate)
+init_services()
 
 app.add_middleware(
     CORSMiddleware,

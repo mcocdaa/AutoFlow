@@ -2,6 +2,10 @@
 # @brief 运行时核心模块 - Registry/Runner/Store 单例初始化（基于 Hook 模式）
 # @create 2026-03-15
 # @update 2026-03-27 重构为基于 Hook 的插件系统
+#
+# Note: RunStore is in-memory and per-process — runs are not shared across
+# workers and are lost on restart. The `@lru_cache(maxsize=1)` singletons
+# here are process-local as well.
 
 from __future__ import annotations
 

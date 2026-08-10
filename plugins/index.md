@@ -66,15 +66,36 @@ AutoFlow 通过 `backend/app/runtime/plugin_loader.py` 统一加载插件：
 
 插件约定（**唯一**注册入口）：
 
+**函数式注册（推荐）：**
+
 ```python
 from app.core.registry import Registry
 
 
-def register(registry: Registry) -> None:
+def register(registry: Registry, config: dict = None) -> None:
+    """config 由 plugin_loader 从 config.yaml 加载并注入"""
     registry.register_plugin(name="my-plugin", version="0.1.0")
     registry.register_action("my.action", handler)
     registry.register_check("my.check", handler)
 ```
+
+**类式注册（通过 hooks.py 实例化后端类）：**
+
+```python
+# plugins/my_plugin/hooks.py
+from plugins.my_plugin.backend import MyPlugin
+
+
+def register(registry, config=None):
+    """config 由 plugin_loader 从 config.yaml 加载并注入"""
+    plugin = MyPlugin(config)  # 后端类接收 config
+    registry.register_plugin(plugin.name, plugin.version)
+    for type_name, handler in plugin.actions.items():
+        registry.register_action(type_name, handler)
+```
+
+`config` 参数由 `plugin_loader` 自动从插件目录下的 `config.yaml` 加载，
+其中 `secrets` block 会被解析为对应的环境变量值。无 `config.yaml` 时传入 `None`。
 
 单个插件加载失败不影响其他插件，错误会记录到 Registry 的 `list_plugin_errors()`。
 
