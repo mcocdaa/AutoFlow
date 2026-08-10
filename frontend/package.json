@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build && electron-builder",
-    "preview": "vite preview"
+    "build:web": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --host 0.0.0.0 --port 8000"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
@@ -14,6 +16,11 @@
     "pinia": "^2.1.6",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4"
+  },
+  "build": {
+    "appId": "com.autoflow.desktop",
+    "productName": "AutoFlow",
+    "files": ["dist", "dist-electron"]
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",

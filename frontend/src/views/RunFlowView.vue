@@ -38,7 +38,12 @@ const currentRun = computed(() => store.currentRun)
 
 const handleExecute = async (yaml: string, isDryRun: boolean) => {
   const vars = isDryRun ? { dry_run: true } : {}
-  await store.executeFlow(yaml, {}, vars)
+  try {
+    await store.executeFlow(yaml, {}, vars)
+  } catch (err) {
+    // Error is already surfaced via store.error in ResultsPanel
+    console.error('Flow execution failed:', err)
+  }
 }
 </script>
 

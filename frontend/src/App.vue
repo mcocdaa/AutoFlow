@@ -15,18 +15,10 @@
             <template #icon><PlusOutlined /></template>
             创建流程
           </a-button>
-          <a-dropdown>
-            <a class="user-info" @click.prevent>
-              <a-avatar class="user-avatar" size="small">U</a-avatar>
-              <span class="user-name">User</span>
-            </a>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item key="profile">个人设置</a-menu-item>
-                <a-menu-item key="logout">退出登录</a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
+          <div class="user-info">
+            <a-avatar class="user-avatar" size="small">U</a-avatar>
+            <span class="user-name">User</span>
+          </div>
         </div>
       </a-layout-header>
 

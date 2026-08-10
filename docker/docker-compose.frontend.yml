@@ -10,6 +10,8 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
       target: web
+      args:
+        - BUILD_ENV=${FRONTEND_BUILD_ENV:-dev}
     restart: unless-stopped
     ports:
       - "${FRONTEND_EXTERNAL_PORT:-8001}:8000"

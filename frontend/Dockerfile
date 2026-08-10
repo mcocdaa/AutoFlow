@@ -16,6 +16,7 @@ COPY package.json package-lock.json* ./
 
 # ---------------- Web 模式 ----------------
 FROM base AS web
+ARG BUILD_ENV=dev
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 ENV DOCKER_WEB=true
 ENV PORT=8000
@@ -24,7 +25,9 @@ EXPOSE 8000
 RUN npm ci
 COPY . .
 
-CMD ["sh", "-c", "npm run dev -- --host 0.0.0.0 --port 8000"]
+RUN if [ "$BUILD_ENV" = "prod" ] ; then npm run build:web ; fi
+
+CMD if [ "$BUILD_ENV" = "prod" ] ; then npm run serve ; else npm run dev -- --host 0.0.0.0 --port 8000 ; fi
 
 # ---------------- Build-Only 模式 ----------------
 FROM base AS build-only

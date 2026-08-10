@@ -24,7 +24,7 @@
         <div class="info-item">
           <ClockCircleOutlined class="info-icon" />
           <span class="info-label">Duration:</span>
-          <span class="info-value">{{ run.duration_ms }} ms</span>
+          <span class="info-value">{{ run.duration_ms !== null ? run.duration_ms + ' ms' : '—' }}</span>
         </div>
       </div>
 

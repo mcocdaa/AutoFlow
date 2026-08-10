@@ -25,10 +25,14 @@
       class="yaml-input"
     />
     <div class="action-buttons">
-      <a-checkbox v-model:checked="isDryRun" class="dry-run-checkbox">
-        <template #icon><CloudOutlined /></template>
-        Dry Run
-      </a-checkbox>
+      <div class="dry-run-wrap">
+        <a-tooltip title="Only effective for plugins that implement a simulation mode (e.g. zhihu_digest, desktop_checkin, ai_deepseek)">
+          <a-checkbox v-model:checked="isDryRun" class="dry-run-checkbox">
+            Dry Run
+          </a-checkbox>
+        </a-tooltip>
+        <span class="dry-run-hint">Simulation mode; only honored by plugins that implement it</span>
+      </div>
       <a-button
         type="primary"
         @click="$emit('execute', yamlContent, isDryRun)"
@@ -46,7 +50,6 @@
 import { ref } from 'vue'
 import {
   FileTextOutlined,
-  CloudOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons-vue'
 import { FLOW_EXAMPLES, DEFAULT_FLOW_YAML } from '../../constants/flow-examples'
@@ -68,10 +71,6 @@ const handleLoadExample = (val: string) => {
     yamlContent.value = FLOW_EXAMPLES[val as keyof typeof FLOW_EXAMPLES]
   }
 }
-
-defineExpose({
-  yamlContent
-})
 </script>
 
 <style scoped>
@@ -123,9 +122,20 @@ defineExpose({
   gap: 12px;
 }
 
+.dry-run-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .dry-run-checkbox {
   display: flex;
   align-items: center;
+}
+
+.dry-run-hint {
+  font-size: 12px;
+  color: var(--flow-text-secondary);
 }
 
 .execute-button {

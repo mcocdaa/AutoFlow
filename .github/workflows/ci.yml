@@ -90,30 +90,23 @@ jobs:
           wait $UVICORN_PID 2>/dev/null || true
 
   frontend:
-    name: Frontend (vue-tsc + build)
+    name: Frontend (vue-tsc + vite build)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Typecheck (vue-tsc)
-        run: npx vue-tsc --noEmit
-      - name: Build (vite)
-        run: npx vite build
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: frontend-dist
-          path: frontend/dist
+      - name: Type-check + build (web)
+        run: npm run build:web
 
   docker-compose:
     name: Docker compose validation

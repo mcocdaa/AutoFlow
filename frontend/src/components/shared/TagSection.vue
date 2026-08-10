@@ -1,12 +1,12 @@
 <template>
   <div class="section-header">
     <div class="section-title">
-      <ThunderboltOutlined class="title-icon" />
-      Registered Actions
+      <component :is="icon" class="title-icon" />
+      {{ title }}
     </div>
     <a-input
       v-model:value="searchValue"
-      placeholder="搜索 Actions"
+      :placeholder="searchPlaceholder"
       allow-clear
       class="search-input"
     >
@@ -18,19 +18,19 @@
   <a-card class="tags-card">
     <a-collapse>
       <a-collapse-panel
-        v-for="(actions, pluginName) in groupedActions"
+        v-for="(items, pluginName) in groupedItems"
         :key="pluginName"
         :header="pluginName"
       >
-        <div class="action-tags-group">
+        <div class="item-tags-group">
           <a-tag
-            v-for="action in actions"
-            :key="action"
-            color="blue"
-            class="action-tag"
-            @click="$emit('copy', action)"
+            v-for="item in items"
+            :key="item"
+            :color="tagColor"
+            class="item-tag"
+            @click="$emit('copy', item)"
           >
-            {{ action }}
+            {{ item }}
           </a-tag>
         </div>
       </a-collapse-panel>
@@ -39,14 +39,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import {
-  ThunderboltOutlined,
-  SearchOutlined,
-} from '@ant-design/icons-vue'
+import { ref, computed, type Component } from 'vue'
+import { SearchOutlined } from '@ant-design/icons-vue'
 
 const props = defineProps<{
-  actions: string[]
+  title: string
+  icon: Component
+  items: string[]
+  tagColor: string
+  searchPlaceholder: string
 }>()
 
 defineEmits<{
@@ -55,15 +56,15 @@ defineEmits<{
 
 const searchValue = ref('')
 
-const groupedActions = computed(() => {
+const groupedItems = computed(() => {
   const groups: Record<string, string[]> = {}
-  props.actions.forEach(action => {
-    const pluginName = action.split('.')[0]
+  props.items.forEach(item => {
+    const pluginName = item.split('.')[0]
     if (!groups[pluginName]) {
       groups[pluginName] = []
     }
-    if (action.toLowerCase().includes(searchValue.value.toLowerCase())) {
-      groups[pluginName].push(action)
+    if (item.toLowerCase().includes(searchValue.value.toLowerCase())) {
+      groups[pluginName].push(item)
     }
   })
   return groups
@@ -103,19 +104,19 @@ const groupedActions = computed(() => {
   border-radius: 12px;
 }
 
-.action-tags-group {
+.item-tags-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   padding: 8px 0;
 }
 
-.action-tag {
+.item-tag {
   font-size: 13px;
   cursor: pointer;
 }
 
-.action-tag:hover {
+.item-tag:hover {
   opacity: 0.85;
 }
 </style>
