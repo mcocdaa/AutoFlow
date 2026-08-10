@@ -8,3 +8,10 @@ export interface PluginError {
   file_path: string
   error: string
 }
+
+export interface PluginsResponse {
+  plugins: Plugin[]
+  actions: string[]
+  checks: string[]
+  errors: PluginError[]
+}
