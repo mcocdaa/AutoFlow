@@ -1819,9 +1819,9 @@ git commit -m "refactor(plugins): migrate example plugins to class methods"
 - Modify: `plugins/common/__init__.py`(**必改**:移除 dry_run_enabled 的 import 与 `__all__` 条目,否则包导入即 ImportError,所有插件加载失败)
 - Modify: `backend/tests/test_plugin_common.py`(删除 TestDryRunEnabled)
 
-- [ ] **Step 1: `plugins/common/helpers.py` 删除 `dry_run_enabled` 函数**(整段移除;import os 保留,resolve_env_value 依赖)
+- [x] **Step 1: `plugins/common/helpers.py` 删除 `dry_run_enabled` 函数**(整段移除;import os 保留,resolve_env_value 依赖)
 
-- [ ] **Step 2: `plugins/common/plugin.py` 移除兼容合并与类属性默认**
+- [x] **Step 2: `plugins/common/plugin.py` 移除兼容合并与类属性默认**
 
 将:
 
@@ -1851,23 +1851,23 @@ git commit -m "refactor(plugins): migrate example plugins to class methods"
 
 同时将文件头注释中"(Task 8 移除类属性兼容合并)"更新为"actions/checks 实例属性化"。
 
-- [ ] **Step 3: `plugins/common/__init__.py` 移除 dry_run_enabled**
+- [x] **Step 3: `plugins/common/__init__.py` 移除 dry_run_enabled**
 
 将 import 块与 `__all__` 中的 `dry_run_enabled` 条目删除(其余导出不变)。
 
-- [ ] **Step 4: `backend/tests/test_plugin_common.py` 删除 `TestDryRunEnabled` 类**(4 个用例;其行为已由 Task 1 新增的 `TestIsDryRun` 覆盖),并移除 import 行的 `dry_run_enabled`
+- [x] **Step 4: `backend/tests/test_plugin_common.py` 删除 `TestDryRunEnabled` 类**(4 个用例;其行为已由 Task 1 新增的 `TestIsDryRun` 覆盖),并移除 import 行的 `dry_run_enabled`
 
-- [ ] **Step 5: grep 确认无残留**
+- [x] **Step 5: grep 确认无残留**
 
 Run: `rg -n "dry_run_enabled" plugins/ backend/ --glob '!**/__pycache__/**'`
 Expected: 无输出(0 命中)
 
-- [ ] **Step 6: 全量回归**
+- [x] **Step 6: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 121 passed(125 - 4 旧 dry_run_enabled 用例)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add plugins/common/helpers.py plugins/common/plugin.py plugins/common/__init__.py backend/tests/test_plugin_common.py
