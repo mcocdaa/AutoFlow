@@ -1,5 +1,5 @@
 # ============================================
-# AutoFlow 默认启动: 全栈模式 (后端 + 前端 + MySQL + Redis)
+# AutoFlow 默认启动: 全栈模式 (后端 + 前端)
 # 用法: docker compose -p autoflow up -d --build
 # 自包含定义见 docker/docker-compose.full.yml
 # ============================================
