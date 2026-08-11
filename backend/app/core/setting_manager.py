@@ -73,7 +73,7 @@ class SettingManager:
         group.add_argument(
             "--host",
             type=str,
-            default=os.getenv("HOST", "0.0.0.0"),
+            default=self.config.get("HOST", "0.0.0.0"),
             help="绑定地址 (默认: 0.0.0.0)",
         )
 
@@ -87,7 +87,7 @@ class SettingManager:
         group.add_argument(
             "--log-level",
             type=str,
-            default=os.getenv("LOG_LEVEL", "INFO"),
+            default=self.config.get("LOG_LEVEL", "INFO"),
             choices=["DEBUG", "INFO", "WARNING", "ERROR", "FATAL"],
             help="日志级别 (默认: INFO)",
         )
@@ -95,7 +95,7 @@ class SettingManager:
         group.add_argument(
             "--cors-origins",
             type=str,
-            default=os.getenv("CORS_ORIGINS", "*"),
+            default=self.config.get("CORS_ORIGINS", "*"),
             help="CORS 允许的源，逗号分隔 (默认: *)",
         )
 
@@ -105,15 +105,15 @@ class SettingManager:
         Args:
             args: 解析后的 argparse.Namespace
         """
-        self.config["HOST"] = getattr(args, "host", self.config.get("HOST", "0.0.0.0"))
-        self.config["PORT"] = getattr(args, "port", self.config.get("PORT", 3001))
-        self.config["LOG_LEVEL"] = getattr(
-            args, "log_level", self.config.get("LOG_LEVEL", "INFO")
-        )
 
-        cors_origins_val = getattr(
-            args, "cors_origins", self.config.get("CORS_ORIGINS", "*")
-        )
+        def _arg(name: str, default: Any) -> Any:
+            return getattr(args, name, self.config.get(name.upper(), default))
+
+        self.config["HOST"] = _arg("host", "0.0.0.0")
+        self.config["PORT"] = _arg("port", 3001)
+        self.config["LOG_LEVEL"] = _arg("log_level", "INFO")
+
+        cors_origins_val = _arg("cors_origins", "*")
         if isinstance(cors_origins_val, list):
             self.config["CORS_ORIGINS"] = cors_origins_val
         else:

@@ -1,5 +1,5 @@
 # @file /backend/app/core/registry.py
-# @brief 全局注册表 - Action/Check 注册表与插件清单（基于 Hook 模式）
+# @brief 全局注册表 - Action/Check 注册表与插件清单(基于 Plugin 注册模式)
 # @create 2026-03-27
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ class PluginLoadErrorInfo:
 class Registry:
     """全局注册表
 
-    通过 hook 系统注册 actions 和 checks
+    通过 Plugin 基类的 register() 注册 actions 和 checks
     """
 
     def __init__(self) -> None:
