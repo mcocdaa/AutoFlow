@@ -2,7 +2,7 @@
 # @brief Plugin 抽象基类:声明式元信息 + 统一注册 + 配置/dry_run/错误共性 API
 # @create 2026-08-10
 # @update 2026-08-11 增加实例级 defaults/secrets、is_dry_run/setting/error_result,
-#   actions/checks 实例属性化(Task 8 移除类属性兼容合并)
+#   actions/checks 实例属性化
 
 from __future__ import annotations
 
@@ -20,16 +20,13 @@ class Plugin:
     name: str
     version: str = "0.1.0"
     dry_run_env: str | None = None
-    actions: dict[str, ActionHandler] = {}  # 类属性默认(兼容旧 ABI);Task 8 移除
-    checks: dict[str, CheckHandler] = {}
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.defaults = dict(self.config.get("defaults", {}))
         self.secrets = dict(self.config.get("secrets", {}))
-        # 兼容过渡:复制子类类属性声明(旧 ABI);新 ABI 在子类 __init__ 覆盖为实例绑定方法
-        self.actions: dict[str, ActionHandler] = dict(type(self).actions)
-        self.checks: dict[str, CheckHandler] = dict(type(self).checks)
+        self.actions: dict[str, ActionHandler] = {}
+        self.checks: dict[str, CheckHandler] = {}
 
     def register(self, registry: Registry) -> None:
         """注册 plugin 元信息、actions、checks"""

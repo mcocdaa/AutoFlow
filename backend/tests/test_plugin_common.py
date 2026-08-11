@@ -8,7 +8,6 @@ from pathlib import Path
 
 from app.core.registry import ActionContext, Registry
 from plugins.common.helpers import (
-    dry_run_enabled,
     is_truthy,
     read_text,
     resolve_env_value,
@@ -239,32 +238,6 @@ class TestResolveEnvValue:
     def test_plain_value_passthrough(self) -> None:
         assert resolve_env_value("plain") == "plain"
         assert resolve_env_value(42) == 42
-
-
-class TestDryRunEnabled:
-    def test_params_dry_run_wins(self, tmp_path: Path) -> None:
-        ctx = _ctx(tmp_path)
-        assert dry_run_enabled(ctx, {"dry_run": True}, "AUTOFLOW_TEST_DRY_RUN") is True
-
-    def test_vars_dry_run(self, tmp_path: Path) -> None:
-        ctx = ActionContext(
-            run_id="r",
-            step_id="s",
-            input=None,
-            vars={"dry_run": True},
-            artifacts_dir=tmp_path,
-        )
-        assert dry_run_enabled(ctx, {}, "AUTOFLOW_TEST_DRY_RUN") is True
-
-    def test_env_var(self, tmp_path: Path, monkeypatch) -> None:
-        ctx = _ctx(tmp_path)
-        monkeypatch.setenv("AUTOFLOW_TEST_DRY_RUN", "1")
-        assert dry_run_enabled(ctx, {}, "AUTOFLOW_TEST_DRY_RUN") is True
-
-    def test_default_false(self, tmp_path: Path, monkeypatch) -> None:
-        ctx = _ctx(tmp_path)
-        monkeypatch.delenv("AUTOFLOW_TEST_DRY_RUN", raising=False)
-        assert dry_run_enabled(ctx, {}, "AUTOFLOW_TEST_DRY_RUN") is False
 
 
 class TestReadWriteText:

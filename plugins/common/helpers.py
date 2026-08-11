@@ -40,15 +40,6 @@ def error_result(
     return {"error": error, "error_type": error_type, **fields}
 
 
-def dry_run_enabled(ctx: ActionContext, params: dict[str, Any], env_var: str) -> bool:
-    """统一 dry_run 判定:params.dry_run > ctx.vars.dry_run > 环境变量 env_var"""
-    if is_truthy(params.get("dry_run")):
-        return True
-    if is_truthy(ctx.vars.get("dry_run")):
-        return True
-    return is_truthy(os.getenv(env_var))
-
-
 def read_text(ctx: ActionContext, path: str, extra_roots: tuple[Path, ...] = ()) -> str:
     """安全路径读取(防穿越):仅允许 artifacts 目录、仓库根目录与 extra_roots 内"""
     p = Path(path)
