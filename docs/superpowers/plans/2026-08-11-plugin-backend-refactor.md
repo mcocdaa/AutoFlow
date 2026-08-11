@@ -1287,7 +1287,7 @@ git commit -m "refactor(plugins): migrate ai_deepseek plugin to class methods"
 **Files:**
 - Modify: `plugins/openclaw/backend.py`(全文替换)
 
-- [ ] **Step 1: 重写 `plugins/openclaw/backend.py`**
+- [x] **Step 1: 重写 `plugins/openclaw/backend.py`**
 
 删除模块级 `_DEFAULTS`/`_SECRETS` 及 `__init__` 中的 clear/update 注入,改由基类实例属性 `self.defaults`/`self.secrets` 提供;三个 action 的错误返回收敛为 `self.error_result()`。注意 `url is required` 分支原返回**不含** error_type 键,保持字面 dict 不变(契约优先)。
 
@@ -1624,7 +1624,7 @@ class OpenClawPlugin(Plugin):
 PLUGIN = OpenClawPlugin
 ```
 
-- [ ] **Step 2: 新增 `plugins/openclaw/tests/test_openclaw_plugin.py`(错误返回/白名单单测)**
+- [x] **Step 2: 新增 `plugins/openclaw/tests/test_openclaw_plugin.py`(错误返回/白名单单测)**
 
 ```python
 # @file /plugins/openclaw/tests/test_openclaw_plugin.py
@@ -1690,17 +1690,17 @@ def test_exec_command_timeout_uses_error_result() -> None:
 Run: `PYTHONPATH=backend:. pytest plugins/openclaw/tests -q`
 Expected: 4 passed
 
-- [ ] **Step 3: 全量回归**
+- [x] **Step 3: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 125 passed(121 + 4)
 
-- [ ] **Step 4: grep 确认模块级状态已删除**
+- [x] **Step 4: grep 确认模块级状态已删除**
 
 Run: `rg -n "_DEFAULTS|_SECRETS" plugins/openclaw/`
 Expected: 无输出(0 命中)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add plugins/openclaw/backend.py plugins/openclaw/tests/test_openclaw_plugin.py
