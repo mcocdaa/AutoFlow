@@ -48,7 +48,7 @@
 | `plugins/examples/dummy_echo.py` | 同上 |
 | `backend/app/runtime/plugin_loader.py` | 最小调整:识别 `PLUGIN`(Plugin 子类),注入 config,调用 `plugin.register` |
 | `backend/tests/test_plugin_loader.py` | 适配新协议 + 新用例(PLUGIN 识别、config 注入、无 PLUGIN 错误上报) |
-| `plugins/index.md` | 更新为新 ABI 说明 |
+| `plugins/index.md` | **删除**(用户指令:代码目录中的 index.md 一律删除) |
 
 ### 删除
 
@@ -2512,122 +2512,26 @@ git commit -m "refactor(plugins): remove hooks.py, export PLUGIN only"
 
 ---
 
-## Task 16: 更新 plugins/index.md 为新 ABI 说明
+## Task 16: 删除 plugins/index.md(用户指令:代码中的 index.md 一律删除)
 
 **Files:**
-- Modify: `plugins/index.md`(全文重写)
+- Delete: `plugins/index.md`(及其它代码目录中的 index.md,见阶段验收)
 
-- [ ] **Step 1: 重写 `plugins/index.md`(全文)**
-
-````markdown
----
-title: 插件系统
-description: AutoFlow 插件系统文档
-keywords: [插件, plugin, 系统, 扩展]
-version: "2.0"
----
-
-# AutoFlow 插件系统
-
-本目录包含 AutoFlow 的所有插件。插件是扩展核心引擎功能的 Python 模块。
-
-## 📁 目录结构
-
-```
-plugins/
-├── plugins.yaml              # 插件注册表（启用/禁用控制）
-├── index.md                  # 本文件
-├── common/                   # 插件共享代码（Plugin 基类 + helpers,不注册进 plugins.yaml）
-│   ├── __init__.py           # 导出 Plugin 与 helpers
-│   ├── plugin.py             # Plugin 抽象基类
-│   └── helpers.py            # 共享工具函数
-│
-├── dummy/                    # 示例插件
-├── ai_deepseek/              # DeepSeek AI 集成
-├── zhihu_digest/             # 知乎摘要
-├── desktop_checkin/          # 桌面签到
-├── openclaw/                 # OpenClaw 自动化 (含 openclaw_plugin 子模块)
-│
-└── examples/                 # 插件开发示例
-    ├── hello_world.py
-    └── dummy_echo.py
-```
-
-## 📋 插件标准结构
-
-一个标准的目录插件：
-
-```
-my_plugin/
-├── __init__.py       # 包入口（导出 PLUGIN）
-├── backend.py        # class XxxPlugin(Plugin),actions/checks 以类属性声明
-└── config.yaml       # 可选,defaults + secrets(secrets 由 loader 解析为环境变量值)
-```
-
-文件插件（如 `examples/*.py`）直接在单文件中定义 Plugin 子类并导出 `PLUGIN`。
-
-## ⚙️ 插件注册表
-
-在 `plugins.yaml` 中控制插件的启用状态：
-
-```yaml
-plugins:
-  dummy:
-    enabled: true
-  ai_deepseek:
-    enabled: true
-  # ...
-```
-
-## 🚀 插件加载
-
-AutoFlow 通过 `backend/app/runtime/plugin_loader.py` 统一加载插件：
-
-1. 读取 `plugins/plugins.yaml` 中启用的插件
-2. 导入对应模块（目录插件要求包含 `__init__.py`）
-3. 识别模块导出的 `PLUGIN`（Plugin 子类），实例化并注入 config
-4. 调用 `plugin.register(registry)` 完成注册
-
-插件约定（**唯一**注册入口）：
-
-```python
-# plugins/my_plugin/backend.py
-from app.core.registry import ActionContext
-from plugins.common.plugin import Plugin
-
-
-def _my_action(ctx: ActionContext, params: dict) -> dict:
-    message = params.get("message", "hello")
-    return {"message": message}
-
-
-class MyPlugin(Plugin):
-    name = "my-plugin"
-    version = "0.1.0"
-    actions = {"my.action": _my_action}
-    checks = {}
-
-
-PLUGIN = MyPlugin
-```
-
-- `Plugin` 基类（`plugins/common/plugin.py`）提供声明式 `name/version/actions/checks` 与统一的 `register(registry)`。
-- actions/checks 的 handler 必须是模块级函数或 `@staticmethod`（类体内无法引用实例方法）。
-- `config` 由 `plugin_loader` 自动从插件目录下的 `config.yaml` 加载并注入构造：`defaults` 原样传入，`secrets` block 会被解析为对应环境变量的值。无 `config.yaml` 时传入 `None`。
-- 共享工具函数见 `plugins/common/helpers.py`：`is_truthy`、`dry_run_enabled(ctx, params, env_var)`、`read_text(ctx, path, extra_roots=())`、`write_text(ctx, rel_path, text)`、`utc_now_iso()`、`safe_name(name, fallback)`。
-- 单个插件加载失败不影响其他插件，错误会记录到 Registry 的 `list_plugin_errors()`。
-
-## 📖 开发指南
-
-参考 `docs/zh/plugin-dev-guide.md` 了解完整的插件开发指南（完整指南迁移到新 ABI 属阶段四）。
-````
-
-- [ ] **Step 2: 提交**
+- [ ] **Step 1: 删除 plugins/index.md**
 
 ```bash
 cd /home/mcocdaa/AI_CODE/AutoFlow
-git add plugins/index.md
-git commit -m "docs(plugins): update index.md for new Plugin ABI"
+git rm plugins/index.md
+```
+
+- [ ] **Step 2: 验证**
+
+Run: `git status --short` — Expected: 显示 `D  plugins/index.md`(仅此一个删除,勿带其它文件)。
+
+- [ ] **Step 3: 提交**
+
+```bash
+git commit -m "chore(plugins): remove in-code index.md"
 ```
 
 ---

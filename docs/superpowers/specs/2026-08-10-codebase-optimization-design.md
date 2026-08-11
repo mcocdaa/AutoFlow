@@ -99,7 +99,7 @@ class Plugin:
 | openclaw | backend.py + hooks.py(构造接收 config) | 同上;config 经构造注入 |
 | examples/hello_world.py | register 函数 | 改为 Plugin 子类 + PLUGIN |
 | examples/dummy_echo.py | register 函数 | 同上 |
-| plugins/index.md | 旧协议文档 | 更新为新 ABI 说明 |
+| plugins/index.md | 旧协议文档 | **删除**(用户指令:代码目录中的 index.md 一律删除) |
 
 `openclaw_plugin` 子模块(JS 插件)不受影响,仅 Python 壳迁移。
 
