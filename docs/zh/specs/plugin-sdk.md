@@ -60,7 +60,7 @@ class Plugin:
 
 - `load`：`plugin_loader` 读取 `plugins.yaml` 启用的插件并导入模块
 - `init`：识别 `PLUGIN` 类引用，实例化并注入 config（即构造阶段）
-- `register`：调用 `plugin.register(registry)` 注册插件元信息、actions、checks
+- `register`：调用 `plugin.register()` 注册插件元信息、actions、checks
 - `dispose`：当前框架未实现（插件为进程内单例，`get_registry` 经 `lru_cache` 缓存）
 
 ## 安全边界（框架要求）
