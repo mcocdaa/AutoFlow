@@ -1,6 +1,7 @@
 # @file /backend/app/core/setting_manager.py
 # @brief 配置管理器 - 负责参数解析和全局配置
 # @create 2026-03-27
+# @update 2026-08-10 删除未被引用的 DB/Redis 死配置
 
 import argparse
 import logging
@@ -48,29 +49,15 @@ class SettingManager:
         self.config.setdefault("BACKEND_EXTERNAL_PORT", 3001)
         self.config.setdefault("FRONTEND_INTERNAL_PORT", 8000)
         self.config.setdefault("FRONTEND_EXTERNAL_PORT", 8001)
-        self.config.setdefault("DB_EXTERNAL_PORT", 3306)
-        self.config.setdefault("REDIS_EXTERNAL_PORT", 6379)
         self.config.setdefault("LOG_LEVEL", "INFO")
-        self.config.setdefault("DB_USER", "autoflow")
-        self.config.setdefault("DB_NAME", "autoflow_db")
-        self.config.setdefault("REDIS_DB", 0)
         self.config.setdefault("SERVE_STATIC_FILES", "False")
         self.config.setdefault("STATIC_FILES_DIR", "/app/static")
         self.config.setdefault("CORS_ORIGINS", os.getenv("CORS_ORIGINS", "*"))
-        self.config.setdefault("DB_HOST", "mysql")
-        self.config.setdefault("DB_PORT", 3306)
-        self.config.setdefault("REDIS_HOST", "redis")
-        self.config.setdefault("REDIS_PORT", 6379)
-        self.config.setdefault("DB_PASSWORD", "")
-        self.config.setdefault("SECRET_KEY", "")
 
         self.config["ROOT_DIR"] = str(ROOT_DIR)
         self.config["BACKEND_DIR"] = str(BACKEND_DIR)
         self.config.setdefault("PLUGINS_DIR", str(ROOT_DIR / "plugins"))
         self.config["API_V1_STR"] = f"/api/{self.config['API_VERSION']}"
-        self.config["REDIS_URL"] = (
-            f"redis://{self.config['REDIS_HOST']}:{self.config['REDIS_PORT']}/{self.config['REDIS_DB']}"
-        )
         self.config["PORT"] = int(
             os.getenv("PORT", self.config["BACKEND_INTERNAL_PORT"])
         )
