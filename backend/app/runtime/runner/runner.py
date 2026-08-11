@@ -38,6 +38,19 @@ class Runner:
     def artifacts_dir(self) -> Path:
         return self._store.artifacts_dir
 
+    def _template_context(
+        self,
+        step_outputs: dict[str, Any],
+        runtime_vars: dict[str, Any],
+        current_input: Any,
+    ) -> dict[str, Any]:
+        """统一模板解析上下文构造(消除 4 处重复)"""
+        return {
+            "steps": step_outputs,
+            "vars": runtime_vars,
+            "input": current_input,
+        }
+
     def _run_hooks(
         self,
         hooks: HookSpec,
@@ -59,11 +72,7 @@ class Runner:
             try:
                 resolved_params = resolve_templates(
                     hook_action.params,
-                    {
-                        "steps": step_outputs,
-                        "vars": runtime_vars,
-                        "input": current_input,
-                    },
+                    self._template_context(step_outputs, runtime_vars, current_input),
                 )
                 handler = self._registry.get_action(hook_action.type)
                 if handler:
@@ -105,11 +114,7 @@ class Runner:
             try:
                 resolved_params = resolve_templates(
                     step.action.params,
-                    {
-                        "steps": step_outputs,
-                        "vars": runtime_vars,
-                        "input": current_input,
-                    },
+                    self._template_context(step_outputs, runtime_vars, current_input),
                 )
 
                 action = self._registry.get_action(step.action.type)
@@ -170,11 +175,7 @@ class Runner:
             iterations = []
             loop_list = resolve_templates(
                 step.for_each,
-                {
-                    "steps": step_outputs,
-                    "vars": runtime_vars,
-                    "input": current_input,
-                },
+                self._template_context(step_outputs, runtime_vars, current_input),
             )
             if not isinstance(loop_list, list):
                 loop_list = [loop_list]
@@ -231,6 +232,31 @@ class Runner:
             runtime_vars.pop(step.for_item_var, None)
         return iterations, action_output, check_passed, success, step_error
 
+    def _make_step_result(
+        self,
+        *,
+        step_id: str,
+        status: str,
+        started_at: datetime,
+        finished_at: datetime,
+        action_output: Any,
+        check_passed: bool | None,
+        error: str | None,
+        iterations: list[dict] | None = None,
+    ) -> StepResult:
+        """统一 StepResult 构造(消除 skipped/正常两处重复)"""
+        return StepResult(
+            step_id=step_id,
+            status=status,
+            started_at=started_at,
+            finished_at=finished_at,
+            duration_ms=int((finished_at - started_at).total_seconds() * 1000),
+            action_output=action_output,
+            check_passed=check_passed,
+            error=error,
+            iterations=iterations,
+        )
+
     def run_flow(
         self,
         flow: FlowSpec,
@@ -256,27 +282,21 @@ class Runner:
             if step.condition is not None:
                 resolved_condition = resolve_templates(
                     step.condition,
-                    {
-                        "steps": step_outputs,
-                        "vars": runtime_vars,
-                        "input": current_input,
-                    },
+                    self._template_context(step_outputs, runtime_vars, current_input),
                 )
                 if not evaluate_condition(str(resolved_condition)):
                     step_finished = _utc_now()
-                    step_result = StepResult(
-                        step_id=step.id,
-                        status="skipped",
-                        started_at=step_started,
-                        finished_at=step_finished,
-                        duration_ms=int(
-                            (step_finished - step_started).total_seconds() * 1000
-                        ),
-                        action_output=None,
-                        check_passed=None,
-                        error=None,
+                    run.steps.append(
+                        self._make_step_result(
+                            step_id=step.id,
+                            status="skipped",
+                            started_at=step_started,
+                            finished_at=step_finished,
+                            action_output=None,
+                            check_passed=None,
+                            error=None,
+                        )
                     )
-                    run.steps.append(step_result)
                     self._store.save_run(run)
                     continue
 
@@ -300,14 +320,11 @@ class Runner:
                 )
 
             run.steps.append(
-                StepResult(
+                self._make_step_result(
                     step_id=step.id,
                     status="success" if success else "failed",
                     started_at=step_started,
                     finished_at=step_finished,
-                    duration_ms=int(
-                        (step_finished - step_started).total_seconds() * 1000
-                    ),
                     action_output=action_output,
                     check_passed=check_passed,
                     error=step_error,
