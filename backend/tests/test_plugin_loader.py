@@ -1,5 +1,5 @@
 # @file /backend/tests/test_plugin_loader.py
-# @brief Tests for plugin_loader: YAML parsing, config loading, PLUGIN 加载
+# @brief Tests for plugin_loader: YAML/config 解析、PLUGIN (Plugin 子类) 加载
 # @create 2026-08-10
 
 from __future__ import annotations
@@ -219,3 +219,45 @@ class TestPluginLoaderIntegration:
         assert len(errors) == 1
         assert "PLUGIN" in errors[0].error
         assert errors[0].plugin_id == "test_p"
+
+    def test_loads_file_plugin_with_subdirectory_module_name(
+        self, monkeypatch, tmp_path: Path
+    ):
+        """文件插件:模块名解析为相对路径点号形式(目录/文件形态保留),config 为 None。"""
+        _RecordingPlugin.instances.clear()
+        registry = Registry()
+        plugins_dir = tmp_path / "plugins"
+        file_plugin = plugins_dir / "examples" / "hello_world.py"
+        file_plugin.parent.mkdir(parents=True)
+        file_plugin.write_text("", encoding="utf-8")
+
+        mock_module = MagicMock()
+        mock_module.PLUGIN = _RecordingPlugin
+
+        monkeypatch.setattr(
+            "app.runtime.plugin_loader._plugins_dir",
+            lambda: plugins_dir,
+        )
+        monkeypatch.setattr(
+            "app.runtime.plugin_loader._load_registry_entries",
+            lambda _: {"hello": {"path": file_plugin}},
+        )
+        imported_names: list[str] = []
+
+        def _fake_import(name: str):
+            imported_names.append(name)
+            return mock_module
+
+        monkeypatch.setattr(
+            "app.runtime.plugin_loader.importlib.import_module",
+            _fake_import,
+        )
+
+        load_plugins(registry)
+
+        assert imported_names == ["plugins.examples.hello_world"]
+        assert len(_RecordingPlugin.instances) == 1
+        assert _RecordingPlugin.instances[0].received_config is None
+        assert [(p.name, p.version) for p in registry.list_plugins()] == [
+            ("test-plugin", "9.9.9")
+        ]
