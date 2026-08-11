@@ -1949,7 +1949,7 @@ git commit -m "docs: update plugin guides and sdk spec for class-method ABI"
 **Files:**
 - Modify: `backend/app/runtime/runner/runner.py`
 
-- [ ] **Step 1: 提取 `_template_context` 私有方法**
+- [x] **Step 1: 提取 `_template_context` 私有方法**
 
 在 `_run_hooks` 之前新增:
 
@@ -1968,7 +1968,7 @@ git commit -m "docs: update plugin guides and sdk spec for class-method ABI"
         }
 ```
 
-- [ ] **Step 2: 将 4 处 `resolve_templates` 调用改为使用 `self._template_context`**
+- [x] **Step 2: 将 4 处 `resolve_templates` 调用改为使用 `self._template_context`**
 
 4 处位置(原代码字面 `{"steps": step_outputs, "vars": runtime_vars, "input": current_input}` 的构造):
 
@@ -1988,7 +1988,7 @@ git commit -m "docs: update plugin guides and sdk spec for class-method ABI"
 
 (condition/for_each/hooks 处同理,保持各自原调用形态,仅替换 context 字面量为 `self._template_context(...)` 调用。)
 
-- [ ] **Step 3: 提取 `_make_step_result` 私有工厂**
+- [x] **Step 3: 提取 `_make_step_result` 私有工厂**
 
 在 `run_flow` 之前新增:
 
@@ -2019,7 +2019,7 @@ git commit -m "docs: update plugin guides and sdk spec for class-method ABI"
         )
 ```
 
-- [ ] **Step 4: 替换 run_flow 中两处 StepResult 构造**
+- [x] **Step 4: 替换 run_flow 中两处 StepResult 构造**
 
 skipped 分支(约 267 行)替换为:
 
@@ -2054,12 +2054,12 @@ skipped 分支(约 267 行)替换为:
             )
 ```
 
-- [ ] **Step 5: 全量回归(行为零变化)**
+- [x] **Step 5: 全量回归(行为零变化)**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 121 passed(runner 被 control_flow/foreach/hooks 等测试覆盖)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/runtime/runner/runner.py
