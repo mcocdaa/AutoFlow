@@ -1059,7 +1059,7 @@ git commit -m "refactor(plugins): migrate zhihu_digest plugin to class methods"
 **Files:**
 - Modify: `plugins/ai_deepseek/backend.py`(全文替换)
 
-- [ ] **Step 1: 重写 `plugins/ai_deepseek/backend.py`**
+- [x] **Step 1: 重写 `plugins/ai_deepseek/backend.py`**
 
 行为契约:返回值结构不变。`DeepSeekClient` 保持独立类。`_get_deepseek_api_key` 收敛为 `self.setting(params, "api_key", env_var="DEEPSEEK_API_KEY")`;原实现中 `env:XXX` 环境变量未设置时返回字面 "env:XXX" 作为 key 的行为,修正为回退/raise(更早失败,属明确改进)。
 
@@ -1227,7 +1227,7 @@ class AIDeepSeekPlugin(Plugin):
 PLUGIN = AIDeepSeekPlugin
 ```
 
-- [ ] **Step 2: 新增 `plugins/ai_deepseek/tests/test_ai_deepseek_plugin.py`(api_key 取值链单测)**
+- [x] **Step 2: 新增 `plugins/ai_deepseek/tests/test_ai_deepseek_plugin.py`(api_key 取值链单测)**
 
 ```python
 # @file /plugins/ai_deepseek/tests/test_ai_deepseek_plugin.py
@@ -1268,12 +1268,12 @@ def test_api_key_missing_raises(monkeypatch) -> None:
 Run: `PYTHONPATH=backend:. pytest plugins/ai_deepseek/tests -q`
 Expected: 4 passed
 
-- [ ] **Step 3: 全量回归**
+- [x] **Step 3: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 121 passed(117 + 4)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add plugins/ai_deepseek/backend.py plugins/ai_deepseek/tests/test_ai_deepseek_plugin.py
