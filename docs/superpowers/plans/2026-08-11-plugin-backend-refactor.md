@@ -1883,7 +1883,7 @@ git commit -m "refactor(plugins): remove dry_run_enabled and class-attr compat s
 - Modify: `docs/en/plugin-dev-guide.md`
 - Modify: `docs/zh/specs/plugin-sdk.md`
 
-- [ ] **Step 1: 更新 `docs/zh/plugin-dev-guide.md` 中 ABI 示例**
+- [x] **Step 1: 更新 `docs/zh/plugin-dev-guide.md` 中 ABI 示例**
 
 将"新建插件"示例替换为类方法形态(以 hello_world 为模板):
 
@@ -1924,18 +1924,18 @@ PLUGIN = MyPlugin
 
 同步更新文档中说明段落:handlers 为实例方法;`is_dry_run`/`setting`/`error_result` 为基类共性 API;config.yaml 的 `defaults`/`secrets` 由基类归一为实例属性。
 
-- [ ] **Step 2: 更新 `docs/en/plugin-dev-guide.md`**(与 Step 1 同内容英文版)
+- [x] **Step 2: 更新 `docs/en/plugin-dev-guide.md`**(与 Step 1 同内容英文版)
 
-- [ ] **Step 3: 更新 `docs/zh/specs/plugin-sdk.md`**
+- [x] **Step 3: 更新 `docs/zh/specs/plugin-sdk.md`**
 
 将协议描述中的旧 ABI(模块级函数 + 类属性 actions)更新为:类方法形态、`PLUGIN` 导出不变、基类共性 API 列表。保留 loader 加载流程描述(不变)。
 
-- [ ] **Step 4: grep 确认文档无旧 ABI 残留**
+- [x] **Step 4: grep 确认文档无旧 ABI 残留**
 
 Run: `rg -n "def _echo\(ctx|dry_run_enabled|^actions = \{" docs/zh/plugin-dev-guide.md docs/en/plugin-dev-guide.md docs/zh/specs/plugin-sdk.md`
 Expected: 无输出(0 命中;`^actions = {` 锚定行首,避免误匹配新版 `self.actions = {` 示例;允许文档中刻意展示旧->新对照的部分除外)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/zh/plugin-dev-guide.md docs/en/plugin-dev-guide.md docs/zh/specs/plugin-sdk.md
