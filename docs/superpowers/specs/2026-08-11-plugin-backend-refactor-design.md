@@ -75,7 +75,7 @@ class Plugin:
 
 要点:
 - `actions`/`checks` 由类属性改为实例属性,`register()` 行为不变
-- `is_dry_run` 语义与原 `helpers.dry_run_enabled` 完全一致(向后行为兼容)
+- `is_dry_run` 采用**优先级语义**(实施确认):params 键存在即以 params 值定夺(显式 `dry_run: False` 覆盖 vars/env),否则依次检查 vars.dry_run、环境变量 dry_run_env。与旧 `helpers.dry_run_enabled`(truthy OR 链)的差异:params 显式 False 可覆盖低层开关——属有意设计(任务级强制),由 `test_params_override_env`/`test_params_false_overrides_vars_true` 固化
 - `error_result` 不强制 schema,只统一构造入口
 
 ### 3.2 helpers(plugins/common/helpers.py)
