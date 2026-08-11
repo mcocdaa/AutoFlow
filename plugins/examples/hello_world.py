@@ -1,13 +1,14 @@
 # @file /plugins/examples/hello_world.py
 # @brief 示例插件：注册 core.hello action
 # @create 2026-08-09
-# @update 2026-08-09 对齐新约定 register(registry)
+# @update 2026-08-10 迁移为 Plugin 基类新 ABI
 
 from __future__ import annotations
 
 from typing import Any
 
-from app.core.registry import ActionContext, Registry
+from app.core.registry import ActionContext
+from plugins.common.plugin import Plugin
 
 
 def _hello(ctx: ActionContext, params: dict[str, Any]) -> Any:
@@ -15,7 +16,15 @@ def _hello(ctx: ActionContext, params: dict[str, Any]) -> Any:
     return {"message": f"Hello, {name} from AutoFlow!"}
 
 
-def register(registry: Registry, config: dict = None) -> None:
-    """注册插件信息与 action(新约定: 接收 registry 并直接注册)"""
-    registry.register_plugin(name="hello-world", version="1.0.0")
-    registry.register_action("core.hello", _hello)
+class HelloWorldPlugin(Plugin):
+    """示例插件：注册 core.hello action"""
+
+    name = "hello-world"
+    version = "1.0.0"
+    actions = {
+        "core.hello": _hello,
+    }
+    checks = {}
+
+
+PLUGIN = HelloWorldPlugin
