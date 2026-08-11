@@ -83,7 +83,8 @@ const navigateToRunFlow = () => {
 }
 
 onMounted(() => {
-  store.fetchPlugins()
+  // executeFlow 失败时 rethrow,错误已由 store.error 展示,此处仅避免 unhandled rejection
+  store.fetchPlugins().catch(() => {})
 })
 </script>
 
