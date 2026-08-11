@@ -11,6 +11,8 @@ AutoFlow English framework documentation.
 
 ## 文件列表
 
+- [plugin-dev-guide](plugin-dev-guide.md): Plugin development guide
+
 ## 子目录
 
 - [specs](specs/index.md): Specifications

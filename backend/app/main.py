@@ -2,13 +2,13 @@
 # @brief FastAPI 应用入口，注册中间件和路由
 # @create 2026-03-15 10:00:00
 # @update 2026-03-27 集成新的插件管理器系统
+# @update 2026-08-10 移除 env_secrets 文件密钥注入(allowlist 为空,属死代码)
 
 import argparse
 import logging
 from contextlib import asynccontextmanager
 
 from app.api import register_routers
-from app.core.env_secrets import apply_file_env
 from app.core.setting_manager import setting_manager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,7 +38,6 @@ def init_services():
     global _services_initialized
     if _services_initialized:
         return
-    apply_file_env()
     args = parse_args()
     setting_manager.init(args)
     _services_initialized = True

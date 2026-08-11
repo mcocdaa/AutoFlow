@@ -1,39 +1,23 @@
 import { defineStore } from 'pinia'
-import apiClient from '../api'
+import { ref } from 'vue'
+import { fetchPlugins as apiFetchPlugins } from '../api/plugins'
+import { useAsyncState } from '../composables/useAsyncState'
 import type { Plugin, PluginError } from '../types/plugins'
 
-interface PluginsResponse {
-  plugins: Plugin[]
-  actions: string[]
-  checks: string[]
-  errors: PluginError[]
-}
+export const usePluginsStore = defineStore('plugins', () => {
+  const plugins = ref<Plugin[]>([])
+  const actions = ref<string[]>([])
+  const checks = ref<string[]>([])
+  const errors = ref<PluginError[]>([])
 
-export const usePluginsStore = defineStore('plugins', {
-  state: () => ({
-    plugins: [] as Plugin[],
-    actions: [] as string[],
-    checks: [] as string[],
-    errors: [] as PluginError[],
-    loading: false,
-    error: null as string | null,
-  }),
-  actions: {
-    async fetchPlugins() {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await apiClient.get<PluginsResponse>('/plugins')
-        this.plugins = response.data.plugins
-        this.actions = response.data.actions
-        this.checks = response.data.checks
-        this.errors = response.data.errors || []
-      } catch (error) {
-        this.error = error instanceof Error ? error.message : String(error)
-        console.error('Failed to fetch plugins:', error)
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+  const { loading, error, execute } = useAsyncState(async () => {
+    const data = await apiFetchPlugins()
+    plugins.value = data.plugins
+    actions.value = data.actions
+    checks.value = data.checks
+    errors.value = data.errors || []
+    return data
+  })
+
+  return { plugins, actions, checks, errors, loading, error, fetchPlugins: execute }
 })

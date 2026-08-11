@@ -1,7 +1,8 @@
 # @file /plugins/dummy/__init__.py
-# @brief Dummy 插件入口
+# @brief dummy 插件入口
 # @create 2026-03-27
+# @update 2026-08-10 迁移为 Plugin 基类新 ABI
 
-from plugins.dummy.hooks import register
+from plugins.dummy.backend import PLUGIN
 
-__all__ = ["register"]
+__all__ = ["PLUGIN"]

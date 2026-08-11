@@ -1,73 +1,70 @@
+---
+title: Plugin SDK 规范
+description: AutoFlow 插件扩展边界框架级规范
+keywords: [plugin, sdk, 规范, 扩展, 边界]
+version: "2.0"
+---
+
 # Plugin SDK 规范（框架级）
 
-本文档定义 AutoFlow 的插件扩展边界：插件如何声明能力、如何被加载、如何扩展 Trigger/Action/Check，以及如何进行最小权限的安全控制。
+本文档定义 AutoFlow 的插件扩展边界：插件如何声明能力、如何被加载、如何扩展 Action/Check，以及如何进行最小权限的安全控制。
 
-插件的业务说明与实现细节应放在各插件目录内（例如 `plugins/<plugin>/README.md`），不写进 `docs/`。
+插件的业务说明与实现细节应放在各插件目录内（例如 `plugins/<plugin>/README.md`），不写进 `docs/`；插件开发的操作性指南见 `docs/zh/plugin-dev-guide.md`。
 
 ## 插件能力模型
 
 插件可以扩展以下能力（可按需实现）：
 
-- **TriggerType**：新增触发类型与配置 schema
 - **ActionType**：新增动作类型与参数 schema
 - **CheckType**：新增校验类型与参数 schema
-- **UI 配置面板**：帮助用户生成 TriggerDoc/Flow（可选）
+
+（Trigger 与 UI 配置面板为框架演进方向，当前未实现。）
 
 ## 最小接口（抽象）
 
 框架只依赖以下抽象概念：
 
-- `PluginManifest`：插件元信息（名称、版本、能力声明、权限声明）
-- `register(registry)`：向框架注册 Trigger/Action/Check 的实现与 schema
+- **`Plugin` 基类**（`plugins/common/plugin.py`）：声明式元信息 `name` / `version` / `actions` / `checks` 类属性 + 统一 `register()` 实例方法
+- **`PLUGIN` 导出约定**：插件模块导出 `PLUGIN = XxxPlugin`（类引用），由 loader 实例化并注入 config
+- **`ActionHandler` / `CheckHandler`**（`app.core.registry`）：action/check 的实现签名
 
-## Manifest（建议字段）
+```python
+class Plugin:
+    name: str
+    version: str = "0.1.0"
+    actions: dict[str, ActionHandler] = {}
+    checks: dict[str, CheckHandler] = {}
 
-```yaml
-name: zhihu-digest
-version: 0.1.0
-description: "知乎自动总结"
-capabilities:
-  triggers:
-    - type: zhihu.question
-  actions:
-    - type: zhihu.fetchAnswers
-    - type: ai.summarize
-  checks:
-    - type: text.contains
-permissions:
-  network:
-    - "https://www.zhihu.com"
-  secrets:
-    - "zhihu.cookie"
-    - "ai.apiKey"
+    def __init__(self, config: dict[str, Any] | None = None) -> None: ...
+    def register(self, registry: Registry) -> None: ...
 ```
 
 约定：
 
 - `version` 建议遵循语义化版本。
-- `permissions` 仅用于声明意图，真正的能力控制由框架运行时实现。
+- handler 必须为模块级函数或 `@staticmethod`（类体内无法引用实例方法）。
+- `config` 由 loader 从插件目录 `config.yaml` 解析注入：`defaults` 原样传入，`secrets` 块解析为环境变量值；无 `config.yaml` 时传 `None`。
 
 ## Schema 与校验
 
-插件为每个扩展点提供 schema（例如 JSON Schema）：
-
-- Trigger 配置 schema：用于校验 TriggerDoc 的 `trigger` 段
-- Action/Check 参数 schema：用于校验 Flow 中的 `params`
+**演进方向（当前未实现）**：插件为每个扩展点提供参数 schema（例如 JSON Schema），用于校验 Flow 中的 `params`。
 
 框架应保证：
 
 - schema 校验失败时，能定位到具体文件/字段/原因
 - 未安装对应插件时，能提示缺失的 `type`
 
-## 生命周期（建议）
+当前阶段，`params` 校验由插件 handler 内部完成（必填参数缺失时 `raise ValueError`，Runner 转为步骤失败）。
 
-- `load`：发现并加载插件包
-- `init`：初始化（读取配置、建立连接池等）
-- `register`：注册能力到运行时
-- `dispose`：释放资源
+## 生命周期（实际机制）
+
+- `load`：`plugin_loader` 读取 `plugins.yaml` 启用的插件并导入模块
+- `init`：识别 `PLUGIN` 类引用，实例化并注入 config（即构造阶段）
+- `register`：调用 `plugin.register()` 注册插件元信息、actions、checks
+- `dispose`：当前框架未实现（插件为进程内单例，`get_registry` 经 `lru_cache` 缓存）
 
 ## 安全边界（框架要求）
 
-- **Secrets 不明文**：插件只能通过“Secrets 引用”访问凭证，严禁把凭证写入 Flow/TriggerDoc。
-- **最小权限**：网络域名白名单、文件路径白名单等应可被运行时限制与审计。
-- **产物脱敏**：日志与产物必须支持脱敏规则（由框架统一实现/插件可声明敏感字段）。
+- **Secrets 不明文**：插件只能通过 `config.yaml` 的 `secrets` 块引用环境变量访问凭证，严禁把凭证写入 Flow/插件代码。
+- **最小权限**：网络域名白名单、文件路径白名单等由插件自行声明与校验（如 `openclaw` 的 `allowed_commands` 白名单、helpers 的 `read_text` 防目录穿越）。
+- **产物脱敏**：日志与产物必须支持脱敏规则（由插件自行处理敏感字段，框架未统一实现）。

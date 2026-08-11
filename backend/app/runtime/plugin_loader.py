@@ -1,6 +1,7 @@
 # @file /backend/app/runtime/plugin_loader.py
-# @brief 插件加载器 - runtime 统一加载 plugins.yaml 启用的插件并注册到 Registry
+# @brief 插件加载器 - 读取 plugins.yaml 启用的插件并注册到 Registry
 # @create 2026-08-08
+# @update 2026-08-10 阶段二:收敛为 PLUGIN (Plugin 子类) 协议最终形态
 
 from __future__ import annotations
 
@@ -28,7 +29,7 @@ def _plugins_dir() -> Path:
 
 
 def _load_registry_entries(plugins_dir: Path) -> dict[str, dict[str, Any]]:
-    """读取 plugins.yaml,返回 {plugin_key: {path, enabled}}"""
+    """读取 plugins.yaml,返回 {plugin_key: {path}} 启用的插件条目"""
     registry_path = plugins_dir / "plugins.yaml"
     if not registry_path.exists():
         return {}
@@ -58,10 +59,9 @@ def _load_registry_entries(plugins_dir: Path) -> dict[str, dict[str, Any]]:
 
 
 def _load_plugin_config(plugin_dir: Path) -> dict[str, Any] | None:
-    """Load and resolve config.yaml from a plugin directory.
+    """加载插件目录下 config.yaml 并解析 secrets(环境变量值)
 
-    Returns None when no config.yaml is present.
-    Resolves the secrets block by looking up each value in the environment.
+    无 config.yaml 时返回 None;secrets 块逐项按环境变量解析。
     """
     config_path = plugin_dir / "config.yaml"
     if not config_path.exists():
@@ -86,9 +86,9 @@ def _load_plugin_config(plugin_dir: Path) -> dict[str, Any] | None:
 
 
 def load_plugins(registry: Registry) -> None:
-    """加载 plugins.yaml 中启用的插件,调用其 register(registry) 完成注册
+    """加载 plugins.yaml 中启用的插件,识别 PLUGIN (Plugin 子类) 完成注册
 
-    插件模块需暴露 register(registry) 函数(见 plugins/*/hooks.py)。
+    插件模块需暴露 PLUGIN = XxxPlugin (Plugin 子类),见 plugins/common/plugin.py。
     单个插件加载失败不会影响其他插件,错误会记录到 registry。
     """
     plugins_dir = _plugins_dir()
@@ -105,6 +105,9 @@ def load_plugins(registry: Registry) -> None:
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
 
+    # 延迟导入:依赖上面 sys.path 注入仓库根目录后 plugins 包才可导入
+    from plugins.common.plugin import Plugin
+
     for key, entry in entries.items():
         path: Path = entry["path"]
         try:
@@ -117,31 +120,31 @@ def load_plugins(registry: Registry) -> None:
             elif not path.is_file() or path.suffix != ".py":
                 raise ValueError(f"插件路径既不是目录也不是 .py 文件: {path}")
 
-            # 模块名取解析后路径的目录名/文件名,与 plugins.yaml 的 key 解耦
-            # For file plugins, compute relative path to support sub-directories
-            # e.g. plugins/examples/hello_world.py → plugins.examples.hello_world
+            # 模块名取解析后路径的目录名/文件名,与 plugins.yaml 的 key 解耦;
+            # 文件插件取相对 plugins_dir 的路径(去 .py 后缀、分隔符转点号),
+            # 例如 plugins/examples/hello_world.py → plugins.examples.hello_world
             if path.is_dir():
                 module_name = path.name
             else:
                 rel = path.resolve().relative_to(plugins_dir.resolve())
-                # Strip .py suffix and convert path separators to dots
                 module_name = (
                     str(rel.with_suffix("")).replace("/", ".").replace("\\", ".")
                 )
             module = importlib.import_module(f"plugins.{module_name}")
 
-            register_fn = getattr(module, "register", None)
-            if not callable(register_fn):
+            plugin_cls = getattr(module, "PLUGIN", None)
+            if not (isinstance(plugin_cls, type) and issubclass(plugin_cls, Plugin)):
                 raise AttributeError(
-                    f"插件模块 {module_name} 未暴露 register(registry)"
+                    f"插件模块 {module_name} 未暴露 PLUGIN (Plugin 子类)"
                 )
 
-            # Load config.yaml if the plugin is a directory
+            # config.yaml 仅对目录插件加载,文件插件传入 None
             config = None
             if path.is_dir():
                 config = _load_plugin_config(path)
 
-            register_fn(registry, config)
+            plugin = plugin_cls(config)
+            plugin.register(registry)
             logger.info(f"成功加载插件: {key} ({path})")
         except Exception as e:
             logger.error(f"加载插件 {key} 失败: {e}", exc_info=True)

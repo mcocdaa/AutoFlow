@@ -1,54 +1,21 @@
 # @file /plugins/ai_deepseek/backend.py
 # @brief DeepSeek AI 插件后端实现
 # @create 2026-03-15 00:00:00
+# @update 2026-08-10 迁移为 Plugin 基类新 ABI(工具函数收敛至 plugins.common.helpers)
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import httpx
 from app.core.registry import ActionContext
 
+from plugins.common.helpers import dry_run_enabled, read_text, write_text
+from plugins.common.plugin import Plugin
 
-def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
-
-
-def _read_text(ctx: ActionContext, path: str) -> str:
-    p = Path(path)
-    if not p.is_absolute():
-        p = ctx.artifacts_dir / p
-    p = p.resolve()
-    allowed = {ctx.artifacts_dir.resolve(), _repo_root().resolve()}
-    if not any(p == base or base in p.parents for base in allowed):
-        raise ValueError(f"path outside allowed directories: {path}")
-    return p.read_text(encoding="utf-8")
-
-
-def _write_text(ctx: ActionContext, rel_path: str, text: str) -> str:
-    out_path = ctx.artifacts_dir / rel_path
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(text, encoding="utf-8")
-    return rel_path
-
-
-def _is_truthy(v: Any) -> bool:
-    if v is None:
-        return False
-    if isinstance(v, bool):
-        return v
-    return str(v).strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def _dry_run(ctx: ActionContext, params: dict[str, Any]) -> bool:
-    if _is_truthy(params.get("dry_run")):
-        return True
-    if _is_truthy(ctx.vars.get("dry_run")):
-        return True
-    return _is_truthy(os.getenv("AUTOFLOW_AI_DRY_RUN"))
+_DRY_RUN_ENV = "AUTOFLOW_AI_DRY_RUN"
 
 
 def _get_deepseek_api_key(params: dict[str, Any]) -> str:
@@ -126,69 +93,75 @@ class DeepSeekClient:
         return DeepSeekResult(content=content, raw=data)
 
 
-class AIDeepSeekPlugin:
-    def __init__(self) -> None:
-        self.name = "ai-deepseek"
-        self.version = "0.1.0"
-        self.actions = {
-            "ai.deepseek_summarize": self.deepseek_summarize,
-        }
+def _deepseek_summarize(ctx: ActionContext, params: dict[str, Any]) -> Any:
+    model = str(params.get("model", "deepseek-chat"))
+    system_prompt = params.get("system_prompt")
+    temperature = params.get("temperature")
+    max_tokens = params.get("max_tokens")
 
-    def deepseek_summarize(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
-        model = str(params.get("model", "deepseek-chat"))
-        system_prompt = params.get("system_prompt")
-        temperature = params.get("temperature")
-        max_tokens = params.get("max_tokens")
+    raw_input = params.get("input", None)
+    if raw_input is None:
+        raw_input = ctx.input
 
-        raw_input = params.get("input", None)
-        if raw_input is None:
-            raw_input = ctx.input
+    if isinstance(raw_input, dict) and "answer_text_path" in raw_input:
+        input_text = read_text(ctx, str(raw_input["answer_text_path"]))
+    elif isinstance(raw_input, dict) and "path" in raw_input:
+        input_text = read_text(ctx, str(raw_input["path"]))
+    elif isinstance(raw_input, str):
+        input_text = raw_input
+    elif raw_input is None:
+        input_text = ""
+    else:
+        input_text = str(raw_input)
 
-        if isinstance(raw_input, dict) and "answer_text_path" in raw_input:
-            input_text = _read_text(ctx, str(raw_input["answer_text_path"]))
-        elif isinstance(raw_input, dict) and "path" in raw_input:
-            input_text = _read_text(ctx, str(raw_input["path"]))
-        elif isinstance(raw_input, str):
-            input_text = raw_input
-        elif raw_input is None:
-            input_text = ""
-        else:
-            input_text = str(raw_input)
+    if not input_text.strip():
+        raise ValueError("input is empty")
 
-        if not input_text.strip():
-            raise ValueError("input is empty")
+    prompt_rel = write_text(ctx, "ai/prompt.txt", input_text)
 
-        prompt_rel = _write_text(ctx, "ai/prompt.txt", input_text)
-
-        if _dry_run(ctx, params):
-            summary = "（dry_run）示例总结：要点已整理。"
-            out_rel = _write_text(ctx, "ai/summary.md", summary)
-            return {
-                "summary_path": out_rel,
-                "prompt_path": prompt_rel,
-                "dry_run": True,
-                "provider": "deepseek",
-            }
-
-        api_key = _get_deepseek_api_key(params)
-        client = DeepSeekClient(
-            base_url=str(params.get("base_url", "https://api.deepseek.com")),
-            timeout_seconds=float(params.get("timeout_seconds", 60.0)),
-        )
-        result = client.chat_completion(
-            api_key=api_key,
-            input=input_text,
-            system_prompt=str(system_prompt) if system_prompt is not None else None,
-            model=model,
-            temperature=float(temperature) if temperature is not None else None,
-            max_tokens=int(max_tokens) if max_tokens is not None else None,
-        )
-
-        out_rel = _write_text(ctx, "ai/summary.md", result.content)
+    if dry_run_enabled(ctx, params, _DRY_RUN_ENV):
+        summary = "（dry_run）示例总结：要点已整理。"
+        out_rel = write_text(ctx, "ai/summary.md", summary)
         return {
             "summary_path": out_rel,
             "prompt_path": prompt_rel,
-            "model": model,
-            "dry_run": False,
+            "dry_run": True,
             "provider": "deepseek",
         }
+
+    api_key = _get_deepseek_api_key(params)
+    client = DeepSeekClient(
+        base_url=str(params.get("base_url", "https://api.deepseek.com")),
+        timeout_seconds=float(params.get("timeout_seconds", 60.0)),
+    )
+    result = client.chat_completion(
+        api_key=api_key,
+        input=input_text,
+        system_prompt=str(system_prompt) if system_prompt is not None else None,
+        model=model,
+        temperature=float(temperature) if temperature is not None else None,
+        max_tokens=int(max_tokens) if max_tokens is not None else None,
+    )
+
+    out_rel = write_text(ctx, "ai/summary.md", result.content)
+    return {
+        "summary_path": out_rel,
+        "prompt_path": prompt_rel,
+        "model": model,
+        "dry_run": False,
+        "provider": "deepseek",
+    }
+
+
+class AIDeepSeekPlugin(Plugin):
+    """DeepSeek AI 插件"""
+
+    name = "ai-deepseek"
+    version = "0.1.0"
+    actions = {
+        "ai.deepseek_summarize": _deepseek_summarize,
+    }
+    checks = {}
+
+
+PLUGIN = AIDeepSeekPlugin

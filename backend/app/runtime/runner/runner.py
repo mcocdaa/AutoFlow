@@ -3,11 +3,11 @@
 # @create 2026-02-21 00:00:00
 # @update 2026-03-15 拆分条件与模板解析到独立模块
 # @update 2026-08-08 合并 for_each 与普通步骤双路径,修复 duration_ms / check_passed
+# @update 2026-08-10 序列化函数收敛至 app.runtime.utils.serialization
 
 from __future__ import annotations
 
 import copy
-import json
 import logging
 import time
 import uuid
@@ -20,27 +20,13 @@ from app.runtime.models import FlowSpec, HookSpec, RunResult, StepResult, StepSp
 from app.runtime.storage.store import RunStore
 from app.runtime.utils import evaluate_condition, resolve_templates
 from app.runtime.utils.output_externalizer import externalize_if_large
+from app.runtime.utils.serialization import safe_deep_copy, to_jsonable
 
 logger = logging.getLogger(__name__)
 
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
-
-
-def _to_vars_value(value: Any) -> Any:
-    """将 action 输出转为可存入 runtime_vars 的值(JSON 往返打断循环引用)"""
-    try:
-        return json.loads(json.dumps(value, default=str))
-    except Exception:
-        return str(value)
-
-
-def _deep_copy_or_str(value: Any) -> Any:
-    try:
-        return copy.deepcopy(value)
-    except Exception:
-        return str(value)
 
 
 class Runner:
@@ -214,13 +200,13 @@ class Runner:
                 iterations.append(
                     {
                         "item": item,
-                        "output": _deep_copy_or_str(iter_output),
+                        "output": safe_deep_copy(iter_output),
                         "error": iter_error,
                         "check_passed": iter_check_passed,
                         "duration_ms": int(
                             (iter_finished - iter_started).total_seconds() * 1000
                         ),
-                        "vars_snapshot": _deep_copy_or_str(runtime_vars_clean),
+                        "vars_snapshot": safe_deep_copy(runtime_vars_clean),
                     }
                 )
 
@@ -351,7 +337,7 @@ class Runner:
 
             step_outputs[step.id] = action_output
             if step.output_var is not None:
-                runtime_vars[step.output_var] = _to_vars_value(action_output)
+                runtime_vars[step.output_var] = to_jsonable(action_output)
 
             current_input = action_output
 
