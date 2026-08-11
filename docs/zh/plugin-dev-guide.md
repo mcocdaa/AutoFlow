@@ -94,7 +94,7 @@ plugins:
 
 ## 2. Plugin 基类
 
-`Plugin` 基类位于 `plugins/common/plugin.py`，提供声明式元信息与统一注册（替代旧版 hooks.py 的注册样板）：
+`Plugin` 基类位于 `plugins/common/plugin.py`，提供声明式元信息与统一注册（替代旧版注册样板）：
 
 ```python
 class Plugin:

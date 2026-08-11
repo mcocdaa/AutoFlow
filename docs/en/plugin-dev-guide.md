@@ -94,7 +94,7 @@ plugins:
 
 ## 2. The Plugin Base Class
 
-`Plugin` lives in `plugins/common/plugin.py` and provides declarative metadata plus unified registration (replacing the old hooks.py boilerplate):
+`Plugin` lives in `plugins/common/plugin.py` and provides declarative metadata plus unified registration (replacing the old boilerplate):
 
 ```python
 class Plugin:
