@@ -362,7 +362,7 @@ git commit -m "refactor(plugins): enhance Plugin base with is_dry_run/setting/er
 **Files:**
 - Modify: `plugins/dummy/backend.py`(全文替换)
 
-- [ ] **Step 1: 重写 `plugins/dummy/backend.py`**
+- [x] **Step 1: 重写 `plugins/dummy/backend.py`**
 
 ```python
 # @file /plugins/dummy/backend.py
@@ -403,12 +403,12 @@ class DummyPlugin(Plugin):
 PLUGIN = DummyPlugin
 ```
 
-- [ ] **Step 2: 全量回归**
+- [x] **Step 2: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 117 passed(dummy 无独立测试文件,由 loader/端到端覆盖)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add plugins/dummy/backend.py
