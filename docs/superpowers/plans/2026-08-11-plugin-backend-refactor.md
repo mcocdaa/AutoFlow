@@ -776,7 +776,7 @@ git commit -m "refactor(plugins): migrate desktop_checkin plugin to class method
 **Files:**
 - Modify: `plugins/zhihu_digest/backend.py`(全文替换)
 
-- [ ] **Step 1: 重写 `plugins/zhihu_digest/backend.py`**
+- [x] **Step 1: 重写 `plugins/zhihu_digest/backend.py`**
 
 行为契约:返回值结构不变;`_get_cookie` 保持原优先级 `params.cookie → params.cookie_env → ZHIHU_COOKIE`(顺序经审核修正,不得再翻转);新增能力:config.yaml `defaults.cookie`/`secrets.cookie`(若配置)作为环境变量之前的回退层。
 
@@ -1035,17 +1035,17 @@ class ZhihuDigestPlugin(Plugin):
 PLUGIN = ZhihuDigestPlugin
 ```
 
-- [ ] **Step 2: 运行知乎插件端到端测试**
+- [x] **Step 2: 运行知乎插件端到端测试**
 
 Run: `PYTHONPATH=backend:. pytest plugins/zhihu_digest/tests -q`
 Expected: 2 passed(dry_run 流程 + actions 列表)
 
-- [ ] **Step 3: 全量回归**
+- [x] **Step 3: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 117 passed
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add plugins/zhihu_digest/backend.py
