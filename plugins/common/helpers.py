@@ -26,6 +26,20 @@ def is_truthy(v: Any) -> bool:
     return str(v).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def resolve_env_value(value: Any) -> Any:
+    """若 value 为 "env:VAR" 形式则解析为环境变量值,否则原样返回"""
+    if isinstance(value, str) and value.startswith("env:"):
+        return os.getenv(value[4:])
+    return value
+
+
+def error_result(
+    error: str, *, error_type: str = "unknown_error", **fields: Any
+) -> dict[str, Any]:
+    """统一错误返回构造(基类 error_result 的纯函数版)"""
+    return {"error": error, "error_type": error_type, **fields}
+
+
 def dry_run_enabled(ctx: ActionContext, params: dict[str, Any], env_var: str) -> bool:
     """统一 dry_run 判定:params.dry_run > ctx.vars.dry_run > 环境变量 env_var"""
     if is_truthy(params.get("dry_run")):
