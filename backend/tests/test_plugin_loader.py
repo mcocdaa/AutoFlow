@@ -1,10 +1,11 @@
 # @file /backend/tests/test_plugin_loader.py
-# @brief Tests for plugin_loader: YAML parsing, config loading, module path
+# @brief Tests for plugin_loader: YAML parsing, config loading, PLUGIN 加载
 # @create 2026-08-10
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 import yaml
@@ -14,11 +15,27 @@ from app.runtime.plugin_loader import (
     _load_registry_entries,
     load_plugins,
 )
+from plugins.common.plugin import Plugin
 
 
 def _write_yaml(path: Path, data: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(yaml.dump(data), encoding="utf-8")
+
+
+class _RecordingPlugin(Plugin):
+    """记录构造接收到的 config,便于断言 config 注入。"""
+
+    name = "test-plugin"
+    version = "9.9.9"
+    actions: dict[str, Any] = {}
+    checks: dict[str, Any] = {}
+    instances: list[_RecordingPlugin] = []
+
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        super().__init__(config)
+        self.received_config = config
+        _RecordingPlugin.instances.append(self)
 
 
 class TestLoadRegistryEntries:
@@ -93,53 +110,54 @@ class TestLoadPluginConfig:
 
 
 class TestPluginLoaderIntegration:
-    """Integration tests for load_plugins with mocked imports."""
+    """Integration tests for load_plugins with mocked imports (PLUGIN 协议)。"""
 
-    def test_loads_directory_plugin_with_config(self, monkeypatch, tmp_path: Path):
-        """Verify load_plugins passes config from config.yaml to register()."""
-        registry = Registry()
-
-        plugins_dir = tmp_path / "plugins"
-        plugin_dir = plugins_dir / "test_plugin"
+    def _make_plugin_dir(self, tmp_path: Path) -> Path:
+        plugin_dir = tmp_path / "plugins" / "test_plugin"
         plugin_dir.mkdir(parents=True)
+        (plugin_dir / "__init__.py").write_text("", encoding="utf-8")
+        return plugin_dir
 
-        # __init__.py required for directory plugins
-        (plugin_dir / "__init__.py").write_text("")
-
-        # Write a real config.yaml so load_plugins can find it
-        _write_yaml(
-            plugin_dir / "config.yaml",
-            {"defaults": {"name": "from_config"}, "secrets": {}},
-        )
-
-        # Create a mock module with a register function
-        mock_module = MagicMock()
-        mock_register = MagicMock()
-        mock_module.register = mock_register
-
-        # Mock out the internals so we don't touch real filesystem
+    def _mock_import(self, monkeypatch, plugins_dir: Path, module) -> None:
         monkeypatch.setattr(
             "app.runtime.plugin_loader._plugins_dir",
             lambda: plugins_dir,
         )
         monkeypatch.setattr(
             "app.runtime.plugin_loader._load_registry_entries",
-            lambda _: {"test_p": {"path": plugin_dir}},
+            lambda _: {"test_p": {"path": plugins_dir / "test_plugin"}},
         )
         monkeypatch.setattr(
             "app.runtime.plugin_loader.importlib.import_module",
-            lambda name: mock_module,
+            lambda name: module,
         )
+
+    def test_loads_directory_plugin_with_config(self, monkeypatch, tmp_path: Path):
+        """PLUGIN 识别 + config.yaml 解析结果注入构造 + 注册到 registry。"""
+        _RecordingPlugin.instances.clear()
+        registry = Registry()
+        plugins_dir = tmp_path / "plugins"
+        plugin_dir = self._make_plugin_dir(tmp_path)
+
+        _write_yaml(
+            plugin_dir / "config.yaml",
+            {"defaults": {"name": "from_config"}, "secrets": {}},
+        )
+
+        mock_module = MagicMock()
+        mock_module.PLUGIN = _RecordingPlugin
+
+        self._mock_import(monkeypatch, plugins_dir, mock_module)
 
         load_plugins(registry)
 
-        # Verify register was called with a config dict containing defaults
-        assert mock_register.call_count == 1
-        args, _kwargs = mock_register.call_args
-        assert args[0] is registry
-        config = args[1]
+        assert len(_RecordingPlugin.instances) == 1
+        config = _RecordingPlugin.instances[0].received_config
         assert config is not None
         assert config["defaults"] == {"name": "from_config"}
+
+        plugins = registry.list_plugins()
+        assert [(p.name, p.version) for p in plugins] == [("test-plugin", "9.9.9")]
 
     def test_disabled_plugin_not_loaded(self, monkeypatch):
         """Disabled plugins should not trigger module loading."""
@@ -168,34 +186,36 @@ class TestPluginLoaderIntegration:
     def test_loads_plugin_passes_none_config_when_missing(
         self, monkeypatch, tmp_path: Path
     ):
-        """When config.yaml is missing, register gets config=None."""
+        """缺少 config.yaml 时 PLUGIN 构造应收到 config=None。"""
+        _RecordingPlugin.instances.clear()
         registry = Registry()
-
         plugins_dir = tmp_path / "plugins"
-        plugin_dir = plugins_dir / "test_plugin"
-        plugin_dir.mkdir(parents=True)
-
-        # __init__.py required for directory plugins
-        (plugin_dir / "__init__.py").write_text("")
-        # No config.yaml written
+        self._make_plugin_dir(tmp_path)
 
         mock_module = MagicMock()
-        mock_register = MagicMock()
-        mock_module.register = mock_register
+        mock_module.PLUGIN = _RecordingPlugin
 
-        monkeypatch.setattr(
-            "app.runtime.plugin_loader._plugins_dir",
-            lambda: plugins_dir,
-        )
-        monkeypatch.setattr(
-            "app.runtime.plugin_loader._load_registry_entries",
-            lambda _: {"test_p": {"path": plugin_dir}},
-        )
-        monkeypatch.setattr(
-            "app.runtime.plugin_loader.importlib.import_module",
-            lambda name: mock_module,
-        )
+        self._mock_import(monkeypatch, plugins_dir, mock_module)
 
         load_plugins(registry)
 
-        mock_register.assert_called_once_with(registry, None)
+        assert len(_RecordingPlugin.instances) == 1
+        assert _RecordingPlugin.instances[0].received_config is None
+
+    def test_module_without_plugin_reports_error(self, monkeypatch, tmp_path: Path):
+        """模块未暴露 PLUGIN 时应上报到 registry.add_plugin_error。"""
+        registry = Registry()
+        plugins_dir = tmp_path / "plugins"
+        self._make_plugin_dir(tmp_path)
+
+        # spec=[] 使任意属性访问抛 AttributeError,模拟无 PLUGIN 的模块
+        mock_module = MagicMock(spec=[])
+
+        self._mock_import(monkeypatch, plugins_dir, mock_module)
+
+        load_plugins(registry)
+
+        errors = registry.list_plugin_errors()
+        assert len(errors) == 1
+        assert "PLUGIN" in errors[0].error
+        assert errors[0].plugin_id == "test_p"
