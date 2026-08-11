@@ -1715,7 +1715,7 @@ git commit -m "refactor(plugins): migrate openclaw plugin to class methods"
 - Modify: `plugins/examples/hello_world.py`(全文替换)
 - Modify: `plugins/examples/dummy_echo.py`(全文替换)
 
-- [ ] **Step 1: 重写 `plugins/examples/hello_world.py`**
+- [x] **Step 1: 重写 `plugins/examples/hello_world.py`**
 
 ```python
 # @file /plugins/examples/hello_world.py
@@ -1752,7 +1752,7 @@ class HelloWorldPlugin(Plugin):
 PLUGIN = HelloWorldPlugin
 ```
 
-- [ ] **Step 2: 重写 `plugins/examples/dummy_echo.py`**
+- [x] **Step 2: 重写 `plugins/examples/dummy_echo.py`**
 
 ```python
 # @file /plugins/examples/dummy_echo.py
@@ -1792,17 +1792,17 @@ class DummyEchoPlugin(Plugin):
 PLUGIN = DummyEchoPlugin
 ```
 
-- [ ] **Step 3: 文件插件加载回归(test_plugin_loader 的 file plugin 用例)**
+- [x] **Step 3: 文件插件加载回归(test_plugin_loader 的 file plugin 用例)**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests/test_plugin_loader.py -q`
 Expected: PASS(文件插件模块名解析用例覆盖 examples 形态)
 
-- [ ] **Step 4: 全量回归**
+- [x] **Step 4: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 125 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add plugins/examples/hello_world.py plugins/examples/dummy_echo.py
