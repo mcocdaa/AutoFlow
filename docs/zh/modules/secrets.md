@@ -10,7 +10,4 @@
 
 ## 与现有实现的关系
 
-仓库当前已存在基于 Docker secrets 的敏感变量注入实践，可作为运行时与开发环境的一种落地方式：
-
-- `tools/secrets/README.md`
-- 后端 `.env.example` 中的 `*_FILE` 约定
+插件凭证通过插件级 `config.yaml` 的 `secrets` 块管理：每个值是一个环境变量名，由 `plugin_loader` 在加载时解析为环境变量值注入插件构造（见插件开发指南第 6 节）。框架不读取任何全局 secret 文件。

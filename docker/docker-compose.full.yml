@@ -1,5 +1,5 @@
 # ============================================
-# AutoFlow 全栈模式 (后端 + 前端 + MySQL + Redis) - 自包含
+# AutoFlow 全栈模式 (后端 + 前端) - 自包含
 # 用法: docker compose -f docker/docker-compose.full.yml -p autoflow up -d --build
 #
 # 注意: 本文件为自包含定义(每个 service 只定义一次),
@@ -10,18 +10,6 @@
 networks:
   autoflow-network:
     driver: bridge
-
-volumes:
-  mysql_data:
-  redis_data:
-
-secrets:
-  mysql_root_password:
-    file: ../secrets/mysql_root_password
-  db_password:
-    file: ../secrets/db_password
-  secret_key:
-    file: ../secrets/secret_key
 
 services:
   autoflow-backend:
@@ -36,26 +24,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-production}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - API_VERSION=v1
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=${DB_USER:-autoflow}
-      - DB_NAME=${DB_NAME:-autoflow_db}
-      - DB_PASSWORD_FILE=/run/secrets/db_password
-      - SECRET_KEY_FILE=/run/secrets/secret_key
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=${REDIS_DB:-0}
-      - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app/backend
-      - SECRET_FALLBACK_MODE=${SECRET_FALLBACK_MODE:-default}
-    secrets:
-      - db_password
-      - secret_key
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     volumes:
       - ../plugins:/app/plugins:ro
     networks:
@@ -66,41 +35,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  mysql:
-    image: mysql:8.0
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
-      MYSQL_DATABASE: ${DB_NAME:-autoflow_db}
-      MYSQL_USER: ${DB_USER:-autoflow}
-      MYSQL_PASSWORD_FILE: /run/secrets/db_password
-    secrets:
-      - mysql_root_password
-      - db_password
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - autoflow-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  redis:
-    image: redis:7.4-alpine
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    networks:
-      - autoflow-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   autoflow-frontend:
     build:
