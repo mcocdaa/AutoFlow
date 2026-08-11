@@ -1,6 +1,6 @@
 # 插件共性层与后端去重优化 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers-subagent-driven-development (recommended) or superpowers-executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers-subagent-driven-development (recommended) or superpowers-executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 将插件 handlers 统一为类方法形态,在 Plugin 基类收敛 dry_run/配置取值/错误返回三类重复,并对后端 runner/registry/setting_manager 做纯重构去重。
 
@@ -21,7 +21,7 @@
 - Modify: `plugins/common/helpers.py`(新增 resolve_env_value / error_result,保留 dry_run_enabled)
 - Modify: `backend/tests/test_plugin_common.py`(适配实例属性 + 新增 3 组测试)
 
-- [ ] **Step 1: 重写 `plugins/common/plugin.py`**
+- [x] **Step 1: 重写 `plugins/common/plugin.py`**
 
 ```python
 # @file /plugins/common/plugin.py
@@ -111,7 +111,7 @@ class Plugin:
         return {"error": error, "error_type": error_type, **fields}
 ```
 
-- [ ] **Step 2: 更新 `plugins/common/helpers.py`**(保留 dry_run_enabled 不动,新增两个函数)
+- [x] **Step 2: 更新 `plugins/common/helpers.py`**(保留 dry_run_enabled 不动,新增两个函数)
 
 在 `is_truthy` 之后新增:
 
@@ -130,7 +130,7 @@ def error_result(
     return {"error": error, "error_type": error_type, **fields}
 ```
 
-- [ ] **Step 3: 更新 `backend/tests/test_plugin_common.py`**
+- [x] **Step 3: 更新 `backend/tests/test_plugin_common.py`**
 
 替换 `TestPluginBase` 两个测试(类属性 → __init__ 绑定),并在 `TestDryRunEnabled` 前新增 3 组测试:
 
@@ -336,19 +336,19 @@ from plugins.common.helpers import (
 
 `TestDryRunEnabled` 类(原 helpers.dry_run_enabled 的 4 个测试)保留到 Task 8 删除(依赖上面的 import)。
 
-- [ ] **Step 4: 运行单测验证**
+- [x] **Step 4: 运行单测验证**
 
 Run: `cd /home/mcocdaa/AI_CODE/AutoFlow && PYTHONPATH=backend:. pytest backend/tests/test_plugin_common.py -q`
 Expected: PASS(原 16 + 新增 22 个用例 = 38;TestPluginBase 2 个为 1:1 改造,净增 0)
 
-- [ ] **Step 5: 全量回归(确认兼容过渡有效)**
+- [x] **Step 5: 全量回归(确认兼容过渡有效)**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 117 passed(95 基线 + 22 新增;旧插件仍用类属性 actions,被基类复制进实例)
 
 > **ruff 提示**:本任务与后续所有任务的代码块均需通过 ruff(E501 行宽 88/format)。复制代码后先运行 `ruff format backend plugins && ruff check backend plugins`,修正任何行宽问题后再提交,否则 pre-commit 的 ruff hook 会拦截 commit。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add plugins/common/plugin.py plugins/common/helpers.py backend/tests/test_plugin_common.py
