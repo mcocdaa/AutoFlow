@@ -29,7 +29,7 @@ Every AutoFlow plugin is a directory (or a single `.py` file) containing:
 ```
 plugin_dir/
 ├── __init__.py       # package entry (exports PLUGIN)
-├── backend.py        # class XxxPlugin(Plugin); actions/checks declared as class attributes
+├── backend.py        # class XxxPlugin(Plugin); actions/checks bound to instance methods in __init__
 └── config.yaml       # optional; defaults + secrets (secrets resolved to env values by the loader)
 ```
 
@@ -51,23 +51,25 @@ from app.core.registry import ActionContext
 from plugins.common.plugin import Plugin
 
 
-def _echo(ctx: ActionContext, params: dict[str, Any]) -> Any:
-    return {
-        "input": ctx.input,
-        "message": params.get("message"),
-        "vars": ctx.vars,
-    }
-
-
 class DummyPlugin(Plugin):
     """Dummy plugin: echoes user input (for testing)"""
 
     name = "dummy"
     version = "0.1.0"
-    actions = {
-        "dummy.echo": _echo,
-    }
-    checks = {}
+
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        super().__init__(config)
+        self.actions = {
+            "dummy.echo": self._echo,
+        }
+        self.checks = {}
+
+    def _echo(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
+        return {
+            "input": ctx.input,
+            "message": params.get("message"),
+            "vars": ctx.vars,
+        }
 
 
 PLUGIN = DummyPlugin
@@ -94,19 +96,23 @@ plugins:
 
 ## 2. The Plugin Base Class
 
-`Plugin` lives in `plugins/common/plugin.py` and provides declarative metadata plus unified registration (replacing the old boilerplate):
+`Plugin` lives in `plugins/common/plugin.py` and provides declarative metadata, unified registration, and common config/dry-run/error APIs (replacing the old boilerplate):
 
 ```python
 class Plugin:
-    """Plugin base: declarative metadata + unified registration"""
+    """Plugin base: declarative metadata + unified registration
+    + config/dry-run/error common APIs"""
 
     name: str
     version: str = "0.1.0"
-    actions: dict[str, ActionHandler] = {}
-    checks: dict[str, CheckHandler] = {}
+    dry_run_env: str | None = None   # optional: deployment-level dry-run env var name
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
+        self.defaults = dict(self.config.get("defaults", {}))
+        self.secrets = dict(self.config.get("secrets", {}))
+        self.actions: dict[str, ActionHandler] = {}
+        self.checks: dict[str, CheckHandler] = {}
 
     def register(self, registry: Registry) -> None:
         """Register plugin metadata, actions and checks"""
@@ -121,12 +127,21 @@ Key rules:
 
 - **`name`**: unique plugin identifier, decoupled from the plugins.yaml key (but keeping them consistent is recommended).
 - **`version`**: plugin version, defaults to `"0.1.0"`.
-- **`actions` / `checks`**: declared as **class attributes** mapping `type_name -> handler`. Handlers must be **module-level functions or `@staticmethod`** (instance methods cannot be referenced inside the class body).
-- **`__init__(config)`**: the loader injects the parsed `config.yaml` (or `None` when absent); plugins read `defaults` / `secrets` here.
+- **`dry_run_env`** (optional): deployment-level dry-run switch env var name; the third level of the `is_dry_run()` chain.
+- **`actions` / `checks`**: **instance attributes**; bind `type_name -> instance method` mappings in `__init__` (handler signature `def _xxx(self, ctx, params)`; call `super().__init__(config)` first).
+- **`__init__(config)`**: the loader injects the parsed `config.yaml` (or `None` when absent); the base class normalizes `defaults` / `secrets` into instance attributes `self.defaults` / `self.secrets`.
 - **`register()`**: implemented by the base class — plugins never write it.
 - **`PLUGIN = XxxPlugin`**: modules must export `PLUGIN` (a class reference, not an instance); the loader discovers plugins through it.
 
 Type names follow `plugin_name.function`, e.g. `zhihu.fetch_answer`, `desktop.click`.
+
+### Base-class common API
+
+Every plugin can use these base-class methods directly:
+
+- **`is_dry_run(ctx, params) -> bool`**: unified dry-run check; chain `params["dry_run"]` → `ctx.vars["dry_run"]` → env var `dry_run_env`.
+- **`setting(params, key, *, env_var=None, default=None) -> Any`**: unified lookup chain `params[key]` → `self.defaults[key]` → `self.secrets[key]` → `os.getenv(env_var)` → `default`; values support the `env:VAR` form (resolved to env values automatically).
+- **`error_result(error, *, error_type="unknown_error", **fields) -> dict`**: unified error result builder, producing `{"error": ..., "error_type": ..., **fields}`.
 
 ## 3. Action Development
 
@@ -139,6 +154,8 @@ ActionHandler = Callable[[ActionContext, dict[str, Any]], Any]
 - `ActionContext`: contextual information (below)
 - `dict[str, Any]`: parameters (the `params` section of a Flow step, already template-resolved)
 - Return value: any data structure (becomes the next step's `input`)
+
+In the class-method form, handlers are **instance methods** with the signature `def _xxx(self, ctx: ActionContext, params: dict[str, Any]) -> Any`, bound to `self.actions` in `__init__`.
 
 ### ActionContext Fields
 
@@ -220,32 +237,35 @@ Common utilities are centralized in `plugins/common/helpers.py`. Reuse them — 
 | Function | Description |
 |----------|-------------|
 | `is_truthy(v)` | Lenient truthiness: `None`/empty are False; `"1"/"true"/"yes"` etc. are True |
-| `dry_run_enabled(ctx, params, env_var)` | Three-level dry-run check: `params` → `ctx.vars` → env var |
+| `resolve_env_value(value)` | Resolves `env:VAR`-form values to env values; otherwise returns as-is |
+| `error_result(error, *, error_type="unknown_error", **fields)` | Unified error result builder (pure-function version of the base-class `error_result`) |
 | `read_text(ctx, path, extra_roots=())` | Safe path read (path-traversal guard; allows artifacts_dir and repo root by default) |
 | `write_text(ctx, rel_path, text)` | Write into artifacts_dir; returns the relative path |
 | `utc_now_iso()` | UTC ISO 8601 timestamp string |
 | `safe_name(name, fallback)` | Filename sanitization (strips separators and illegal chars) |
 
-### Dry-run Example
+> Dry-run checks are not here: use the base-class `Plugin.is_dry_run(ctx, params)` instead (see Section 2).
+
+### Dry-run Example (base-class is_dry_run)
 
 See `plugins/zhihu_digest/backend.py`:
 
 ```python
-from plugins.common.helpers import dry_run_enabled
-
-_DRY_RUN_ENV = "AUTOFLOW_ZHIHU_DRY_RUN"
-
-def _fetch_answer(ctx: ActionContext, params: dict[str, Any]) -> Any:
+class ZhihuDigestPlugin(Plugin):
     ...
-    if dry_run_enabled(ctx, params, _DRY_RUN_ENV):
-        # simulation path: no real request, return sample data
-        rel = write_text(ctx, f"zhihu/answers/{answer_id}.txt", "sample text")
-        return {"answer_text_path": rel, "dry_run": True}
-    # real path
-    ...
+    dry_run_env = "AUTOFLOW_ZHIHU_DRY_RUN"
+
+    def _fetch_answer(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
+        ...
+        if self.is_dry_run(ctx, params):
+            # simulation path: no real request, return sample data
+            rel = write_text(ctx, f"zhihu/answers/{answer_id}.txt", "sample text")
+            return {"answer_text_path": rel, "dry_run": True}
+        # real path
+        ...
 ```
 
-Precedence: `dry_run` in `params` → `dry_run` in `ctx.vars` → plugin-specific env var (convention `AUTOFLOW_<PLUGIN>_DRY_RUN`).
+Precedence: `dry_run` in `params` → `dry_run` in `ctx.vars` → plugin-specific env var (convention `AUTOFLOW_<PLUGIN>_DRY_RUN`, declared via the class attribute `dry_run_env`).
 
 ### Safe Path I/O Example
 
@@ -276,12 +296,12 @@ secrets:
   cookie_file: ZHIHU_COOKIE_FILE
 ```
 
-- **`defaults`**: passed through verbatim as `config["defaults"]`.
-- **`secrets`**: each value names an environment variable; the loader resolves it (or `None` when unset) into `config["secrets"]`.
-- Plugins read them in `__init__`: `self.config.get("defaults", {})` / `self.config.get("secrets", {})`.
-- Without `config.yaml` the loader passes `config=None`.
+- **`defaults`**: normalized by the base class into the instance attribute `self.defaults` in `__init__`.
+- **`secrets`**: each value names an environment variable; the loader resolves it (or `None` when unset) into `config["secrets"]`; the base class normalizes it into `self.secrets`.
+- Plugins use `self.defaults` / `self.secrets` directly, or go through the base-class `setting(params, key, env_var=..., default=...)` unified lookup chain.
+- Without `config.yaml` the loader passes `config=None` (`self.defaults` / `self.secrets` are then empty dicts).
 
-See `plugins/openclaw/backend.py`: OpenClaw writes config into module-level `_DEFAULTS` / `_SECRETS` for handlers (plugins load once per process; `get_registry` is an `lru_cache` singleton, so this is safe).
+See `plugins/openclaw/backend.py`: OpenClaw normalizes config via `super().__init__(config)`; handlers are instance methods reading `self.defaults` / `self.secrets` directly.
 
 ## 7. Registry & Loading
 
@@ -326,20 +346,22 @@ from app.core.registry import ActionContext
 from plugins.common.plugin import Plugin
 
 
-def _hello(ctx: ActionContext, params: dict[str, Any]) -> Any:
-    name = params.get("name", "World")
-    return {"message": f"Hello, {name} from AutoFlow!"}
-
-
 class HelloWorldPlugin(Plugin):
     """Example plugin: registers core.hello action"""
 
     name = "hello-world"
     version = "1.0.0"
-    actions = {
-        "core.hello": _hello,
-    }
-    checks = {}
+
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        super().__init__(config)
+        self.actions = {
+            "core.hello": self._hello,
+        }
+        self.checks = {}
+
+    def _hello(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
+        name = params.get("name", "World")
+        return {"message": f"Hello, {name} from AutoFlow!"}
 
 
 PLUGIN = HelloWorldPlugin
@@ -351,24 +373,24 @@ PLUGIN = HelloWorldPlugin
 
 See `plugins/desktop_checkin/backend.py`.
 
-**Features**: 8 actions + 2 checks; desktop automation; uses `dry_run_enabled` / `is_truthy` / `safe_name`; dry-run support.
+**Features**: 8 actions + 2 checks; desktop automation; uses base-class `is_dry_run` / `setting` and `is_truthy` / `safe_name`; dry-run support (`dry_run_env = "AUTOFLOW_DESKTOP_DRY_RUN"`).
 
 ### zhihu_digest: external API calls
 
 See `plugins/zhihu_digest/backend.py`.
 
-**Features**: external API (zhihu, playwright); uses `read_text` / `write_text` / `utc_now_iso` / `dry_run_enabled`; data processing and storage; dry-run and error handling.
+**Features**: external API (zhihu, playwright); uses `read_text` / `write_text` / `utc_now_iso` and base-class `is_dry_run` / `setting`; data processing and storage; dry-run and error handling.
 
 ### openclaw: config injection
 
 See `plugins/openclaw/backend.py`.
 
-**Features**: constructor receives config.yaml defaults/secrets into module level; 3 actions + 2 checks; security: safe_mode on by default, `allowed_commands` whitelist.
+**Features**: config normalized into `self.defaults` / `self.secrets` via the base-class `__init__`; handlers are instance methods reading them directly; 3 actions + 2 checks; security: safe_mode on by default, `allowed_commands` whitelist.
 
 ## 9. Development Steps
 
 1. Create `plugins/my_plugin/` with `__init__.py`
-2. Define `class MyPlugin(Plugin)` in `backend.py` with `name` / `version` / `actions` / `checks` (module-level handlers)
+2. Define `class MyPlugin(Plugin)` in `backend.py` with `name` / `version` (optional `dry_run_env`), binding `actions` / `checks` to instance methods in `__init__`
 3. Export `PLUGIN = MyPlugin` from `__init__.py`
 4. Register in `plugins/plugins.yaml` (`enabled: true`)
 5. Add `config.yaml` when configuration is needed (defaults + secrets)
