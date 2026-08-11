@@ -422,7 +422,7 @@ git commit -m "refactor(plugins): migrate dummy plugin to class methods"
 **Files:**
 - Modify: `plugins/desktop_checkin/backend.py`(全文替换)
 
-- [ ] **Step 1: 重写 `plugins/desktop_checkin/backend.py`**
+- [x] **Step 1: 重写 `plugins/desktop_checkin/backend.py`**
 
 ```python
 # @file /plugins/desktop_checkin/backend.py
@@ -752,17 +752,17 @@ class DesktopCheckinPlugin(Plugin):
 PLUGIN = DesktopCheckinPlugin
 ```
 
-- [ ] **Step 2: 运行桌面插件端到端测试**
+- [x] **Step 2: 运行桌面插件端到端测试**
 
 Run: `PYTHONPATH=backend:. pytest plugins/desktop_checkin/tests -q`
 Expected: 2 passed(dry_run 流程 + actions 列表)
 
-- [ ] **Step 3: 全量回归**
+- [x] **Step 3: 全量回归**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 117 passed
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add plugins/desktop_checkin/backend.py
