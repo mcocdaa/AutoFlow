@@ -2163,22 +2163,22 @@ git commit -m "refactor(backend): update stale comments and dedup setting defaul
 
 **Files:** 无(纯验证)
 
-- [ ] **Step 1: 完整测试**
+- [x] **Step 1: 完整测试**
 
 Run: `PYTHONPATH=backend:. pytest backend/tests plugins -q`
 Expected: 121 passed
 
-- [ ] **Step 2: ruff 检查与格式**
+- [x] **Step 2: ruff 检查与格式**
 
 Run: `ruff check backend plugins && ruff format --check backend plugins`
 Expected: 无错误、无格式差异(如 pre-commit ruff hook 在 commit 时失败,先手动 `ruff check --fix` + `ruff format` 再 `git add` 重新 commit)
 
-- [ ] **Step 3: 残留 grep 全量确认**
+- [x] **Step 3: 残留 grep 全量确认**
 
 Run: `rg -n "_DRY_RUN_ENV|_DEFAULTS|_SECRETS|dry_run_enabled" plugins/ backend/ --glob '!**/__pycache__/**'`
 Expected: 无输出(0 命中)
 
-- [ ] **Step 4: 后端启动冒烟(插件加载 + execute)**
+- [x] **Step 4: 后端启动冒烟(插件加载 + execute)**
 
 基线(实施前实测):actions=17(builtin 2: core.log/core.sleep + 插件 15)、plugins=6(含 builtin)、checks=6、errors 字段名为 `errors`。重构后计数必须一致。
 
@@ -2203,11 +2203,11 @@ Expected: `17 actions, 6 plugins, 0 errors`(与基线一致);execute 返回 `suc
 kill $SMOKE_PID 2>/dev/null; pkill -f "uvicorn app.main:app" 2>/dev/null
 ```
 
-- [ ] **Step 5: git 状态确认**
+- [x] **Step 5: git 状态确认**
 
 Run: `git status --short && git log --oneline -15`
 Expected: 工作区干净;最近 15 条提交中包含本计划全部 12 条任务 commit(不含 spec/plan 文档提交 c7243ff 之前的旧提交可能挤出列表,以 `git log --oneline c7243ff..HEAD` 核对 12 条为准)
 
-- [ ] **Step 6: 汇总报告**
+- [x] **Step 6: 汇总报告**
 
 向用户报告:完成的任务清单、121 passed 测试结果、冒烟结果(17/6/0 + execute)、全部 commit 列表(含 hash)。
