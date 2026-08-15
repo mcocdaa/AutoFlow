@@ -2,6 +2,7 @@
 # @brief 插件加载器 - 读取 plugins.yaml 启用的插件并注册到 Registry
 # @create 2026-08-08
 # @update 2026-08-10 阶段二:收敛为 PLUGIN (Plugin 子类) 协议最终形态
+# @update 2026-08-11 注释同步类方法 ABI
 
 from __future__ import annotations
 
@@ -89,6 +90,7 @@ def load_plugins(registry: Registry) -> None:
     """加载 plugins.yaml 中启用的插件,识别 PLUGIN (Plugin 子类) 完成注册
 
     插件模块需暴露 PLUGIN = XxxPlugin (Plugin 子类),见 plugins/common/plugin.py。
+    handlers 为实例方法,由插件 __init__ 绑定到 self.actions/self.checks。
     单个插件加载失败不会影响其他插件,错误会记录到 registry。
     """
     plugins_dir = _plugins_dir()

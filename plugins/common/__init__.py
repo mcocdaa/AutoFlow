@@ -3,7 +3,6 @@
 # @create 2026-08-10
 
 from plugins.common.helpers import (
-    dry_run_enabled,
     is_truthy,
     read_text,
     safe_name,
@@ -14,7 +13,6 @@ from plugins.common.plugin import Plugin
 
 __all__ = [
     "Plugin",
-    "dry_run_enabled",
     "is_truthy",
     "read_text",
     "safe_name",

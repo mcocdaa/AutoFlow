@@ -24,7 +24,7 @@ version: "2.0"
 
 框架只依赖以下抽象概念：
 
-- **`Plugin` 基类**（`plugins/common/plugin.py`）：声明式元信息 `name` / `version` / `actions` / `checks` 类属性 + 统一 `register()` 实例方法
+- **`Plugin` 基类**（`plugins/common/plugin.py`）：声明式元信息 `name` / `version` / `dry_run_env` + 统一 `register()` 实例方法 + 共性 API（`is_dry_run` / `setting` / `error_result`）
 - **`PLUGIN` 导出约定**：插件模块导出 `PLUGIN = XxxPlugin`（类引用），由 loader 实例化并注入 config
 - **`ActionHandler` / `CheckHandler`**（`app.core.registry`）：action/check 的实现签名
 
@@ -32,18 +32,26 @@ version: "2.0"
 class Plugin:
     name: str
     version: str = "0.1.0"
-    actions: dict[str, ActionHandler] = {}
-    checks: dict[str, CheckHandler] = {}
+    dry_run_env: str | None = None
 
     def __init__(self, config: dict[str, Any] | None = None) -> None: ...
     def register(self, registry: Registry) -> None: ...
+
+    # 共性 API
+    def is_dry_run(self, ctx, params) -> bool: ...
+    def setting(self, params, key, *, env_var=None, default=None) -> Any: ...
+    def error_result(self, error, *, error_type="unknown_error", **fields) -> dict: ...
 ```
 
 约定：
 
 - `version` 建议遵循语义化版本。
-- handler 必须为模块级函数或 `@staticmethod`（类体内无法引用实例方法）。
-- `config` 由 loader 从插件目录 `config.yaml` 解析注入：`defaults` 原样传入，`secrets` 块解析为环境变量值；无 `config.yaml` 时传 `None`。
+- action/check handler 为插件类的**实例方法**（签名 `def _xxx(self, ctx, params)`），在 `__init__` 中绑定到实例属性 `self.actions` / `self.checks`。
+- `config` 由 loader 从插件目录 `config.yaml` 解析注入：`defaults` 原样传入，`secrets` 块解析为环境变量值；无 `config.yaml` 时传 `None`。基类 `__init__` 将二者归一为实例属性 `self.defaults` / `self.secrets`。
+- 共性 API 语义：
+  - `is_dry_run(ctx, params)`：dry_run 判定链 `params.dry_run` → `ctx.vars.dry_run` → 环境变量 `dry_run_env`
+  - `setting(params, key, *, env_var=None, default=None)`：取值链 `params[key]` → `defaults[key]` → `secrets[key]` → `os.getenv(env_var)` → `default`；值支持 `env:VAR` 形式
+  - `error_result(error, *, error_type="unknown_error", **fields)`：统一错误返回 `{"error": ..., "error_type": ..., **fields}`
 
 ## Schema 与校验
 

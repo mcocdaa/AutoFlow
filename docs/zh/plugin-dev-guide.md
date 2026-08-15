@@ -29,7 +29,7 @@ version: "2.0"
 ```
 插件目录/
 ├── __init__.py       # 包入口（导出 PLUGIN）
-├── backend.py        # class XxxPlugin(Plugin)，actions/checks 以类属性声明
+├── backend.py        # class XxxPlugin(Plugin)，actions/checks 在 __init__ 中绑定实例方法
 └── config.yaml       # 可选，defaults + secrets（secrets 由 loader 解析为环境变量值）
 ```
 
@@ -51,23 +51,25 @@ from app.core.registry import ActionContext
 from plugins.common.plugin import Plugin
 
 
-def _echo(ctx: ActionContext, params: dict[str, Any]) -> Any:
-    return {
-        "input": ctx.input,
-        "message": params.get("message"),
-        "vars": ctx.vars,
-    }
-
-
 class DummyPlugin(Plugin):
     """Dummy 插件：回传用户输入信息（测试用）"""
 
     name = "dummy"
     version = "0.1.0"
-    actions = {
-        "dummy.echo": _echo,
-    }
-    checks = {}
+
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        super().__init__(config)
+        self.actions = {
+            "dummy.echo": self._echo,
+        }
+        self.checks = {}
+
+    def _echo(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
+        return {
+            "input": ctx.input,
+            "message": params.get("message"),
+            "vars": ctx.vars,
+        }
 
 
 PLUGIN = DummyPlugin
@@ -94,19 +96,22 @@ plugins:
 
 ## 2. Plugin 基类
 
-`Plugin` 基类位于 `plugins/common/plugin.py`，提供声明式元信息与统一注册（替代旧版注册样板）：
+`Plugin` 基类位于 `plugins/common/plugin.py`，提供声明式元信息、统一注册与配置/dry_run/错误共性 API（替代旧版注册样板）：
 
 ```python
 class Plugin:
-    """插件基类：声明式元信息 + 统一注册"""
+    """插件基类：声明式元信息 + 统一注册 + 配置/dry_run/错误共性 API"""
 
     name: str
     version: str = "0.1.0"
-    actions: dict[str, ActionHandler] = {}
-    checks: dict[str, CheckHandler] = {}
+    dry_run_env: str | None = None   # 可选：部署级 dry_run 环境变量名
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
+        self.defaults = dict(self.config.get("defaults", {}))
+        self.secrets = dict(self.config.get("secrets", {}))
+        self.actions: dict[str, ActionHandler] = {}
+        self.checks: dict[str, CheckHandler] = {}
 
     def register(self, registry: Registry) -> None:
         """注册 plugin 元信息、actions、checks"""
@@ -121,12 +126,21 @@ class Plugin:
 
 - **`name`**：插件唯一标识，与 plugins.yaml 的 key 解耦（但建议一致）。
 - **`version`**：插件版本号，默认 `"0.1.0"`。
-- **`actions` / `checks`**：以**类属性**声明 `类型名 -> handler` 的映射。handler 必须是**模块级函数或 `@staticmethod`**（类体内无法引用实例方法）。
-- **`__init__(config)`**：loader 会把 `config.yaml` 的解析结果注入构造（无 config.yaml 时传 `None`），插件可在构造中读取 `defaults` / `secrets`。
+- **`dry_run_env`**（可选）：部署级 dry_run 开关的环境变量名，作为 `is_dry_run()` 判定链的第三级。
+- **`actions` / `checks`**：**实例属性**，在 `__init__` 中绑定 `类型名 -> 实例方法` 的映射（handler 签名 `def _xxx(self, ctx, params)`，必须调用 `super().__init__(config)` 后初始化）。
+- **`__init__(config)`**：loader 会把 `config.yaml` 的解析结果注入构造（无 config.yaml 时传 `None`）；基类已将 `defaults` / `secrets` 归一为实例属性 `self.defaults` / `self.secrets`。
 - **`register()`**：由基类实现，插件**无需编写**。
 - **`PLUGIN = XxxPlugin`**：模块必须导出 `PLUGIN`（类引用，非实例），loader 据此识别。
 
 类型名规则为 `插件名.功能`，例如：`zhihu.fetch_answer`、`desktop.click`。
+
+### 基类共性 API
+
+所有插件可直接使用以下基类方法：
+
+- **`is_dry_run(ctx, params) -> bool`**：统一 dry_run 判定，判定链 `params["dry_run"]` → `ctx.vars["dry_run"]` → 环境变量 `dry_run_env`。
+- **`setting(params, key, *, env_var=None, default=None) -> Any`**：统一取值链 `params[key]` → `self.defaults[key]` → `self.secrets[key]` → `os.getenv(env_var)` → `default`；值支持 `env:VAR` 形式（自动解析为环境变量值）。
+- **`error_result(error, *, error_type="unknown_error", **fields) -> dict`**：统一错误返回构造，结果为 `{"error": ..., "error_type": ..., **fields}`。
 
 ## 3. Action 开发规范
 
@@ -141,6 +155,8 @@ ActionHandler = Callable[[ActionContext, dict[str, Any]], Any]
 - `ActionContext`：上下文信息（见下）
 - `dict[str, Any]`：参数字典（Flow 中 `params` 段，已解析模板）
 - 返回值：任意数据结构（将作为下一步的 `input`）
+
+在类方法形态下，handler 是插件类的**实例方法**，签名 `def _xxx(self, ctx: ActionContext, params: dict[str, Any]) -> Any`，在 `__init__` 中绑定到 `self.actions`。
 
 ### ActionContext 包含哪些信息
 
@@ -224,32 +240,35 @@ return False  # 检查失败
 | 函数 | 说明 |
 |------|------|
 | `is_truthy(v)` | 宽松布尔化：None/空串 为 False，`"1"/"true"/"yes"` 等为 True |
-| `dry_run_enabled(ctx, params, env_var)` | 三段式 dry_run 判定：`params` → `ctx.vars` → 环境变量 |
+| `resolve_env_value(value)` | 若 value 为 `env:VAR` 形式则解析为环境变量值，否则原样返回 |
+| `error_result(error, *, error_type="unknown_error", **fields)` | 统一错误返回构造（基类 `error_result` 的纯函数版） |
 | `read_text(ctx, path, extra_roots=())` | 安全路径读取（防目录穿越，默认允许 artifacts_dir 与仓库根） |
 | `write_text(ctx, rel_path, text)` | 写入 artifacts 目录，返回相对路径 |
 | `utc_now_iso()` | UTC ISO 8601 时间戳字符串 |
 | `safe_name(name, fallback)` | 文件名净化（去除路径分隔符与非法字符） |
 
-### dry_run 三段式判定示例
+> dry_run 判定不在此处：统一走基类 `Plugin.is_dry_run(ctx, params)`（见第 2 节）。
+
+### dry_run 判定示例（基类 is_dry_run）
 
 对应文件 `plugins/zhihu_digest/backend.py`：
 
 ```python
-from plugins.common.helpers import dry_run_enabled
-
-_DRY_RUN_ENV = "AUTOFLOW_ZHIHU_DRY_RUN"
-
-def _fetch_answer(ctx: ActionContext, params: dict[str, Any]) -> Any:
+class ZhihuDigestPlugin(Plugin):
     ...
-    if dry_run_enabled(ctx, params, _DRY_RUN_ENV):
-        # 模拟路径：不发起真实请求，返回示例数据
-        rel = write_text(ctx, f"zhihu/answers/{answer_id}.txt", "示例文本")
-        return {"answer_text_path": rel, "dry_run": True}
-    # 真实路径
-    ...
+    dry_run_env = "AUTOFLOW_ZHIHU_DRY_RUN"
+
+    def _fetch_answer(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
+        ...
+        if self.is_dry_run(ctx, params):
+            # 模拟路径：不发起真实请求，返回示例数据
+            rel = write_text(ctx, f"zhihu/answers/{answer_id}.txt", "示例文本")
+            return {"answer_text_path": rel, "dry_run": True}
+        # 真实路径
+        ...
 ```
 
-判定优先级：`params` 中的 `dry_run` → `ctx.vars` 中的 `dry_run` → 插件专属环境变量（约定命名 `AUTOFLOW_<插件>_DRY_RUN`）。
+判定优先级：`params` 中的 `dry_run` → `ctx.vars` 中的 `dry_run` → 插件专属环境变量（约定命名 `AUTOFLOW_<插件>_DRY_RUN`，通过类属性 `dry_run_env` 声明）。
 
 ### 安全路径读写示例
 
@@ -280,12 +299,12 @@ secrets:
   cookie_file: ZHIHU_COOKIE_FILE
 ```
 
-- **`defaults`**：原样传入插件构造的 `config["defaults"]`。
-- **`secrets`**：每个值是一个环境变量名，loader 加载时解析为对应的环境变量值（不存在则为 `None`）传入 `config["secrets"]`。
-- 插件在 `__init__` 中读取：`self.config.get("defaults", {})` / `self.config.get("secrets", {})`。
-- 无 `config.yaml` 时 loader 传入 `config=None`。
+- **`defaults`**：基类在 `__init__` 中归一为实例属性 `self.defaults`。
+- **`secrets`**：每个值是一个环境变量名，loader 加载时解析为对应的环境变量值（不存在则为 `None`）传入 `config["secrets"]`；基类归一为实例属性 `self.secrets`。
+- 插件直接使用 `self.defaults` / `self.secrets`，或通过基类 `setting(params, key, env_var=..., default=...)` 走统一取值链。
+- 无 `config.yaml` 时 loader 传入 `config=None`（此时 `self.defaults` / `self.secrets` 为空字典）。
 
-参考 `plugins/openclaw/backend.py`：OpenClaw 插件把 config 写入模块级 `_DEFAULTS` / `_SECRETS` 供 handler 读取（插件进程启动时仅加载一次，`get_registry` 为 `lru_cache` 单例，该方案安全）。
+参考 `plugins/openclaw/backend.py`：OpenClaw 插件在 `__init__` 中经 `super().__init__(config)` 归一配置，handler 为实例方法直接读取 `self.defaults` / `self.secrets`。
 
 ## 7. 注册表与插件加载
 
@@ -334,20 +353,22 @@ from app.core.registry import ActionContext
 from plugins.common.plugin import Plugin
 
 
-def _hello(ctx: ActionContext, params: dict[str, Any]) -> Any:
-    name = params.get("name", "World")
-    return {"message": f"Hello, {name} from AutoFlow!"}
-
-
 class HelloWorldPlugin(Plugin):
     """示例插件：注册 core.hello action"""
 
     name = "hello-world"
     version = "1.0.0"
-    actions = {
-        "core.hello": _hello,
-    }
-    checks = {}
+
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
+        super().__init__(config)
+        self.actions = {
+            "core.hello": self._hello,
+        }
+        self.checks = {}
+
+    def _hello(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
+        name = params.get("name", "World")
+        return {"message": f"Hello, {name} from AutoFlow!"}
 
 
 PLUGIN = HelloWorldPlugin
@@ -366,8 +387,8 @@ PLUGIN = HelloWorldPlugin
 
 - 注册 8 个 action 与 2 个 check
 - 实现高级功能：桌面自动化
-- 使用 `dry_run_enabled` / `is_truthy` / `safe_name` 共享工具
-- 支持模拟模式（dry_run）
+- 使用基类 `is_dry_run` / `setting` 与 `is_truthy` / `safe_name` 共享工具
+- 支持模拟模式（dry_run，`dry_run_env = "AUTOFLOW_DESKTOP_DRY_RUN"`）
 
 ### zhihu_digest：外部 API 调用
 
@@ -376,7 +397,7 @@ PLUGIN = HelloWorldPlugin
 **特点分析**：
 
 - 调用外部 API：知乎（playwright）
-- 使用 `read_text` / `write_text` / `utc_now_iso` / `dry_run_enabled` 共享工具
+- 使用 `read_text` / `write_text` / `utc_now_iso` 共享工具与基类 `is_dry_run` / `setting`
 - 实现数据处理和存储
 - 支持模拟模式与错误处理
 
@@ -386,14 +407,14 @@ PLUGIN = HelloWorldPlugin
 
 **特点分析**：
 
-- 构造接收 config.yaml 的 defaults/secrets，写入模块级供 handler 读取
+- 构造经基类 `__init__` 归一 `self.defaults` / `self.secrets`，handler 为实例方法直接读取
 - 注册 3 个 action 与 2 个 check
 - 安全控制：safe_mode 默认开启、allowed_commands 白名单
 
 ## 9. 完整开发步骤
 
 1. 在 `plugins/` 下创建插件目录 `my_plugin/`，包含 `__init__.py`
-2. 在 `backend.py` 中定义 `class MyPlugin(Plugin)`，声明 `name` / `version` / `actions` / `checks`（handler 用模块级函数）
+2. 在 `backend.py` 中定义 `class MyPlugin(Plugin)`，声明 `name` / `version`（可选 `dry_run_env`），在 `__init__` 中将 `actions` / `checks` 绑定为实例方法
 3. 在 `__init__.py` 中导出 `PLUGIN = MyPlugin`
 4. 在 `plugins/plugins.yaml` 中登记插件（`enabled: true`）
 5. 需要配置时添加 `config.yaml`（defaults + secrets）
