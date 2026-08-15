@@ -106,6 +106,65 @@ class TestResolveTemplates:
         assert result == "{{steps.missing.output}}"
 
 
+class TestResolveTemplatesPath:
+    """测试属性链模板解析 {{steps.X.output.key}} / {{vars.X.y}} / {{input.x}}"""
+
+    def _context(self):
+        return {
+            "steps": {
+                "a": {"message": "hello", "tags": ["x", "y"], "nested": {"k": 42}}
+            },
+            "vars": {"item": {"name": "foo", "list": [1, 2, 3]}},
+            "input": {"items": [10, 20]},
+        }
+
+    def test_steps_output_property_chain(self):
+        """steps 输出的属性链"""
+        ctx = self._context()
+        assert resolve_templates("{{steps.a.output.message}}", ctx) == "hello"
+        assert resolve_templates("{{steps.a.output.tags.0}}", ctx) == "x"
+        assert resolve_templates("{{steps.a.output.nested.k}}", ctx) == 42
+
+    def test_steps_output_property_chain_inline(self):
+        """属性链在普通字符串中内联解析"""
+        ctx = self._context()
+        assert (
+            resolve_templates("msg={{steps.a.output.message}}+B", ctx) == "msg=hello+B"
+        )
+
+    def test_vars_property_chain(self):
+        """vars 的属性链与列表索引"""
+        ctx = self._context()
+        assert resolve_templates("{{vars.item.list.1}}", ctx) == 2
+        assert resolve_templates("{{vars.item.name}}", ctx) == "foo"
+
+    def test_input_property_chain(self):
+        """input 的属性链与列表索引"""
+        ctx = self._context()
+        assert resolve_templates("{{input.items.0}}", ctx) == 10
+
+    def test_missing_path_keeps_template(self):
+        """路径缺失时保留原模板"""
+        ctx = self._context()
+        assert (
+            resolve_templates("{{steps.a.output.unknown}}", ctx)
+            == "{{steps.a.output.unknown}}"
+        )
+        assert (
+            resolve_templates("{{vars.item.missing}}", ctx) == "{{vars.item.missing}}"
+        )
+        assert resolve_templates("{{input.nope}}", ctx) == "{{input.nope}}"
+
+    def test_whole_step_output_still_typed(self):
+        """整步输出引用仍返回原始 dict"""
+        ctx = self._context()
+        assert resolve_templates("{{steps.a.output}}", ctx) == {
+            "message": "hello",
+            "tags": ["x", "y"],
+            "nested": {"k": 42},
+        }
+
+
 class TestStepSpecOutputVar:
     """测试 StepSpec.output_var 字段（需要集成测试验证）"""
 
