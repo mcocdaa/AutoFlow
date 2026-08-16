@@ -30,6 +30,7 @@ Python plugin activate
 {
   "id": "meeting-export.toolbar-markdown",
   "plugin_id": "meeting-export",
+  "component_path": "meeting-export",
   "slot": "meeting.toolbar.action",
   "component": "command-button",
   "order": 100,
@@ -47,12 +48,13 @@ Python plugin activate
 | --- | --- |
 | `id` | 插件内稳定、全局唯一的 contribution ID |
 | `plugin_id` | 由 Runtime 注入，不接受插件伪造 |
+| `component_path` | 由 Runtime 注入的 owning component path |
 | `slot` | Host 注册的固定插槽 |
 | `component` | Host 支持的受控组件类型 |
 | `order` | 排序值，默认 100 |
 | `props` | 经过 component schema 校验的 JSON |
 
-响应按 `order`、`plugin_id`、`id` 稳定排序。
+响应按 `order`、`plugin_id`、`component_path`、`id` 稳定排序。
 
 ## 3. 第一版组件
 
@@ -106,7 +108,7 @@ GET /api/plugin-runtime/v1/ui/meeting.toolbar.action
 1. 用户认证；
 2. target 存在性和访问授权；
 3. slot 与 target type 校验；
-4. 插件 ACTIVE generation 校验；
+4. owning component ACTIVE generation 校验；
 5. Descriptor schema 校验；
 6. 按权限和条件过滤。
 

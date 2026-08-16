@@ -25,10 +25,13 @@ description: 独立插件仓库文档入口
 
 1. [architecture.md](architecture.md)
 2. [protocol/manifest.md](protocol/manifest.md)
-3. [protocol/runtime.md](protocol/runtime.md)
-4. [integration/adapters.md](integration/adapters.md)
-5. [protocol/frontend.md](protocol/frontend.md)
-6. [integration/example.md](integration/example.md)
-7. [protocol/assurance.md](protocol/assurance.md)
+3. [protocol/context.md](protocol/context.md)
+4. [protocol/components.md](protocol/components.md)
+5. [protocol/runtime.md](protocol/runtime.md)
+6. [protocol/hot-reload.md](protocol/hot-reload.md)
+7. [integration/adapters.md](integration/adapters.md)
+8. [protocol/frontend.md](protocol/frontend.md)
+9. [integration/example.md](integration/example.md)
+10. [protocol/assurance.md](protocol/assurance.md)
 
 已有项目接入时，再阅读 [integration/project-mapping.md](integration/project-mapping.md)。

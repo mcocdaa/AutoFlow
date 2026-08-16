@@ -161,9 +161,10 @@ flow.ui@1
 
 - Manifest 解析和版本兼容；
 - 插件 Catalog 和 Loader；
-- Context/Service 依赖图；
+- Scoped Context、父子 Component 和 Service 依赖图；
 - Reconciler 和状态机；
 - EffectScope/disposer；
+- code generation 热替换与补偿回滚协议；
 - config/secret/state 端口；
 - Command、UI Descriptor 和 diagnostics 基础协议；
 - Contract test suite。

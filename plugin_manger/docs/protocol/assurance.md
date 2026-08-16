@@ -22,7 +22,12 @@ description: 插件安全诊断与测试规范
 7. 同一 contribution ID 在同一 Registry 中至多有一个 owner；
 8. 配置、代码和依赖的旧 generation 不能覆盖新 generation；
 9. 业务持久数据不因插件 deactivation 自动删除；
-10. Runtime snapshot 能解释每个插件为什么 ACTIVE 或 INACTIVE。
+10. ACTIVE child 的全部祖先 component 必须 ACTIVE；
+11. parent generation 结束后不得存活任何 descendant scope、effect、service 或 contribution；
+12. consumer 只能绑定相同 `(service_id, resolution_key)` 下的 provider；
+13. isolate 和 intercept 不能扩大 Manifest 权限；
+14. reload 只能结束为 `SUCCEEDED`、`ROLLED_BACK` 或可解释的 `FAILED`，不能同时暴露新旧 generation；
+15. Runtime snapshot 能解释每个 component 为什么 ACTIVE 或 INACTIVE。
 
 ## 2. 错误模型
 
@@ -58,6 +63,15 @@ command_input_invalid
 command_output_invalid
 command_timeout
 stale_generation
+invalid_intercept
+duplicate_component
+invalid_component_context
+component_limit_exceeded
+component_parent_inactive
+provider_owner_mismatch
+reload_prepare_failed
+reload_failed
+rollback_failed
 ```
 
 面向普通用户的响应不得包含 Python traceback、文件系统路径、secret、配置值或第三方原始错误。管理员诊断可以包含经过脱敏的 exception class 和 `detail_ref`。
@@ -75,8 +89,13 @@ stale_generation
   "desired_enabled": true,
   "state": "ACTIVE",
   "reason": null,
+  "component_path": "meeting-export",
+  "parent_component_path": null,
+  "scope_id": "scope-01J...",
   "generation": 7,
+  "code_epoch": 3,
   "config_epoch": 12,
+  "context_epoch": 5,
   "required_services": [],
   "provided_services": [],
   "contributions": [],
@@ -86,7 +105,9 @@ stale_generation
 }
 ```
 
-effect 只暴露 label 和状态，不暴露连接对象、handler repr 或闭包内容。
+Child component 使用同一结构，并填充 `parent_component_path`。Root plugin snapshot 必须包含 child tree 摘要和最近 reload operation 状态。
+
+effect 只暴露 label 和状态，不暴露连接对象、handler repr 或闭包内容。Scope 只暴露不可反推内部 resolution key 的引用。
 
 ## 4. Reconcile 日志
 
@@ -173,13 +194,17 @@ Liveness 只表示进程存活。Readiness 至少检查：
 - Manifest 严格校验；
 - 必需/可选/many 依赖；
 - provider 歧义和版本不兼容；
+- root/child provider owner 匹配与声明但未实际 provide；
 - 环检测；
 - 稳定拓扑顺序；
 - activate/deactivate 正常路径；
 - activation 部分失败逆序 rollback；
 - disposer 异常继续清理；
+- Context 继承、isolate、intercept 和 context epoch；
+- child 独立激活、父子递归撤销和 component 环；
 - config/provider/code generation 更新；
 - stale async completion；
+- reload prepare、candidate failure、rollback success/failure；
 - FAILED retry gate；
 - runtime.close 全量清理。
 
@@ -191,9 +216,10 @@ Liveness 只表示进程存活。Readiness 至少检查：
 install / remove / enable / disable
 provide / withdraw / replace
 config update / activation fail / cleanup fail
+derive / isolate / intercept / mount child / replace code
 ```
 
-任意序列完成并 settle 后，不得出现 ACTIVE consumer 指向缺失 provider、重复 contribution 或未归属 effect。
+任意序列完成并 settle 后，不得出现 ACTIVE consumer 指向缺失或错误 resolution key 的 provider、ACTIVE child 指向非 ACTIVE parent、重复 contribution、跨 generation scope 或未归属 effect。
 
 ### 10.3 Adapter Contract Suite
 
@@ -203,6 +229,8 @@ FPR 发布共享测试套件，所有 Host Adapter 必须通过：
 - contribution 未声明时拒绝；
 - 冲突不覆盖旧 owner；
 - 卸载删除 Registry 可见项；
+- component path 与 generation 归属贯穿 register/invoke/dispose；
+- ScopedContext 不允许越权或跨树复用；
 - Invocation 再次鉴权；
 - secret 和错误脱敏；
 - 多进程不支持时正确返回 restart-required。
@@ -247,6 +275,8 @@ FPR 可被称为“通用插件系统”前，必须同时满足：
 
 - 四个 Host Adapter 的最小 contract tests 通过；
 - 任意顺序启停和依赖变化的状态机测试通过；
+- Context 隔离、intercept 和父子 component 所有权测试通过；
+- 热替换成功、补偿回滚与回滚失败测试通过；
 - activation 失败与 cleanup 失败均有可解释诊断；
 - Python 插件无需手写 stop/unload；
 - Vue 和 React 至少各有一个 Descriptor Host Bridge；

@@ -141,7 +141,9 @@ runtime:
 | `many` | `false` | 是否注入全部匹配 provider |
 | `reload_on_change` | `true` | provider generation 变化时是否重载 |
 
-必需依赖采用 AND 语义。`many: false` 时必须恰好选中一个 provider；零个表示缺失，多个且无法确定唯一选择表示歧义，插件保持 `INACTIVE`。
+Root component 的必需依赖采用 AND 语义。`many: false` 时必须恰好选中一个 provider；零个表示缺失，多个且无法确定唯一选择表示歧义，root component 保持 `INACTIVE`。
+
+Manifest `requires` 同时是整个 Plugin package 的服务访问上限。仅供 child component 使用的服务必须在 Manifest 中声明为 `optional: true`；child 可以在自己的 `ComponentSpec.requires` 中把它收紧为必需依赖，但不能增加未声明服务或放宽 version range。完整规则见 [components.md](components.md)。
 
 第一版不支持任意布尔表达式、动态代码条件或基于配置拼接 Service ID。
 
@@ -153,11 +155,21 @@ runtime:
 provides:
   - service: ai.summarizer
     version: 1.1.0
+    owner: root
 ```
 
-声明只表示“允许提供”，不使服务立即可用。只有插件成功激活并提交 `ctx.services.provide()` effect 后，服务才进入 Context。
+`owner` 只允许：
 
-实际提供的 Service ID 和版本必须与 Manifest 完全匹配。声明但未提供允许存在；提供但未声明必须导致激活失败并回滚。
+| 值 | 默认 | 说明 |
+| --- | --- | --- |
+| `root` | 是 | 由 Plugin root component 声明为 provider candidate |
+| `child` | 否 | 作为 child components 的 package 权限上限，具体 owner 由 `ComponentSpec.provides` 声明 |
+
+声明只建立 provider candidate 或 package 上限，不使服务立即可用。只有对应 component 成功激活并提交 `ctx.services.provide()` effect 后，服务才进入其 ScopedContext 对应的 resolution key。
+
+实际提供的 Service ID、版本和 owner 类型必须与 Manifest 匹配。Root 不能提供 `owner: child` 的服务，child 不能提供 `owner: root` 的服务。声明但未提供允许存在；提供但未声明或 owner 不匹配必须导致当前 component 激活失败并回滚。
+
+第一版禁止 `owner: any`。同一服务确实需要 root 和 child 都能提供时，必须使用两个不同的 Service ID，避免依赖图把 package 权限误判为具体 provider。
 
 ## 7. Capabilities
 

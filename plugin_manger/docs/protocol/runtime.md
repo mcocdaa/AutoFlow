@@ -11,11 +11,11 @@ description: 插件状态机与可逆效果规范
 
 ## 1. 状态模型
 
-Runtime 对每个插件实例暴露以下状态：
+Runtime 对每个 component instance 暴露以下状态。Plugin 的公共状态是 root component 状态及 child tree 摘要：
 
 | 状态 | 含义 |
 | --- | --- |
-| `ABSENT` | Catalog 中不存在该插件 |
+| `ABSENT` | Root 不在 Catalog，或 child desired spec 尚未发布/已撤销 |
 | `INACTIVE` | 已发现但当前不能或不应激活 |
 | `ACTIVATING` | 正在创建新的 activation generation |
 | `ACTIVE` | 当前 generation 已提交并可对外提供能力 |
@@ -30,6 +30,7 @@ MISSING_DEPENDENCY
 AMBIGUOUS_PROVIDER
 DEPENDENCY_CYCLE
 INVALID_CONFIG
+INVALID_INTERCEPT
 PERMISSION_DENIED
 INCOMPATIBLE_HOST
 INCOMPATIBLE_ADAPTER
@@ -38,7 +39,7 @@ DEPENDENCY_FAILED
 
 状态和 reason 分离，避免为每个原因扩展状态机。
 
-`FAILED` 使用 `ACTIVATION_FAILED` 或 `CLEANUP_FAILED` reason，并保留脱敏错误引用。
+`FAILED` 使用 `ACTIVATION_FAILED`、`CLEANUP_FAILED`、`RELOAD_FAILED` 或 `ROLLBACK_FAILED` reason，并保留脱敏错误引用。
 
 ## 2. 状态转换
 
@@ -71,6 +72,8 @@ Runtime 禁止对未知结果的激活或外部副作用进行无条件自动重
 - 插件被发现、安装、移除、启用或禁用；
 - 配置 epoch 改变；
 - provider service 提供、撤销、替换或健康状态改变；
+- ScopedContext 被创建、撤销或产生新 context epoch；
+- child component 被挂载或由父 generation 撤销；
 - Host Adapter 出现或消失；
 - 权限 grant 改变；
 - 插件代码 generation 热替换。
@@ -79,14 +82,17 @@ Mutation 只负责更新 desired snapshot，然后向单一 reconcile 队列发�
 
 ## 4. 依赖图
 
-图包含两类节点：plugin instance 和 service provider generation。
+图包含三类节点：component instance、scoped service binding 和 ACTIVE provider generation。Component 可以是 Plugin root，也可以是 parent-owned child：
 
 ```text
-provider plugin ──provides──▶ service generation
-consumer plugin ──requires──▶ service generation
+provider component ──declares──▶ scoped service binding
+consumer component ──requires──▶ scoped service binding
+ACTIVE provider generation ──realizes──▶ scoped service binding
 ```
 
-provider generation 由 `(provider_plugin_id, service_id, activation_generation)` 唯一标识。即使服务对象相等，generation 改变也视为替换。
+Scoped service binding 由 `(service_id, resolution_key)` 标识。Host provider candidate 来自 Adapter service declaration；Plugin root candidate 来自 Manifest `provides owner: root`；child candidate 来自 `ComponentSpec.provides` 与 Manifest `owner: child` 的交集。
+
+provider generation 由 `(plugin_id, component_path, service_id, activation_generation)` 唯一标识。即使服务对象相等，generation 改变也视为替换。声明的 candidate 只用于建图和环检测；只有 ACTIVE generation 的实际 provide effect 才能满足依赖。Provider 和 consumer 必须指向相同 scoped binding；详见 [context.md](context.md)。
 
 Runtime 必须：
 
@@ -94,29 +100,30 @@ Runtime 必须：
 2. 让环内插件保持 `INACTIVE/DEPENDENCY_CYCLE`；
 3. 按稳定拓扑顺序激活；
 4. 按反向拓扑顺序先卸载 consumer，再卸载 provider；
-5. 使用插件 ID 作为同层稳定排序，保证测试和诊断可重复。
+5. 父 component 退出前先卸载全部 descendants；
+6. 使用 component path 作为同层稳定排序，保证测试和诊断可重复。
 
 ## 5. Reconcile 算法
 
 每轮 reconcile 使用不可变 snapshot：
 
 ```text
-1. 读取 catalog、desired enabled、config epoch、service generations
+1. 读取 catalog、desired enabled、code/config/context epochs、component specs 和 service generations
 2. 校验 compatibility、permissions、config 和依赖
-3. 标记必须退出 ACTIVE 的插件
+3. 标记必须退出 ACTIVE 的 components
 4. 按反向拓扑 deactivation 并等待完成
 5. 重新计算可用 provider generations
-6. 标记可以进入 ACTIVE 的插件
+6. 标记可以进入 ACTIVE 的 components
 7. 按正向拓扑 activation 并等待完成
 8. 发布 RuntimeSnapshot 和 transition events
 9. 如果过程中收到新 mutation，从最新 snapshot 再运行一轮
 ```
 
-单轮内不得让同一插件同时处于 activation 和 deactivation。
+单轮内不得让同一 component 同时处于 activation 和 deactivation。父子发布与撤销还必须遵守 [components.md](components.md) 的结构所有权顺序。
 
 ## 6. Activation Generation
 
-每次激活生成单调递增的 `generation`。所有异步完成、service provide 和 diagnostics 都必须携带 generation。
+每个 component 每次激活生成单调递增的 `generation`。所有异步完成、service provide 和 diagnostics 都必须携带 component path 与 generation。
 
 如果旧 generation 的异步工作在新 generation 建立后返回，Runtime 必须忽略其发布结果，并立即调用它产生的 disposer。这样可防止慢连接、慢导入或慢配置覆盖新状态。
 
@@ -128,6 +135,8 @@ Effect 是一次可撤销资源获取：
 Disposer = Callable[[], None | Awaitable[None]]
 
 class EffectScope(Protocol):
+    def nest(self, label: str) -> "EffectScope": ...
+
     def own(
         self,
         label: str,
@@ -140,6 +149,8 @@ class EffectScope(Protocol):
         factory: Callable[[], Disposer | Awaitable[Disposer]],
     ) -> EffectHandle: ...
 ```
+
+`nest()` 返回由当前 scope 自动拥有的子 scope，用于组织同一 component 的多组资源。`EffectHandle` 和 nested scope 都不向插件提供跳过 Runtime 状态机的公开 dispose/close 操作。
 
 所有 registrar 必须在内部使用当前 EffectScope。例如：
 
@@ -160,11 +171,13 @@ ctx.effects.own(
 
 需要异步建立的连接、watcher 或客户端使用 `acquire()`；已经取得 disposer 的同步注册使用 `own()`。两者进入同一个逆序清理栈。
 
+FPR v1 的 effect factory 只返回一个 disposer，不接受 disposer iterable、async generator 或任意对象。一次 acquisition 创建多项资源时，插件必须逐项 `own()`，或先 `nest()` 再在子 scope 中 acquire，使失败点和撤销顺序保持明确。
+
 ## 8. Effect 所有权
 
 每个 effect 必须满足：
 
-1. 归属于一个 plugin ID 和 activation generation；
+1. 归属于一个 plugin ID、component path 和 activation generation；
 2. 有稳定、可脱敏的 label；
 3. 成功 acquire 后返回 disposer；
 4. disposer 最多执行一次；
@@ -173,7 +186,7 @@ ctx.effects.own(
 7. Runtime 可查询 effect tree，但不能暴露敏感资源值。
 8. acquire factory 在返回 disposer 前若失败，必须自行清理已取得的部分资源；Runtime 无法撤销一个从未交付的 disposer。
 
-嵌套 scope 形成 effect tree。父 scope 撤销时，子 scope 先撤销。
+嵌套 scope 形成同一 component 内的 effect tree。父 scope 撤销时，子 scope 先撤销。Nested EffectScope 不拥有独立依赖状态；需要独立 requires/state/generation 时必须声明 child component，而不是伪装成 nested effect。
 
 ## 9. 激活事务
 
@@ -198,12 +211,13 @@ Activation 使用 staging scope：
 
 ## 10. 撤销顺序
 
-Runtime 在两个层次保证逆序：
+Runtime 在三个层次保证逆序：
 
-1. 图层次：consumer 在 provider 之前撤销；
-2. 插件层次：同一 generation 的 effects 按 acquire 的逆序撤销。
+1. 结构层次：descendant component 在 parent 之前撤销；
+2. 图层次：consumer 在 provider 之前撤销；
+3. component 层次：同一 generation 的 effects 按 acquire 的逆序撤销。
 
-同一插件的 disposer 默认顺序 await，前一个完成后才执行下一个；只有显式创建的独立子 scope 才可以由 Runtime 并行清理。
+同一 component 的 disposer 默认顺序 await，前一个完成后才执行下一个；只有显式创建的独立 nested EffectScope 才可以由 Runtime 并行清理。
 
 示例：
 
@@ -216,7 +230,7 @@ dispose: event subscription → timer → database client
 
 ## 11. 动态依赖
 
-Service provide effect 提交后，ContextStore 发布新 provider generation；撤销前先触发 consumer deactivation，等 consumer settled 后才删除 provider service。
+Service provide effect 提交后，ContextStore 在当前 `(service_id, resolution_key)` 发布新 provider generation；撤销前先触发匹配 consumers deactivation，等 consumers settled 后才删除 provider service。
 
 依赖恢复时 Runtime 自动重新激活 consumer。插件不需要监听“服务上线/下线”事件。
 
@@ -253,9 +267,9 @@ Runtime 不自行轮询数据库、网络或第三方服务。Provider 或 Host 
 - 禁用：desired enabled 变为 false，执行完整 deactivation，最终 `INACTIVE/DISABLED`。
 - 启用：desired enabled 变为 true，进入依赖协调，不保证立即 ACTIVE。
 - 移除：必须先完成 deactivation，再从 Catalog 删除并进入 `ABSENT`。
-- 热替换：先验证新代码可导入，再撤销旧 generation，激活新 generation；失败时是否回装旧代码必须由显式 HMR policy 决定并记录。
+- 热替换：以整个 Plugin package 和 component tree 为单位，使用 loader checkpoint、显式 policy 和新 generation 执行补偿事务。
 
-第一版默认不启用生产 HMR。开发 HMR 必须遵守同一 generation 和 effect 规则。
+第一版默认不启用生产 HMR。开发 HMR 的 prepare、switch、cleanup 和 rollback 必须遵守 [hot-reload.md](hot-reload.md)，不得只做原地 `importlib.reload()`。
 
 ## 15. 永久业务写入不是 Effect
 

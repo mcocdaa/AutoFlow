@@ -19,13 +19,20 @@ FPR 解决四类重复问题：
 统一后的基础模型是：
 
 ```python
-Plugin = {
+PluginPackage = {
     manifest,
-    activate(runtime_context, config) -> reversible effects,
+    root_component,
+}
+
+Component = {
+    requires,
+    provides,
+    scoped_context,
+    activate(scoped_runtime_context, config) -> reversible effects + child specs,
 }
 ```
 
-Runtime 负责发现、校验、依赖协调、状态转换、effect 托管、逆序回滚和诊断。插件只声明并使用能力。
+Runtime 负责发现、校验、Context 空间解析、父子组件所有权、依赖协调、状态转换、effect 托管、逆序回滚和诊断。插件只声明并使用能力。
 
 ## 2. 非目标
 
@@ -43,7 +50,7 @@ FPR 也不把所有扩展点压缩成一个无类型的 Hook。通用 Runtime �
                         │ 只调用声明过的服务/能力
 ┌───────────────────────▼────────────────────────────┐
 │  Python SDK                                         │
-│  PluginContext / EffectScope / ServiceRef / Config │
+│  ScopedContext / PluginContext / Component / Effect│
 └───────────────────────┬────────────────────────────┘
                         │
 ┌───────────────────────▼────────────────────────────┐
@@ -70,8 +77,10 @@ Runtime Core 只拥有以下通用概念：
 | 组件 | 职责 |
 | --- | --- |
 | `PluginCatalog` | 发现并保存经过校验的插件描述符 |
-| `ContextStore` | 保存当前可用服务及其 provider generation |
-| `DependencyGraph` | 建立插件到服务、provider 到 consumer 的有向图 |
+| `ContextTree` | 保存作用域继承、service resolution key 和 intercept |
+| `ContextStore` | 按作用域 key 保存当前可用服务及其 provider generation |
+| `DependencyGraph` | 建立 component 到服务、provider 到 consumer 的有向图 |
+| `ComponentRegistry` | 保存父子组件结构及其 generation 所有权 |
 | `Reconciler` | 把 Context 变化收敛成确定的生命周期转换 |
 | `EffectScope` | 收集一次激活产生的 disposer，并保证只执行一次 |
 | `RuntimeStateStore` | 保存 desired enabled、配置版本和故障恢复信息 |
@@ -79,25 +88,33 @@ Runtime Core 只拥有以下通用概念：
 
 Runtime Core 禁止导入 FastAPI、SQLAlchemy、Vue、React 或具体项目模型。
 
-## 5. 两类 Context
+## 5. Context 分层
 
-FPR 必须区分进程生命周期和请求生命周期。
+FPR 同时区分空间作用域、激活生命周期和请求生命周期。完整解析规则见 [context.md](protocol/context.md)。
 
-### 5.1 Runtime Context
+### 5.1 Root 与 Scoped Context
 
-`activate()` 接收 `PluginRuntimeContext`。它与一个插件 activation generation 绑定，包含：
+每个 Python Runtime 拥有一个 `RootContext`。Host Adapter 在根作用域提供通用服务；plugin root component 和 child component 各自绑定不可变 `ScopedContext`。
+
+子作用域默认继承父作用域的 service resolution keys。`isolate()` 为一个分支创建新的服务解析域，`intercept()` 为后代附加经过 provider schema 校验的 service binding 配置。两者都不能扩大 Manifest 权限。
+
+### 5.2 Plugin Runtime Context
+
+`activate()` 接收 `PluginRuntimeContext`。它与一个 component activation generation 绑定，包含：
 
 - Manifest 与插件 ID；
+- component path 与当前 ScopedContext；
 - 经过校验的配置快照；
 - Manifest 声明过的 service 引用；
 - effect API；
+- child component registrar；
 - capability registrar；
 - 插件作用域 logger；
 - Runtime 诊断接口的只读视图。
 
 Runtime Context 不包含当前用户、HTTP Request、数据库 Session 或某个业务对象。
 
-### 5.2 Invocation Context
+### 5.3 Invocation Context
 
 Action、Hook、Exporter 或 Command 被真正调用时，Host Adapter 创建短生命周期的 `InvocationContext`，可以包含：
 
@@ -108,6 +125,8 @@ Action、Hook、Exporter 或 Command 被真正调用时，Host Adapter 创建短
 - Host 提供的事务或 outbox 能力。
 
 插件禁止把 Invocation Context 存入进程级变量或 activation effect。
+
+Invocation Context 与 ScopedContext 正交：前者表达“这次谁在调用什么”，后者表达“这个组件在哪个服务作用域中运行”。
 
 ## 6. 服务与扩展点
 
@@ -126,7 +145,7 @@ harvestflow.curators
 meetflow.exporters
 ```
 
-插件通过 Manifest `requires` 声明依赖，通过 `ctx.services.require()` 取得对象。未声明的服务不可访问。
+插件通过 Manifest `requires` 声明 package 权限上限，component 声明本实例依赖，通过 `ctx.services.require()` 取得当前 resolution key 下的只读 service snapshot。未声明的服务不可访问。
 
 插件也可以通过 `ctx.services.provide()` 提供新服务。提供服务本身是一个 effect，撤销后所有依赖者都会被重新协调。
 
@@ -153,6 +172,8 @@ class PluginEntrypoint(Protocol):
 
 插件入口模块被导入时禁止注册 Hook、启动线程、连接外部服务或修改全局 Registry。所有副作用必须发生在 `activate()` 的 EffectScope 内。
 
+Root component 可以通过 `ctx.components.mount()` 声明 child component。Child 拥有独立依赖状态、generation、ScopedContext 和 EffectScope，但其权限不能超过 Plugin Manifest，且生命周期由父 generation 递归拥有。完整规则见 [components.md](protocol/components.md)。
+
 ## 8. Python 包公共边界
 
 未来 Python 包建议采用以下边界：
@@ -161,10 +182,12 @@ class PluginEntrypoint(Protocol):
 src/flow_plugin_runtime/
 ├── api.py              # 稳定公共导出
 ├── manifest.py         # Manifest 模型与校验
-├── context.py          # Runtime/Invocation Context
+├── context.py          # Root/Scoped/Runtime/Invocation Context
+├── components.py       # ComponentSpec 与父子所有权
 ├── effects.py          # EffectScope 与 Disposer
 ├── graph.py            # 依赖图
 ├── runtime.py          # Reconciler 与状态机
+├── hot_reload.py       # 代码 generation 与补偿事务
 ├── diagnostics.py      # 状态快照与错误模型
 ├── ports.py            # StateStore、MutationBus、Loader 等端口
 └── adapters/
@@ -201,17 +224,19 @@ FPR 借鉴 Cordis 的运行时语义，但不依赖 Cordis 的 TypeScript 包：
 
 | Cordis 概念 | FPR 概念 |
 | --- | --- |
-| `Context` | 动态 `ContextStore` + 插件作用域 `PluginRuntimeContext` |
+| `Context.extend()` | 不可变 `ScopedContext.derive()` |
+| `Context.isolate()` | 分支 service resolution key |
+| `Context.intercept()` | 有 schema 的 service binding intercept |
 | `inject` | Manifest `requires` 与只读 service snapshot |
 | `provide()` | `ctx.services.provide()` service effect |
-| `Fiber` | plugin activation generation + `EffectScope` |
+| root/child `Fiber` | parent-owned component tree + 独立 generation |
 | `effect()` | acquire 返回 disposer，Runtime 托管 |
 | `notify()` | Context mutation 触发 dependency reconcile |
 | provider epoch | service provider generation |
 | fiber reload/unload | deactivate → reverse dispose → activate |
-| HMR rollback | generation guard + 显式 HMR policy |
+| HMR rollback | loader checkpoint + 新 generation 补偿恢复 |
 
-FPR 不复制 Cordis 的 Proxy、decorator 或 Node loader。需要保留的是“依赖变化驱动生命周期、所有副作用可撤销、旧 generation 不能污染新状态”三个不变量。
+FPR 不复制 Cordis 的 Proxy、decorator 或 Node loader，但保留五个核心不变量：依赖变化驱动生命周期、所有副作用可撤销、旧 generation 不能污染新状态、Context 分支可以组合和隔离、父组件递归拥有子组件。热替换的失败恢复由 [hot-reload.md](protocol/hot-reload.md) 明确定义。
 
 ## 12. 方案决策
 

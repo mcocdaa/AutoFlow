@@ -51,6 +51,9 @@ requires:
   - service: flow.ui
     version: ">=1,<2"
     optional: true
+  - service: flow.metrics
+    version: ">=1,<2"
+    optional: true
 
 capabilities:
   exporters:
@@ -274,3 +277,79 @@ Exporter effect acquired
 ```
 
 外部调用者从未看到半激活插件。
+
+## 10. 可选 Child Component
+
+假设指标能力不是导出功能的启动前提，可以声明独立 child：
+
+```python
+from flow_plugin_runtime.api import ComponentSpec, ServiceRequirement
+
+
+async def activate_metrics(ctx, config):
+    metrics = ctx.services.require("flow.metrics")
+    await ctx.effects.acquire(
+        "metrics:meeting-export.usage",
+        lambda: metrics.open_counter(
+            "meeting-export.usage",
+            labels={"format": "markdown"},
+        ),
+    )
+
+
+metrics_component = ComponentSpec(
+    local_id="metrics",
+    requires=(
+        ServiceRequirement(service="flow.metrics", version=">=1,<2"),
+    ),
+    activate=activate_metrics,
+)
+
+
+class MeetingExportPlugin:
+    async def activate(self, ctx, config):
+        exporters = ctx.services.require("meetflow.exporters")
+        exporters.register(
+            "meeting-export.markdown",
+            handler=build_exporter(config["filename"]),
+            target_types=("meeting",),
+            input_schema={
+                "type": "object",
+                "additionalProperties": False,
+            },
+        )
+        ctx.components.mount(metrics_component)
+```
+
+Manifest 已把 `flow.metrics` 声明为 package 级 optional 上限。运行时行为是：
+
+```text
+meeting-export root ACTIVE
+  └── metrics child INACTIVE/MISSING_DEPENDENCY
+
+flow.metrics provider appears
+  → only metrics child activates
+  → meeting-export root does not reload
+
+meeting-export root deactivates
+  → metrics child deactivates first
+  → root effects dispose afterward
+```
+
+如果需要为多个 workspace 提供互不干扰的同名服务，父组件先通过 `ctx.context.isolate(service_id)` 创建分支，再把该分支的后代 Context 传给 `mount()`。隔离只改变服务 resolution key，不增加 Manifest 权限。
+
+## 11. 热替换失败恢复
+
+开发环境显式选择 `ROLLBACK` 后，新代码激活失败的结果是：
+
+```text
+prepare candidate code_epoch=9 while generation=21 remains ACTIVE
+  → deactivate old component tree
+  → candidate generation=22 staging activation fails
+  → rollback every candidate effect
+  → restore checkpoint code_epoch=8
+  → activate old code as generation=23
+  → reload operation ROLLED_BACK
+```
+
+Generation 21 不会复活；恢复的是相同旧代码的新 generation 23。如果 candidate cleanup 或旧代码重新激活失败，插件保持 FAILED，Runtime 不会让新旧代码同时运行。

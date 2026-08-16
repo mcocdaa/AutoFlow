@@ -29,9 +29,9 @@ FPR 的规范名、Python 分发名和导入名固定如下：
 FPR 把插件从“导入模块后手工 `start/stop/on_load/on_unload`”改为：
 
 ```text
-插件声明 requires / provides / capabilities
+插件或子组件声明 requires / provides / capabilities
               ↓
-Runtime 维护动态 Context 与依赖图
+Runtime 维护动态 Scoped Context 树与依赖图
               ↓
 依赖满足时 activate
               ↓
@@ -40,7 +40,7 @@ activate 产生由 Runtime 托管的可逆 effects
 依赖消失、禁用、配置变化或热替换时逆序 dispose
 ```
 
-插件作者只实现 `activate(ctx, config)`，不实现对称的 `deactivate()`。所有注册、订阅和外部资源都必须通过 effect 进入 Runtime 的所有权范围。
+插件作者只实现 `activate(ctx, config)`，不实现对称的 `deactivate()`。所有注册、订阅和外部资源都必须通过 effect 进入 Runtime 的所有权范围；需要独立依赖状态的动态功能通过父组件声明 child component，由 Runtime 递归拥有。
 
 ## 约束性关键词
 
@@ -55,7 +55,7 @@ activate 产生由 Runtime 托管的可逆 effects
 
 - [docs/index.md](docs/index.md)：完整文档入口。
 - [docs/architecture.md](docs/architecture.md)：总体架构、包边界、上下文和扩展模型。
-- [docs/protocol/index.md](docs/protocol/index.md)：Manifest、Runtime、前端与保障协议。
+- [docs/protocol/index.md](docs/protocol/index.md)：Manifest、Context、Component、Runtime、热替换、前端与保障协议。
 - [docs/integration/index.md](docs/integration/index.md)：Host Adapter、项目映射和完整示例。
 
 ## 仓库结构
@@ -71,7 +71,10 @@ flow-plugin-runtime/
     ├── protocol/
     │   ├── index.md
     │   ├── manifest.md
+    │   ├── context.md
+    │   ├── components.md
     │   ├── runtime.md
+    │   ├── hot-reload.md
     │   ├── frontend.md
     │   └── assurance.md
     └── integration/
@@ -113,7 +116,8 @@ flow-plugin-runtime/
 
 - Python 3.12+ 进程内运行时；
 - 声明式 Manifest、配置和密钥引用；
-- 动态服务依赖、拓扑协调和可逆 effect；
+- 动态服务依赖、Scoped Context、父子组件、拓扑协调和可逆 effect；
+- 默认关闭、支持显式补偿回滚策略的代码热替换协议；
 - Action、Check、Hook、Exporter、Event Subscriber 等宿主扩展点；
 - 声明式 UI Descriptor 及 Vue/React Host Bridge；
 - 受信任插件代码边界与可选的进程外执行扩展口。

@@ -35,6 +35,8 @@ class HostAdapter(Protocol):
 
 `install()` 自身也是 root runtime effect。应用关闭时先卸载所有插件，再撤销 Adapter。
 
+`HostContext` 持有 Runtime 的 `RootContext`。只有 Host Adapter 可以在根作用域创建默认 service bindings；插件只能在自己的 ScopedContext 分支 provide、derive、isolate 或 intercept。
+
 Adapter 必须声明：
 
 - 提供的 service ID 与版本；
@@ -63,7 +65,7 @@ class Registrar(Protocol):
 1. 校验当前插件 Manifest 声明；
 2. 校验 ID、schema、权限和冲突；
 3. 从底层 Registry 取得完整注销 disposer，并立即归入当前 EffectScope；
-4. 把注册归属记录为 plugin ID + generation；
+4. 把注册归属记录为 plugin ID + component path + generation；
 5. 禁止插件取得内部 dict/list/router 的可变引用。
 
 Registrar 只进行可快速完成的内存注册，因此是同步接口。需要 I/O 的资源建立必须使用 `ctx.effects.acquire()`，不能隐藏在 registrar 中。
@@ -199,6 +201,8 @@ class PluginLoader(Protocol):
 
 Loader 必须固定插件根目录并防止路径逃逸。生产环境应从只读挂载、wheel 或受控安装目录加载。
 
+支持热替换的 Loader 还必须实现 [hot-reload.md](../protocol/hot-reload.md) 的 candidate/checkpoint 事务端口。无法在切换期间保留旧代码 checkpoint 时，只能声明 `DISABLED` 或 `FAIL_CLOSED`，不得声称支持 `ROLLBACK`。
+
 ## 11. 应用启动与关闭
 
 宿主推荐流程：
@@ -221,7 +225,7 @@ async def lifespan(app):
 
 1. 停止接受新 invocation；
 2. 等待或取消受控 invocation；
-3. 按反向依赖顺序卸载插件；
+3. 按反向依赖与父子结构顺序卸载全部 component trees；
 4. 撤销 Adapter root effects；
 5. 输出未清理 effect 诊断。
 
