@@ -7,6 +7,8 @@ description: 插件静态声明与兼容规范
 
 # Manifest 规范
 
+本文件属于 `flow-plugin/v1` 核心协议。
+
 ## 1. 示例
 
 ```yaml

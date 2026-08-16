@@ -7,7 +7,7 @@ description: 通用插件运行时规范索引
 
 # Flow Plugin Runtime
 
-本目录定义 AutoFlow、KnowFlow、HarvestFlow、MeetFlow 后续共同使用的插件系统。规范名称为 **Flow Plugin Runtime**，简称 **FPR**。
+本仓库定义 AutoFlow、KnowFlow、HarvestFlow、MeetFlow 后续共同使用的插件系统。规范名称为 **Flow Plugin Runtime**，简称 **FPR**。
 
 FPR 的规范名、Python 分发名和导入名固定如下：
 
@@ -18,7 +18,11 @@ FPR 的规范名、Python 分发名和导入名固定如下：
 | Python 导入名 | `flow_plugin_runtime` |
 | Manifest API | `flow-plugin/v1` |
 
-当前目录名 `plugin_manger` 仅是本仓库中的设计落点，不进入公共 API，也不作为未来 Python 包名。
+当前 AutoFlow 挂载目录名 `plugin_manger` 仅是设计阶段的临时路径，不进入公共 API，也不作为未来仓库或 Python 包名。未来独立仓库名固定为 `flow-plugin-runtime`。
+
+## 当前状态
+
+当前只交付协议设计，没有 Python 实现。仓库根部因此只保留本 README，规范正文全部位于 `docs/`。进入实现阶段后再增加工程文件，避免用空目录或占位包伪装实现进度。
 
 ## 规范目标
 
@@ -49,14 +53,47 @@ activate 产生由 Runtime 托管的可逆 effects
 
 ## 文件列表
 
-- [architecture.md](architecture.md)：总体架构、包边界、上下文和扩展模型。
-- [manifest.md](manifest.md)：Manifest 字段、版本、依赖和权限声明。
-- [runtime.md](runtime.md)：状态机、依赖协调、effect 与 rollback 语义。
-- [adapters.md](adapters.md)：Python 宿主适配器、配置、事件和管理 API。
-- [frontend.md](frontend.md)：Python-only 插件的声明式前端协议。
-- [example.md](example.md)：后端与前端接入的完整参考示例。
-- [project-mapping.md](project-mapping.md)：四个现有项目到 FPR 的能力映射。
-- [assurance.md](assurance.md)：错误、安全、可观测性和验证要求。
+- [docs/index.md](docs/index.md)：完整文档入口。
+- [docs/architecture.md](docs/architecture.md)：总体架构、包边界、上下文和扩展模型。
+- [docs/protocol/index.md](docs/protocol/index.md)：Manifest、Runtime、前端与保障协议。
+- [docs/integration/index.md](docs/integration/index.md)：Host Adapter、项目映射和完整示例。
+
+## 仓库结构
+
+设计阶段的实际结构：
+
+```text
+flow-plugin-runtime/
+├── README.md
+└── docs/
+    ├── index.md
+    ├── architecture.md
+    ├── protocol/
+    │   ├── index.md
+    │   ├── manifest.md
+    │   ├── runtime.md
+    │   ├── frontend.md
+    │   └── assurance.md
+    └── integration/
+        ├── index.md
+        ├── adapters.md
+        ├── project-mapping.md
+        └── example.md
+```
+
+实现阶段批准后扩展为：
+
+```text
+flow-plugin-runtime/
+├── pyproject.toml
+├── src/flow_plugin_runtime/
+├── tests/
+├── schemas/
+├── README.md
+└── docs/
+```
+
+`src/` 是 Python Runtime；`schemas/` 保存可跨语言消费的 Manifest/UI JSON Schema；`tests/` 包含 Core、状态机属性测试和 Adapter Contract Suite。
 
 ## 规范层级
 
@@ -92,7 +129,7 @@ activate 产生由 Runtime 托管的可逆 effects
 
 ## 采用方式
 
-未来可以把 FPR 独立为仓库，并以 Git submodule 引入源码；宿主仍应通过标准 Python 包安装方式使用：
+FPR 独立为仓库后，可以 Git submodule 引入源码；宿主仍应通过标准 Python 包安装方式使用：
 
 ```text
 vendor/flow-plugin-runtime/       Git submodule

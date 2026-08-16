@@ -7,6 +7,8 @@ description: Python宿主适配器接口规范
 
 # Host Adapter 规范
 
+本文件定义核心协议与具体 Python 宿主之间的集成边界。
+
 ## 1. Adapter 的位置
 
 Runtime Core 不理解 Action、会议、知识条目或审核器。Host Adapter 把项目已有 Registry、Service、权限和持久化能力包装成可逆 service/capability。

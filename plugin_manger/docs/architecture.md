@@ -193,7 +193,7 @@ Vue/React Host Bridge 不是第二套插件生命周期；它只负责：
 3. 把用户操作提交到后端 Command；
 4. 隔离单个 Descriptor 的渲染错误。
 
-详细协议见 [frontend.md](frontend.md)。
+详细协议见 [frontend.md](protocol/frontend.md)。
 
 ## 11. Cordis 语义映射
 

@@ -7,6 +7,8 @@ description: 插件状态机与可逆效果规范
 
 # Runtime 生命周期
 
+本文件属于 `flow-plugin/v1` 核心协议。
+
 ## 1. 状态模型
 
 Runtime 对每个插件实例暴露以下状态：

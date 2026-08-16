@@ -7,6 +7,8 @@ description: Python插件前端桥接协议
 
 # 声明式前端协议
 
+本文件属于 `flow-plugin/v1` 核心协议。
+
 ## 1. 原则
 
 第一版插件只写 Python。插件通过 `flow.ui` 注册 UI Descriptor；后端 Runtime 拥有它的生命周期；Vue/React 只渲染后端返回的已授权描述。
