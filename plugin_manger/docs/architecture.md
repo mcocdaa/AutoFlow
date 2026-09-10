@@ -28,11 +28,11 @@ Component = {
     requires,
     provides,
     scoped_context,
-    activate(scoped_runtime_context, config) -> reversible effects + child specs,
+    activate(scoped_runtime_context, config) -> None,
 }
 ```
 
-Runtime 负责发现、校验、Context 空间解析、父子组件所有权、依赖协调、状态转换、effect 托管、逆序回滚和诊断。插件只声明并使用能力。
+`activate()` 通过 `ctx.effects` 获取资源、通过 registrar 注册 capability，并通过 `ctx.components.mount()` 发布 child desired specs；它不直接返回 child specs 或 disposer。Runtime 负责发现、校验、Context 空间解析、父子组件所有权、依赖协调、状态转换、effect 托管、逆序回滚和诊断。插件只声明并使用能力。
 
 ## 2. 非目标
 
@@ -145,7 +145,7 @@ harvestflow.curators
 meetflow.exporters
 ```
 
-插件通过 Manifest `requires` 声明 package 权限上限，component 声明本实例依赖，通过 `ctx.services.require()` 取得当前 resolution key 下的只读 service snapshot。未声明的服务不可访问。
+插件通过 Manifest `requires` 声明 package 权限上限，component 声明本实例依赖，通过 `ctx.services.require()` 或 `ctx.services.get()` 取得当前 resolution key 下的只读 service snapshot。`require()` 只接受 ACTIVE service 并建立生命周期依赖；`get()` 用于不阻塞激活的即时只读查询，缺失时返回 `None`，但不得把结果存入 effect 或长期 handler。需要动态可选功能时使用声明必需依赖的 child component。未声明的服务不可访问。
 
 插件也可以通过 `ctx.services.provide()` 提供新服务。提供服务本身是一个 effect，撤销后所有依赖者都会被重新协调。
 
@@ -230,7 +230,7 @@ FPR 借鉴 Cordis 的运行时语义，但不依赖 Cordis 的 TypeScript 包：
 | `inject` | Manifest `requires` 与只读 service snapshot |
 | `provide()` | `ctx.services.provide()` service effect |
 | root/child `Fiber` | parent-owned component tree + 独立 generation |
-| `effect()` | acquire 返回 disposer，Runtime 托管 |
+| `effect()` | 当前 Fiber/Component 托管幂等 disposer |
 | `notify()` | Context mutation 触发 dependency reconcile |
 | provider epoch | service provider generation |
 | fiber reload/unload | deactivate → reverse dispose → activate |

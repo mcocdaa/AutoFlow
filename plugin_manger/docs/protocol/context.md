@@ -65,6 +65,11 @@ class ScopedContext(Protocol):
         service_id: str,
         config: Mapping[str, Any],
     ) -> "ScopedContext": ...
+
+
+class ServiceView(Protocol):
+    def require(self, service_id: str) -> object: ...
+    def get(self, service_id: str) -> object | None: ...
 ```
 
 具体实现可以使用持久化 mapping、链式对象或其他结构，但不得把父作用域暴露为可变对象。
@@ -73,7 +78,7 @@ class ScopedContext(Protocol):
 
 `derive(local_id)` 创建一个继承当前解析视图的子作用域。`local_id` 只在同一父作用域内唯一，完整 `scope_id` 由 Runtime 生成，插件不得伪造。
 
-每个非根作用域必须归属于一个父 `ComponentScope` 的结构 effect：
+每个非根作用域必须归属于一个父 component activation generation 的结构 effect：
 
 1. 创建作用域不会立即激活业务组件；
 2. 挂载组件后，Runtime 才把组件节点加入 desired graph；
@@ -97,8 +102,8 @@ ContextStore 以二元组标识空间中的服务：
 consumer ScopedContext
   → 取得 service_id 对应的 resolution_key
   → 只选择相同 (service_id, resolution_key) 下的 ACTIVE provider generations
-  → 应用 version、many 和歧义规则
-  → 创建只读 service snapshot
+  → 应用 version 与唯一 provider 规则
+  → 创建只读 service snapshot；没有匹配 provider 时 `get()` 返回 None，`require()` 产生受控的 missing dependency 错误
   → 应用 intercept binding
 ```
 
@@ -161,7 +166,7 @@ Intercept schema 属于版本化 Service ID contract，而不是某个 provider 
 
 `PluginRuntimeContext` 只暴露当前组件被授权的视图：
 
-- `ctx.services.require()` 只能读取插件 Manifest 已声明且当前组件 `requires` 包含的服务；
+- `ctx.services.require()` 只能读取当前 component 声明为必需 `requires` 的 service；`ctx.services.get()` 只能读取 Manifest 已声明为 `optional: true` 的 service，且不建立自动 reload 的依赖边；两者都只返回 ACTIVE provider，`get()` 的结果不得跨越当前即时只读操作存活；
 - `ctx.services.provide()` 只能提供 Manifest `provides` 允许的服务；
 - `ctx.context.derive/isolate/intercept` 只能为当前组件的后代创建视图；
 - 派生 Context 继承插件身份、权限和 capability 上限；

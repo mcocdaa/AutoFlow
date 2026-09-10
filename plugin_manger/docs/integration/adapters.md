@@ -25,6 +25,13 @@ Host Application
 ## 2. 基础接口
 
 ```python
+from collections.abc import Awaitable, Callable
+
+from flow_plugin_runtime.api import EffectHandle
+
+Disposer = Callable[[], None | Awaitable[None]]
+
+
 class HostAdapter(Protocol):
     id: str
     version: str
@@ -64,11 +71,13 @@ class Registrar(Protocol):
 
 1. 校验当前插件 Manifest 声明；
 2. 校验 ID、schema、权限和冲突；
-3. 从底层 Registry 取得完整注销 disposer，并立即归入当前 EffectScope；
+3. 从底层 Registry 取得完整注销 disposer，并立即归入当前 EffectScope；公共结果是不可释放的只读 `EffectHandle`，原始 `Disposer` 只在 Adapter/Runtime 内部保存；
 4. 把注册归属记录为 plugin ID + component path + generation；
 5. 禁止插件取得内部 dict/list/router 的可变引用。
 
-Registrar 只进行可快速完成的内存注册，因此是同步接口。需要 I/O 的资源建立必须使用 `ctx.effects.acquire()`，不能隐藏在 registrar 中。
+Registrar 只进行可快速完成的内存注册，因此是同步接口。需要 I/O 的资源建立必须使用 `ctx.effects.acquire()`，不能隐藏在 registrar 中。Runtime 调用 disposer 前，Registry 必须先隐藏该 contribution；清理失败时也不得重新暴露它。
+
+Adapter Registry 的逻辑可见性必须与物理记录分离：每次 `get/list/dispatch` 都先校验记录的 owner component path 和 generation 当前为 `ACTIVE`。Runtime 在进入 `DEACTIVATING` 时即可阻止新调用，随后 disposer 负责物理删除记录。即使物理删除失败，残留记录也只能进入 quarantine 诊断，不能绕过 owner-generation gate 被调用；Host 禁止向业务代码暴露不经过该 gate 的底层 Registry。
 
 ## 4. 通用服务
 

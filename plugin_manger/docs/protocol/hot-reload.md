@@ -67,13 +67,20 @@ class ReloadCandidate(Protocol):
     code_epoch: int
     code_digest: str
 
+
 class ReloadCheckpoint(Protocol):
     descriptor: PluginDescriptor
     entrypoint: PluginEntrypoint
     code_epoch: int
     code_digest: str
 
+
 class TransactionalPluginLoader(Protocol):
+    async def capture_checkpoint(
+        self,
+        current: PluginDescriptor,
+    ) -> ReloadCheckpoint: ...
+
     async def prepare_reload(
         self,
         current: ReloadCheckpoint,
@@ -84,7 +91,7 @@ class TransactionalPluginLoader(Protocol):
     async def restore(self, checkpoint: ReloadCheckpoint) -> PluginEntrypoint: ...
 ```
 
-实现可以使用独立 module namespace、版本化 wheel、受控 import cache 或其他机制，但必须保证 checkpoint 在事务结束前仍可加载。单纯覆盖源文件后调用 `importlib.reload()`，却无法恢复旧入口，不符合 `ROLLBACK` policy。
+`capture_checkpoint()` 必须在任何旧 generation deactivation 之前完成；`prepare_reload()` 接收的 `current` 就是本次事务保存的旧 checkpoint。实现可以使用独立 module namespace、版本化 wheel、受控 import cache 或其他机制，但必须保证 checkpoint 在事务结束前仍可加载。单纯覆盖源文件后调用 `importlib.reload()`，却无法恢复旧入口，不符合 `ROLLBACK` policy。
 
 入口模块仍必须遵守“导入阶段无副作用”。Prepare 阶段产生不可撤销副作用必须视为 `reload_prepare_failed`。
 
@@ -110,7 +117,7 @@ Prepare 失败只使 reload operation 进入 FAILED，旧 component tree 继续 
 `ROLLBACK` policy 的固定流程是：
 
 ```text
-1. serialize reload request and capture old checkpoint
+1. serialize reload request and capture old checkpoint through `capture_checkpoint()`
 2. prepare candidate in isolated loader state
 3. validate Manifest, compatibility, permissions and entrypoint
 4. stop accepting new invocations for the old component tree
@@ -160,7 +167,9 @@ Runtime 必须进入 FAILED，保留残留 effect 标签、checkpoint ref 和脱
 
 1. 记录更高 desired code epoch；
 2. 先让当前事务 settle 为 SUCCEEDED、ROLLED_BACK 或 FAILED；
-3. 只有非 FAILED 且仍存在更新时，再开始下一事务。
+3. SUCCEEDED 或 ROLLED_BACK 后仍存在更新时，开始下一事务；
+4. PREPARING 阶段失败且旧 component tree 仍 ACTIVE 时，只有更高 code epoch 或管理员显式 retry 才能开始新事务；
+5. SWITCHING/ROLLING_BACK 阶段失败并使 component 进入生命周期 FAILED 时，禁止自动开始下一事务，必须遵守 Runtime 的 FAILED retry gate。
 
 不同 plugin 可以并行 prepare，但涉及相同 provider/consumer 子图的 SWITCHING 必须进入 Runtime 的单一 reconcile 序列。
 
@@ -200,6 +209,8 @@ failed_instances
   "target_code_epoch": 9,
   "result_code_epoch": 8,
   "operation_state": "ROLLED_BACK",
+  "failure_phase": null,
+  "component_state": "ACTIVE",
   "old_generation": 21,
   "candidate_generation": 22,
   "restored_generation": 23,

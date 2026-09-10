@@ -57,7 +57,7 @@ async def activate(ctx, config):
     )
 ```
 
-`actions.register()` 自动产生删除该 Action 的 disposer。Runner 只从 Adapter 的稳定 Registry 查询 ACTIVE contribution。
+`actions.register()` 在 Adapter 内部产生删除该 Action 的 disposer 并交给 Runtime 托管，插件只获得只读 `EffectHandle`。Runner 只从 Adapter 的稳定 Registry 查询 ACTIVE contribution。
 
 `config.yaml` 中普通 defaults 进入 config snapshot；secret 名称进入 Manifest permission，值由 `flow.secrets` 提供，不再由 loader 提前解析成普通 dict。
 
@@ -151,7 +151,7 @@ flow.ui@1
 
 现有 `PluginRegistry.register_*` 改为 FPR registrar 后，Action、Exporter 和 Subscriber 的注册自动成为 effects。MeetFlow 现有 capability 校验、bounded context、JSON Schema、secret encryption、Job 和 Outbox 继续由 Host Adapter 复用。
 
-`PluginJob` 和 `PluginEvent` 是持久业务执行状态，不属于 activation effect。禁用插件不会删除 Job/Event；Worker 在调用前检查对应 plugin generation 是否 ACTIVE。
+`PluginJob` 和 `PluginEvent` 是持久业务执行状态，不属于 activation effect。禁用插件不会删除 Job/Event；Worker 在调用前检查记录所属 component path、generation 及其祖先是否仍为 ACTIVE，不能只检查 plugin root。
 
 现有前端 `frontend_entry` 在 FPR v1 中被 UI Descriptor 替代。固定 slot 设计可以直接保留，Vue `PluginSlot` 改为消费统一 Descriptor API。
 

@@ -168,9 +168,34 @@ desired_enabled=false
 
 ## 5. 增加声明式前端
 
-同一个插件只需在 `activate()` 中检测可选 UI service：
+UI 是可选功能，但注册行为会长期持有 UI service，因此不能用非依赖型 `ctx.services.get()`。应把它建模成依赖 `flow.ui` 的 child component：
 
 ```python
+from flow_plugin_runtime.api import ComponentSpec, ServiceRequirement
+
+
+async def activate_ui(ctx, config):
+    ui = ctx.services.require("flow.ui")
+    ui.register(
+        id="meeting-export.toolbar-markdown",
+        slot="meeting.toolbar.action",
+        component="command-button",
+        order=100,
+        props={
+            "label": "导出 Markdown",
+            "command": "meeting-export.markdown",
+            "variant": "secondary",
+        },
+    )
+
+
+ui_component = ComponentSpec(
+    local_id="ui",
+    requires=(ServiceRequirement(service="flow.ui", version=">=1,<2"),),
+    activate=activate_ui,
+)
+
+
 class MeetingExportPlugin:
     async def activate(self, ctx: PluginRuntimeContext, config):
         exporters = ctx.services.require("meetflow.exporters")
@@ -183,30 +208,19 @@ class MeetingExportPlugin:
                 "additionalProperties": False,
             },
         )
-
-        ui = ctx.services.optional("flow.ui")
-        if ui is not None:
-            ui.register(
-                id="meeting-export.toolbar-markdown",
-                slot="meeting.toolbar.action",
-                component="command-button",
-                order=100,
-                props={
-                    "label": "导出 Markdown",
-                    "command": "meeting-export.markdown",
-                    "variant": "secondary",
-                },
-            )
+        ctx.components.mount(ui_component)
 ```
 
-UI 注册是第二个 effect。插件 effect 栈为：
+Exporter 属于 root EffectScope，UI 注册属于 child EffectScope：
 
 ```text
-1. exporter:meeting-export.markdown
-2. ui:meeting-export.toolbar-markdown
+meeting-export root
+├── effect: exporter:meeting-export.markdown
+└── child: ui
+    └── effect: ui:meeting-export.toolbar-markdown
 ```
 
-卸载时按逆序撤销 UI，再撤销 Exporter。
+`flow.ui` 缺失时只有 UI child 保持 INACTIVE，导出功能仍 ACTIVE；UI provider 出现后只激活 child。卸载 root 时先撤销 UI child，再撤销 Exporter。
 
 在本例中，MeetFlow Adapter 还会把 Exporter 投影为同 ID 的只读下载 Command，因此 UI Descriptor 可以引用 `meeting-export.markdown`；插件不需要重复注册第二个 handler。
 
@@ -299,9 +313,7 @@ async def activate_metrics(ctx, config):
 
 metrics_component = ComponentSpec(
     local_id="metrics",
-    requires=(
-        ServiceRequirement(service="flow.metrics", version=">=1,<2"),
-    ),
+    requires=(ServiceRequirement(service="flow.metrics", version=">=1,<2"),),
     activate=activate_metrics,
 )
 

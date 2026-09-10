@@ -13,11 +13,11 @@ description: 插件安全诊断与测试规范
 
 任何实现都必须保持：
 
-1. 只有 `ACTIVE` generation 的 contribution 对调用者可见；
-2. ACTIVE 插件的全部必需依赖均指向可用 provider generation；
-3. provider 撤销前，其 consumer 已完成 deactivation；
+1. 只有 `ACTIVE` generation 的 service、capability、UI descriptor 和其他 contribution 对调用者可见；`FAILED` 或 `QUARANTINED` owner 不得重新发布；
+2. 每个 ACTIVE component 的全部必需依赖均指向可用 provider generation；
+3. provider 退出时先隐藏 binding；执行 provider disposer 前，其 consumer 已完成 deactivation；
 4. 每个已 acquire effect 最终执行且只执行一次 disposer；
-5. 激活失败不遗留已发布 service 或 contribution；
+5. 激活失败不遗留已发布 service 或 contribution；cleanup 失败时 binding 仍不可见，并保留 quarantine 诊断；
 6. 插件不能访问 Manifest 未声明的 service、secret 和 capability；
 7. 同一 contribution ID 在同一 Registry 中至多有一个 owner；
 8. 配置、代码和依赖的旧 generation 不能覆盖新 generation；
@@ -27,7 +27,9 @@ description: 插件安全诊断与测试规范
 12. consumer 只能绑定相同 `(service_id, resolution_key)` 下的 provider；
 13. isolate 和 intercept 不能扩大 Manifest 权限；
 14. reload 只能结束为 `SUCCEEDED`、`ROLLED_BACK` 或可解释的 `FAILED`，不能同时暴露新旧 generation；
-15. Runtime snapshot 能解释每个 component 为什么 ACTIVE 或 INACTIVE。
+15. Runtime snapshot 能解释每个 component 为什么 ACTIVE 或 INACTIVE；
+16. service binding 在同一 resolution key 下至多有一个 provider，不能依靠隐式 priority 解决冲突；
+17. 每次 invocation 必须校验 owning component 及其全部祖先 generation 为 `ACTIVE`，不能只检查 root plugin 状态。
 
 ## 2. 错误模型
 
@@ -100,12 +102,19 @@ rollback_failed
   "provided_services": [],
   "contributions": [],
   "effect_labels": [],
+  "residual_effects": [],
+  "reload_operation": {
+    "reload_id": "reload-01J...",
+    "operation_state": "SUCCEEDED",
+    "checkpoint_ref": "checkpoint-...",
+    "error_ref": null
+  },
   "last_transition_at": "...",
   "last_error": null
 }
 ```
 
-Child component 使用同一结构，并填充 `parent_component_path`。Root plugin snapshot 必须包含 child tree 摘要和最近 reload operation 状态。
+Child component 使用同一结构，并填充 `parent_component_path`。Root plugin snapshot 必须包含 child tree 摘要和最近 reload operation 状态；`reload_operation` 使用 [hot-reload.md](hot-reload.md) 定义的 `reload_id`、`operation_state`、`checkpoint_ref` 和错误引用，而不是复用 component 的 `FAILED` 状态。
 
 effect 只暴露 label 和状态，不暴露连接对象、handler repr 或闭包内容。Scope 只暴露不可反推内部 resolution key 的引用。
 
@@ -174,8 +183,8 @@ Liveness 只表示进程存活。Readiness 至少检查：
 
 每次 Command、Action、Exporter 或 Event 调用都必须：
 
-1. 校验插件当前 ACTIVE；
-2. 绑定当前 generation；
+1. 校验 owning component 及其全部祖先当前为 ACTIVE；
+2. 绑定 owning component path 与当前 generation；
 3. 验证 actor 和 target 权限；
 4. 校验输入 schema 和大小限制；
 5. 设置 timeout/cancellation policy；
@@ -192,7 +201,7 @@ Liveness 只表示进程存活。Readiness 至少检查：
 必须覆盖：
 
 - Manifest 严格校验；
-- 必需/可选/many 依赖；
+- 必需/可选依赖；
 - provider 歧义和版本不兼容；
 - root/child provider owner 匹配与声明但未实际 provide；
 - 环检测；
@@ -200,12 +209,15 @@ Liveness 只表示进程存活。Readiness 至少检查：
 - activate/deactivate 正常路径；
 - activation 部分失败逆序 rollback；
 - disposer 异常继续清理；
+- cleanup failure 后 contribution 隔离、owner quarantine 和 cleanup retry gate；
 - Context 继承、isolate、intercept 和 context epoch；
 - child 独立激活、父子递归撤销和 component 环；
 - config/provider/code generation 更新；
 - stale async completion；
 - reload prepare、candidate failure、rollback success/failure；
 - FAILED retry gate；
+- provider 撤销先隐藏 binding，再通知 consumer；
+- required provider generation 替换触发一致性 reconcile；optional `get()` 不建立依赖边，动态可选功能由 required child component 承担；
 - runtime.close 全量清理。
 
 ### 10.2 属性与状态机测试
@@ -225,7 +237,7 @@ derive / isolate / intercept / mount child / replace code
 
 FPR 发布共享测试套件，所有 Host Adapter 必须通过：
 
-- register 返回可重复请求且只执行一次的 disposer；
+- register 返回不含 dispose/close 的只读 `EffectHandle`；底层 disposer 只由 Runtime 请求且最多执行一次；
 - contribution 未声明时拒绝；
 - 冲突不覆盖旧 owner；
 - 卸载删除 Registry 可见项；

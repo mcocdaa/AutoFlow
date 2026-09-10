@@ -31,7 +31,6 @@ requires:
   - service: flow.ui
     version: ">=1,<2"
     optional: true
-    reload_on_change: true
 
 provides: []
 
@@ -127,8 +126,6 @@ runtime:
 - service: meetflow.exporters
   version: ">=2,<3"
   optional: false
-  many: false
-  reload_on_change: true
 ```
 
 字段语义：
@@ -138,14 +135,29 @@ runtime:
 | `service` | 无 | 所需服务 ID |
 | `version` | `*` | provider service 版本范围 |
 | `optional` | `false` | 缺失时是否允许激活 |
-| `many` | `false` | 是否注入全部匹配 provider |
-| `reload_on_change` | `true` | provider generation 变化时是否重载 |
 
-Root component 的必需依赖采用 AND 语义。`many: false` 时必须恰好选中一个 provider；零个表示缺失，多个且无法确定唯一选择表示歧义，root component 保持 `INACTIVE`。
+Root component 的必需依赖采用 AND 语义，每个 `(service_id, resolution_key)` 必须恰好绑定一个 ACTIVE provider；零个表示缺失。若 desired graph 中存在多个兼容 provider candidates，Runtime 必须在执行 provider activation 前把全部冲突 candidates 标记为 `INACTIVE/AMBIGUOUS_PROVIDER`，其 consumers 同样保持 `INACTIVE/AMBIGUOUS_PROVIDER`。Runtime 不使用隐式 priority、注册顺序或版本最高规则来选择 provider；第二个 provider 提交仍必须作为防御性校验被拒绝并回滚当前 activation。
+
+provider 的 ACTIVE generation 一旦撤销、替换或健康状态变为不可用，所有声明为必需依赖的 consumer 都必须自动 deactivation；新的 provider generation 可用后再自动 activation。这个行为不提供关闭必需依赖 reload 的字段。`optional: true` 只表示 package 可以通过 `get()` 观察该 service，不建立阻塞 component 激活的依赖边；需要随 provider 动态激活/撤销的功能必须建模为 child component 的必需 `requires`。
+
+`flow-plugin/v1` 不支持多 provider service。需要多实现集合时，Host 应提供唯一的聚合 service，再由该 service 暴露有类型的 registrar/list API；Action、Exporter 和 Hook 集合本身属于这种 capability registrar，而不是多个同名 service provider。
 
 Manifest `requires` 同时是整个 Plugin package 的服务访问上限。仅供 child component 使用的服务必须在 Manifest 中声明为 `optional: true`；child 可以在自己的 `ComponentSpec.requires` 中把它收紧为必需依赖，但不能增加未声明服务或放宽 version range。完整规则见 [components.md](components.md)。
 
 第一版不支持任意布尔表达式、动态代码条件或基于配置拼接 Service ID。
+
+### 5.1 可选 service 访问
+
+可选 service 不会阻止 component 激活，也不会因为 provider 出现或消失自动重载当前 component。插件必须通过 SDK 的明确读取 API 访问它们：
+
+```python
+ctx.services.require("flow.logging")  # 缺失或非 ACTIVE 时抛出受控错误
+ctx.services.get("flow.ui")  # 缺失时返回 None
+```
+
+`get()` 只返回调用时的当前 ACTIVE provider snapshot，不能被 activation effect、registrar、长期 handler 或进程级变量捕获；它只适合即时只读查询。Runtime/diagnostics 若需要观察撤销中的 provider，必须显式使用内部的非严格读取，不得把该结果当成已满足的依赖。需要 provider 出现/消失时自动重建资源时，插件必须把该服务放进 child `ComponentSpec.requires`，而不是在 root 中手工轮询。规范不提供未定义的 `ctx.services.optional()` 方法。
+
+依赖对象的未知字段也必须拒绝。`reload_on_change` 和 `many` 都不是 `flow-plugin/v1` 字段；旧 Manifest 含有这些字段时必须报告 `manifest_invalid`，不能静默忽略或改变依赖语义。
 
 ## 6. Provides
 
@@ -165,7 +177,7 @@ provides:
 | `root` | 是 | 由 Plugin root component 声明为 provider candidate |
 | `child` | 否 | 作为 child components 的 package 权限上限，具体 owner 由 `ComponentSpec.provides` 声明 |
 
-声明只建立 provider candidate 或 package 上限，不使服务立即可用。只有对应 component 成功激活并提交 `ctx.services.provide()` effect 后，服务才进入其 ScopedContext 对应的 resolution key。
+声明只建立 provider candidate 或 package 上限，不使服务立即可用。只有对应 component 成功激活并提交 `ctx.services.provide()` effect 后，服务才进入其 ScopedContext 对应的 resolution key。一个 `(service_id, resolution_key)` 默认只能有一个 ACTIVE provider；重复提交必须失败并回滚当前 activation。
 
 实际提供的 Service ID、版本和 owner 类型必须与 Manifest 匹配。Root 不能提供 `owner: child` 的服务，child 不能提供 `owner: root` 的服务。声明但未提供允许存在；提供但未声明或 owner 不匹配必须导致当前 component 激活失败并回滚。
 

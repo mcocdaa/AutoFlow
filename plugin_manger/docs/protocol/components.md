@@ -30,6 +30,7 @@ ComponentActivator = Callable[
     None | Awaitable[None],
 ]
 
+
 @dataclass(frozen=True)
 class ComponentSpec:
     local_id: str
@@ -47,7 +48,7 @@ class ComponentSpec:
 
 Component path 用于诊断和排序，不是跨卸载永久不变的数据库主键。
 
-Root component spec 由 Manifest 的入口、必需 `requires` 和 `provides` 派生。Child spec 在 Python 中声明，但仍受 Manifest package 上限约束。
+Root component spec 只从 Manifest 的入口、`requires` 和 `provides: owner: root` 声明派生；Manifest 中的 `owner: child` 服务不能成为 root provider candidate。Child spec 在 Python 中通过 `ctx.components.mount()` 发布，但仍受 Manifest package 上限约束。
 
 ## 3. Manifest 上限
 
@@ -78,7 +79,7 @@ class ComponentRegistrar(Protocol):
     ) -> ComponentHandle: ...
 ```
 
-`ComponentRegistrar` 由 `PluginRuntimeContext` 暴露为 `ctx.components`，因此插件调用 `ctx.components.mount(...)`。`mount()` 必须自动创建结构 effect。插件不能取得或保存 child disposer，也不实现 `unmount()`、`stop()` 或 `deactivate()`。
+`ComponentRegistrar` 由 `PluginRuntimeContext` 暴露为 `ctx.components`，因此插件调用 `ctx.components.mount(...)`。`mount()` 必须自动创建结构 effect，并把 desired child spec 纳入父 generation 的 staging snapshot。插件不能取得或保存 child disposer，也不实现 `unmount()`、`stop()` 或 `deactivate()`。
 
 `ComponentHandle` 是只读诊断句柄，只能读取 component path、期望状态和当前状态；它不能强制状态转换，也不能返回 child 的可变 Context 或 EffectScope。
 

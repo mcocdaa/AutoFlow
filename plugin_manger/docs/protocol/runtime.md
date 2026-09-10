@@ -20,7 +20,7 @@ Runtime 对每个 component instance 暴露以下状态。Plugin 的公共状态
 | `ACTIVATING` | 正在创建新的 activation generation |
 | `ACTIVE` | 当前 generation 已提交并可对外提供能力 |
 | `DEACTIVATING` | 正在撤销当前 generation 的 effects |
-| `FAILED` | 激活或撤销未能安全完成，需要新变化或人工重试 |
+| `FAILED` | 激活或撤销未能安全完成；必须等待明确的新 generation、配置/依赖变化或人工 retry |
 
 `INACTIVE` 必须附带 reason：
 
@@ -63,7 +63,7 @@ INACTIVE ── dependencies ready ──▶ ACTIVATING ── commit ──▶ 
 - 管理员显式 retry；
 - 进程重启并重新发现。
 
-Runtime 禁止对未知结果的激活或外部副作用进行无条件自动重试。
+以上事件只是重新协调的入口，不自动授权重新激活。`FAILED/CLEANUP_FAILED` 在 quarantine 清除前只能执行 cleanup retry，配置、代码或依赖变化也不能并行创建新 generation；cleanup 成功或进程重启确认无残留后才能重新进入普通协调。Runtime 禁止对未知结果的激活或外部副作用进行无条件自动重试。代码热替换的操作失败不自动改变 component state；两者的关系由 [hot-reload.md](hot-reload.md) 定义。
 
 ## 3. Context Mutation
 
@@ -96,12 +96,13 @@ provider generation 由 `(plugin_id, component_path, service_id, activation_gene
 
 Runtime 必须：
 
-1. 用强连通分量检测必需依赖环；
-2. 让环内插件保持 `INACTIVE/DEPENDENCY_CYCLE`；
-3. 按稳定拓扑顺序激活；
-4. 按反向拓扑顺序先卸载 consumer，再卸载 provider；
-5. 父 component 退出前先卸载全部 descendants；
-6. 使用 component path 作为同层稳定排序，保证测试和诊断可重复。
+1. 在 activation 前按 scoped binding 检测重复 provider candidates，并让冲突 providers 与 consumers 保持 `INACTIVE/AMBIGUOUS_PROVIDER`；
+2. 用强连通分量检测必需依赖环；
+3. 让环内插件保持 `INACTIVE/DEPENDENCY_CYCLE`；
+4. 按稳定拓扑顺序激活；
+5. 按反向拓扑顺序先卸载 consumer，再卸载 provider；
+6. 父 component 退出前先卸载全部 descendants；
+7. 使用 component path 作为同层稳定排序，保证测试和诊断可重复。
 
 ## 5. Reconcile 算法
 
@@ -134,6 +135,21 @@ Effect 是一次可撤销资源获取：
 ```python
 Disposer = Callable[[], None | Awaitable[None]]
 
+
+class EffectHandle(Protocol):
+    @property
+    def label(self) -> str: ...
+
+    @property
+    def owner_path(self) -> str: ...
+
+    @property
+    def generation(self) -> int: ...
+
+    @property
+    def state(self) -> str: ...
+
+
 class EffectScope(Protocol):
     def nest(self, label: str) -> "EffectScope": ...
 
@@ -150,7 +166,7 @@ class EffectScope(Protocol):
     ) -> EffectHandle: ...
 ```
 
-`nest()` 返回由当前 scope 自动拥有的子 scope，用于组织同一 component 的多组资源。`EffectHandle` 和 nested scope 都不向插件提供跳过 Runtime 状态机的公开 dispose/close 操作。
+`nest()` 返回由当前 scope 自动拥有的子 scope，用于组织同一 component 的多组资源。`EffectHandle` 是 SDK 暴露的只读所有权句柄，只包含 label、owner path、generation 和诊断状态，不提供 dispose/close；nested scope 同样不能让插件跳过 Runtime 状态机。
 
 所有 registrar 必须在内部使用当前 EffectScope。例如：
 
@@ -167,7 +183,7 @@ ctx.effects.own(
 )
 ```
 
-其中 `action_registry.add()` 返回删除该 Action 的 disposer。
+其中底层 `action_registry.add()` 返回删除该 Action 的 disposer。Registrar 必须把这个 disposer 交给当前 EffectScope 托管，并只向插件返回对应的只读 `EffectHandle`；原始 disposer 不得离开 Adapter/Runtime 边界。
 
 需要异步建立的连接、watcher 或客户端使用 `acquire()`；已经取得 disposer 的同步注册使用 `own()`。两者进入同一个逆序清理栈。
 
@@ -179,7 +195,7 @@ FPR v1 的 effect factory 只返回一个 disposer，不接受 disposer iterable
 
 1. 归属于一个 plugin ID、component path 和 activation generation；
 2. 有稳定、可脱敏的 label；
-3. 成功 acquire 后返回 disposer；
+3. acquire factory 成功后把 disposer 交给 Runtime，并向插件返回只读 `EffectHandle`；
 4. disposer 最多执行一次；
 5. disposer 可重复被请求，但第二次必须为空操作；
 6. 不允许把 disposer 交给插件自行保存和选择性调用；
@@ -228,13 +244,19 @@ dispose: event subscription → timer → database client
 
 每个 disposer 异常必须记录，但 Runtime 继续撤销剩余 effects。全部执行后若仍有 cleanup error，状态进入 `FAILED`，reason 为 `CLEANUP_FAILED`，禁止在同进程内盲目重新激活。
 
+### 10.1 Contribution 可见性与残留隔离
+
+撤销 effect 时必须先从可见 Registry/ContextStore 移除 `(service_id, resolution_key, owner_path, generation)` binding，再通知 consumer deactivation。这样 consumer 在撤销期间不会读取到已经失效的 provider。随后 Runtime 执行 disposer；disposer 失败不能恢复该 binding 的可见性。
+
+如果 disposer 失败，Runtime 必须保留脱敏的残留 effect 记录并将 owner generation 标记为 `QUARANTINED`。`QUARANTINED` 是内部 visibility/cleanup 标记，不是新的 component lifecycle state；component 仍进入 `FAILED/CLEANUP_FAILED`。所有 service、capability、UI descriptor 和 invocation lookup 都必须过滤 `ACTIVE` 以外的 owner generation；quarantine 记录只能由 cleanup retry 或进程重启处理。
+
 ## 11. 动态依赖
 
-Service provide effect 提交后，ContextStore 在当前 `(service_id, resolution_key)` 发布新 provider generation；撤销前先触发匹配 consumers deactivation，等 consumers settled 后才删除 provider service。
+Service provide effect 提交后，ContextStore 在当前 `(service_id, resolution_key)` 发布新 provider generation；撤销时先删除可见 binding，再触发匹配 consumers deactivation，等待 consumers settled 后执行 provider disposer。provider generation 的 owner/path 记录必须一直带到清理完成，防止旧 generation 的异步结果重新发布服务。
 
 依赖恢复时 Runtime 自动重新激活 consumer。插件不需要监听“服务上线/下线”事件。
 
-可选依赖默认不阻止激活，但 `reload_on_change: true` 时，它的出现、消失或替换会触发 consumer reload，使插件获得新的不可变 service snapshot。
+可选 service 不阻止激活，`ctx.services.get()` 也不建立自动 reload 的依赖边；它只读取调用时的 ACTIVE provider snapshot，且不得被 effect、registrar 或长期 handler 捕获。需要随 provider 出现、消失或替换自动启停的功能必须声明为 child component 的必需依赖。必需依赖的 provider generation 变化始终触发一致性 reconcile，插件不能通过 Manifest 字段关闭。
 
 ## 12. Service 健康状态
 
