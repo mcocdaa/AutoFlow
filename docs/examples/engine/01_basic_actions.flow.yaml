@@ -1,0 +1,27 @@
+# @file /docs/examples/engine/01_basic_actions.flow.yaml
+# @brief 内置 Action 串联：core.log / core.sleep / dummy.echo + output_var
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-basic-actions
+
+steps:
+  - id: log
+    name: 记录日志
+    action:
+      type: core.log
+      params:
+        message: "hello"
+  - id: nap
+    name: 短暂等待
+    action:
+      type: core.sleep
+      params:
+        seconds: 0.1
+  - id: echo
+    name: 回显并写入运行时变量
+    action:
+      type: dummy.echo
+      params:
+        message: "chain-ok"
+    output_var: echoed

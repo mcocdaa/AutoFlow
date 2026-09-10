@@ -1,0 +1,37 @@
+# @file /docs/examples/engine/11_openclaw_local.flow.yaml
+# @brief OpenClaw 本地闭环：HTTP 请求本服务 /health、命令执行、KnowFlow 不可达时优雅报错
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-openclaw-local
+
+steps:
+  - id: health
+    name: 请求本服务健康检查
+    action:
+      type: openclaw.http_request
+      params:
+        method: GET
+        url: "http://localhost:3001/health"
+    check:
+      type: openclaw.status_code_ok
+      params:
+        expected: 200
+  - id: echo
+    name: 执行 shell 命令
+    action:
+      type: openclaw.exec
+      params:
+        command: "echo autoflow-openclaw-ok"
+    check:
+      type: openclaw.exit_code_zero
+  - id: knowflow_missing
+    name: KnowFlow 不可达时返回结构化错误（步骤仍成功）
+    action:
+      type: openclaw.knowflow_record
+      params:
+        base_url: "http://localhost:39999"
+        name: "demo"
+        project_id: "p1"
+        summary: "s"
+        content: "c"

@@ -1,0 +1,24 @@
+# @file /docs/examples/engine/08_hooks_failure.flow.yaml
+# @brief 失败钩子：on_failure 在步骤失败后执行
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-hooks-failure
+
+steps:
+  - id: boom
+    name: 必然失败的步骤
+    action:
+      type: core.sleep
+      params:
+        seconds: -1
+
+hooks:
+  on_failure:
+    - type: openclaw.exec
+      params:
+        safe_mode: false
+        command: "echo hook-failure > /tmp/autoflow_hook_failure.txt"
+    - type: core.log
+      params:
+        message: "flow failed as expected"

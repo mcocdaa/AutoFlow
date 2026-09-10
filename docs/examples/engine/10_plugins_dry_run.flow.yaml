@@ -1,0 +1,46 @@
+# @file /docs/examples/engine/10_plugins_dry_run.flow.yaml
+# @brief 插件 dry_run 覆盖：desktop / ai-deepseek / zhihu 全部空跑
+#        运行时通过 vars: {"dry_run": true} 或环境变量开启
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-plugins-dry-run
+
+steps:
+  - id: desktop_wait
+    name: 桌面等待（空跑）
+    action:
+      type: desktop.wait
+      params:
+        seconds: 0.01
+  - id: desktop_type
+    name: 键盘输入（空跑）
+    action:
+      type: desktop.type_text
+      params:
+        text: "abc"
+  - id: desktop_shot
+    name: 截图（空跑，写入 1x1 占位图）
+    action:
+      type: desktop.screenshot
+      params:
+        name: "dry.png"
+  - id: deepseek
+    name: DeepSeek 总结（空跑）
+    action:
+      type: ai.deepseek_summarize
+      params:
+        input: "AutoFlow 是一个流程编排引擎。"
+  - id: zhihu_fetch
+    name: 知乎抓取（空跑）
+    action:
+      type: zhihu.fetch_answer
+      params:
+        url: "https://www.zhihu.com/question/123/answer/456"
+  - id: zhihu_post
+    name: 知乎草稿发布（空跑）
+    action:
+      type: zhihu.post_answer_draft
+      params:
+        content_md: "草稿内容"
+        question_url: "https://www.zhihu.com/question/123"

@@ -30,6 +30,9 @@ _STEPS_RE = re.compile(r"^steps\.(?P<name>\w+)\.output(?:\.(?P<path>.+))?$")
 _VARS_RE = re.compile(r"^vars\.(?P<name>\w+)(?:\.(?P<path>.+))?$")
 _INPUT_RE = re.compile(r"^input(?:\.(?P<path>.+))?$")
 
+# 模板占位符不允许嵌套花括号,避免 "{{A}} x {{B}}" 被误判为单个模板
+_TEMPLATE_RE = re.compile(r"\{\{([^{}]+)\}\}")
+
 _PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (_STEPS_RE, "steps"),
     (_VARS_RE, "vars"),
@@ -79,7 +82,7 @@ def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
                 return _serialize(value)
             return match.group(0)
 
-        single_match = re.fullmatch(r"\{\{(.+?)\}\}", obj.strip())
+        single_match = _TEMPLATE_RE.fullmatch(obj.strip())
         if single_match:
             template = single_match.group(1).strip()
             found, value = _lookup(template, context)
@@ -87,7 +90,7 @@ def resolve_templates(obj: Any, context: dict[str, Any]) -> Any:
                 return value
             return obj
 
-        return re.sub(r"\{\{(.+?)\}\}", replace_template, obj)
+        return _TEMPLATE_RE.sub(replace_template, obj)
 
     elif isinstance(obj, dict):
         return {k: resolve_templates(v, context) for k, v in obj.items()}

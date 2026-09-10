@@ -1,0 +1,16 @@
+# @file /docs/examples/engine/04_foreach.flow.yaml
+# @brief 循环执行：for_each 遍历列表，iterations 记录每次迭代
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-foreach
+
+steps:
+  - id: loop
+    name: 遍历 items
+    for_each: "{{input.items}}"
+    for_item_var: item
+    action:
+      type: dummy.echo
+      params:
+        message: "{{vars.item}}"

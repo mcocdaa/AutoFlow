@@ -1,0 +1,26 @@
+# @file /docs/examples/engine/07_hooks_success.flow.yaml
+# @brief 成功钩子：on_success 执行副作用并引用 steps 输出
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-hooks-success
+
+steps:
+  - id: work
+    name: 执行工作
+    action:
+      type: openclaw.exec
+      params:
+        command: "echo work-done"
+    check:
+      type: openclaw.exit_code_zero
+
+hooks:
+  on_success:
+    - type: openclaw.exec
+      params:
+        safe_mode: false
+        command: "echo hook-success > /tmp/autoflow_hook_success.txt"
+    - type: core.log
+      params:
+        message: "hook saw: {{steps.work.output.stdout}}"

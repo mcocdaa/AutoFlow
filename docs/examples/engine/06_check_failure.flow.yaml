@@ -1,0 +1,24 @@
+# @file /docs/examples/engine/06_check_failure.flow.yaml
+# @brief Check 失败：text.contains 未命中导致步骤与 Run 失败，后续步骤不执行
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-check-failure
+
+steps:
+  - id: logged
+    name: 输出不包含否定词
+    action:
+      type: core.log
+      params:
+        message: "nothing to see"
+    check:
+      type: text.contains
+      params:
+        needle: "not-present"
+  - id: never
+    name: 不应执行
+    action:
+      type: core.log
+      params:
+        message: "unreachable"
