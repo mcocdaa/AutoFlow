@@ -30,26 +30,17 @@ def _ctx(artifacts_dir: Path) -> ActionContext:
 
 class TestPluginBase:
     def test_register_registers_plugin_and_actions_checks(self) -> None:
-        def _handler(ctx, params):
-            return {}
-
-        def _check(ctx, params):
-            return True
-
         class SamplePlugin(Plugin):
             name = "sample"
             version = "2.0.0"
-
-            def __init__(self, config=None):
-                super().__init__(config)
-                self.actions = {"sample.run": self._run}
-                self.checks = {"sample.ok": self._ok}
+            actions = {"sample.run": "_run"}
+            checks = {"sample.ok": "_ok"}
 
             def _run(self, ctx, params):
-                return _handler(ctx, params)
+                return {}
 
             def _ok(self, ctx, params):
-                return _check(ctx, params)
+                return True
 
         registry = Registry()
         SamplePlugin().register(registry)
@@ -59,6 +50,19 @@ class TestPluginBase:
         ]
         assert registry.list_actions() == ["sample.run"]
         assert registry.list_checks() == ["sample.ok"]
+
+    def test_register_accepts_callable_handlers(self) -> None:
+        def _handler(ctx, params):
+            return {}
+
+        class SamplePlugin(Plugin):
+            name = "sample-callable"
+            actions = {"sample.run": _handler}
+
+        registry = Registry()
+        SamplePlugin().register(registry)
+
+        assert registry.get_action("sample.run") is _handler
 
     def test_config_defaults_to_empty_dict(self) -> None:
         class SamplePlugin(Plugin):

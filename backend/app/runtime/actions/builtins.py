@@ -34,11 +34,7 @@ def _check_text_contains(ctx: CheckContext, params: dict[str, Any]) -> bool:
     haystack = ctx.action_output
     if haystack is None:
         return False
-    if isinstance(haystack, (dict, list)):
-        haystack_str = str(haystack)
-    else:
-        haystack_str = str(haystack)
-    return str(needle) in haystack_str
+    return str(needle) in str(haystack)
 
 
 def register_builtins(registry: Registry) -> None:

@@ -3,38 +3,47 @@
 # @create 2026-08-10
 # @update 2026-08-11 增加实例级 defaults/secrets、is_dry_run/setting/error_result,
 #   actions/checks 实例属性化
+# @update 2026-08-22 actions/checks 改为声明式类属性 {type_name: 方法名},
+#   register() 统一绑定实例,插件不再需要样板 __init__
 
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, ClassVar
 
-from app.core.registry import ActionContext, ActionHandler, CheckHandler, Registry
+from app.core.registry import ActionContext, Registry
 
 from plugins.common.helpers import is_truthy, resolve_env_value
 
 
 class Plugin:
-    """插件基类:声明式元信息 + 统一注册 + 配置/dry_run/错误共性 API"""
+    """插件基类:声明式元信息 + 统一注册 + 配置/dry_run/错误共性 API
+
+    actions/checks 声明为 {type_name: 方法名或可调用对象},register() 时绑定实例。
+    """
 
     name: str
     version: str = "0.1.0"
     dry_run_env: str | None = None
+    actions: ClassVar[dict[str, Any]] = {}
+    checks: ClassVar[dict[str, Any]] = {}
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.defaults = dict(self.config.get("defaults", {}))
         self.secrets = dict(self.config.get("secrets", {}))
-        self.actions: dict[str, ActionHandler] = {}
-        self.checks: dict[str, CheckHandler] = {}
+
+    def _bind(self, handler: Any) -> Any:
+        """方法名 -> 绑定实例方法;可调用对象原样返回"""
+        return getattr(self, handler) if isinstance(handler, str) else handler
 
     def register(self, registry: Registry) -> None:
         """注册 plugin 元信息、actions、checks"""
         registry.register_plugin(self.name, self.version)
         for type_name, handler in self.actions.items():
-            registry.register_action(type_name, handler)
+            registry.register_action(type_name, self._bind(handler))
         for type_name, handler in self.checks.items():
-            registry.register_check(type_name, handler)
+            registry.register_check(type_name, self._bind(handler))
 
     # ---- 共性 API ----
 

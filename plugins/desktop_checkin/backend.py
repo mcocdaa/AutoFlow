@@ -31,23 +31,20 @@ class DesktopCheckinPlugin(Plugin):
     name = "desktop-checkin"
     version = "0.1.0"
     dry_run_env = "AUTOFLOW_DESKTOP_DRY_RUN"
-
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        super().__init__(config)
-        self.actions = {
-            "desktop.activate_window": self._activate_window,
-            "desktop.click": self._click,
-            "desktop.double_click": self._double_click,
-            "desktop.drag": self._drag,
-            "desktop.type_text": self._type_text,
-            "desktop.hotkey": self._hotkey,
-            "desktop.wait": self._wait,
-            "desktop.screenshot": self._screenshot,
-        }
-        self.checks = {
-            "desktop.image_exists": self._image_exists,
-            "desktop.window_title_contains": self._window_title_contains,
-        }
+    actions = {
+        "desktop.activate_window": "_activate_window",
+        "desktop.click": "_click",
+        "desktop.double_click": "_double_click",
+        "desktop.drag": "_drag",
+        "desktop.type_text": "_type_text",
+        "desktop.hotkey": "_hotkey",
+        "desktop.wait": "_wait",
+        "desktop.screenshot": "_screenshot",
+    }
+    checks = {
+        "desktop.image_exists": "_image_exists",
+        "desktop.window_title_contains": "_window_title_contains",
+    }
 
     def _activate_window(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
         title = str(params.get("title", ""))

@@ -83,13 +83,7 @@ class AIDeepSeekPlugin(Plugin):
     name = "ai-deepseek"
     version = "0.1.0"
     dry_run_env = "AUTOFLOW_AI_DRY_RUN"
-
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        super().__init__(config)
-        self.actions = {
-            "ai.deepseek_summarize": self._deepseek_summarize,
-        }
-        self.checks = {}
+    actions = {"ai.deepseek_summarize": "_deepseek_summarize"}
 
     def _get_deepseek_api_key(self, params: dict[str, Any]) -> str:
         """api_key 取值链:params.api_key > defaults.api_key

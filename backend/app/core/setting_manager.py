@@ -13,6 +13,16 @@ from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).parent.parent.parent.parent
 BACKEND_DIR = ROOT_DIR / "backend"
+DEFAULT_PORT = 3000
+
+
+def _is_truthy(value: Any) -> bool:
+    """字符串/布尔统一真值判定:None/False 为假;字符串按 {1,true,yes,y,on} 判定"""
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 class SettingManager:
@@ -45,14 +55,17 @@ class SettingManager:
         self.config.setdefault("PROJECT_NAME", "AutoFlow")
         self.config.setdefault("APP_VERSION", "0.1.0")
         self.config.setdefault("API_VERSION", "v1")
-        self.config.setdefault("BACKEND_INTERNAL_PORT", 3000)
+        self.config.setdefault("BACKEND_INTERNAL_PORT", DEFAULT_PORT)
         self.config.setdefault("BACKEND_EXTERNAL_PORT", 3001)
         self.config.setdefault("FRONTEND_INTERNAL_PORT", 8000)
         self.config.setdefault("FRONTEND_EXTERNAL_PORT", 8001)
         self.config.setdefault("LOG_LEVEL", "INFO")
-        self.config.setdefault("SERVE_STATIC_FILES", "False")
+        self.config.setdefault("SERVE_STATIC_FILES", False)
         self.config.setdefault("STATIC_FILES_DIR", "/app/static")
-        self.config.setdefault("CORS_ORIGINS", os.getenv("CORS_ORIGINS", "*"))
+        self.config.setdefault("CORS_ORIGINS", "*")
+        self.config["SERVE_STATIC_FILES"] = _is_truthy(
+            os.getenv("SERVE_STATIC_FILES", self.config["SERVE_STATIC_FILES"])
+        )
 
         self.config["ROOT_DIR"] = str(ROOT_DIR)
         self.config["BACKEND_DIR"] = str(BACKEND_DIR)
@@ -80,8 +93,8 @@ class SettingManager:
         group.add_argument(
             "--port",
             type=int,
-            default=int(os.getenv("PORT", "3001")),
-            help="绑定端口 (默认: 3001)",
+            default=self.config.get("PORT", DEFAULT_PORT),
+            help=f"绑定端口 (默认: {DEFAULT_PORT})",
         )
 
         group.add_argument(
@@ -110,7 +123,7 @@ class SettingManager:
             return getattr(args, name, self.config.get(name.upper(), default))
 
         self.config["HOST"] = _arg("host", "0.0.0.0")
-        self.config["PORT"] = _arg("port", 3001)
+        self.config["PORT"] = _arg("port", DEFAULT_PORT)
         self.config["LOG_LEVEL"] = _arg("log_level", "INFO")
 
         cors_origins_val = _arg("cors_origins", "*")

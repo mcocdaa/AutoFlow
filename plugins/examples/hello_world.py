@@ -16,13 +16,7 @@ class HelloWorldPlugin(Plugin):
 
     name = "hello-world"
     version = "1.0.0"
-
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        super().__init__(config)
-        self.actions = {
-            "core.hello": self._hello,
-        }
-        self.checks = {}
+    actions = {"core.hello": "_hello"}
 
     def _hello(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
         name = params.get("name", "World")

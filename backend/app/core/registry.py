@@ -100,6 +100,3 @@ class Registry:
         self._checks.clear()
         self._plugins.clear()
         self._plugin_errors.clear()
-
-
-registry = Registry()

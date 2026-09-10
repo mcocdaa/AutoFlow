@@ -16,13 +16,7 @@ class DummyEchoPlugin(Plugin):
 
     name = "dummy-echo"
     version = "0.1.0"
-
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        super().__init__(config)
-        self.actions = {
-            "dummy.echo": self._echo,
-        }
-        self.checks = {}
+    actions = {"dummy.echo": "_echo"}
 
     def _echo(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
         return {

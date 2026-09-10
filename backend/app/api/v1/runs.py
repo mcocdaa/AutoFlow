@@ -1,6 +1,7 @@
-# @file /backend/app/api/v1/routes/runs.py
+# @file /backend/app/api/v1/runs.py
 # @brief 执行与查询 Run 的最小接口
 # @create 2026-02-21 00:00:00
+# @update 2026-08-22 404 样板收敛为 _require_run
 
 from __future__ import annotations
 
@@ -9,11 +10,20 @@ from typing import Any
 from app.runtime import get_runner, get_store
 from app.runtime.loaders import FlowLoadError, load_flow_spec_from_yaml_text
 from app.runtime.models import RunResult
+from app.runtime.storage import RunStore
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+
+
+def _require_run(store: RunStore, run_id: str) -> RunResult:
+    """获取 run,不存在时抛 404"""
+    try:
+        return store.get_run(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run not found") from e
 
 
 class ExecuteFlowRequest(BaseModel):
@@ -41,10 +51,7 @@ def list_runs() -> list[RunResult]:
 @router.get("/runs/{run_id}", response_model=RunResult)
 def get_run(run_id: str) -> RunResult:
     store = get_store()
-    try:
-        return store.get_run(run_id)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail="run not found") from e
+    return _require_run(store, run_id)
 
 
 @router.get("/runs/{run_id}/artifacts/{file_path:path}")
@@ -55,10 +62,7 @@ def download_artifact(run_id: str, file_path: str) -> FileResponse:
     and validated against path-traversal attacks.
     """
     store = get_store()
-    try:
-        store.get_run(run_id)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail="run not found") from e
+    _require_run(store, run_id)
 
     run_artifacts_dir = store.artifacts_dir / run_id
     resolved = (run_artifacts_dir / file_path).resolve()
@@ -79,8 +83,5 @@ def download_artifact(run_id: str, file_path: str) -> FileResponse:
 def delete_run(run_id: str) -> None:
     """Delete a run and its artifacts directory."""
     store = get_store()
-    try:
-        store.get_run(run_id)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail="run not found") from e
+    _require_run(store, run_id)
     store.delete_run(run_id)

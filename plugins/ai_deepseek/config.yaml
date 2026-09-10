@@ -9,4 +9,4 @@ defaults:
   dry_run: false
 
 secrets:
-  api_key: DEEPSEEK_API_KEY
+  api_key: env:DEEPSEEK_API_KEY

@@ -6,14 +6,13 @@
 
 from __future__ import annotations
 
-import os
 import re
 import time
 from typing import Any
 
 from app.core.registry import ActionContext
 
-from plugins.common.helpers import read_text, resolve_env_value, utc_now_iso, write_text
+from plugins.common.helpers import read_text, utc_now_iso, write_text
 from plugins.common.plugin import Plugin
 
 
@@ -30,29 +29,10 @@ class ZhihuDigestPlugin(Plugin):
     name = "zhihu-digest"
     version = "0.1.0"
     dry_run_env = "AUTOFLOW_ZHIHU_DRY_RUN"
-
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        super().__init__(config)
-        self.actions = {
-            "zhihu.fetch_answer": self._fetch_answer,
-            "zhihu.post_answer_draft": self._post_answer_draft,
-        }
-        self.checks = {}
-
-    def _get_cookie(self, params: dict[str, Any]) -> str | None:
-        """cookie 取值(保持原优先级):
-        1. params.cookie(env: 前缀由 resolve_env_value 解析)
-        2. params.cookie_env 指定的环境变量
-        3. setting() 链:defaults.cookie > secrets.cookie > ZHIHU_COOKIE(新增能力)"""
-        cookie = params.get("cookie")
-        if isinstance(cookie, str) and cookie.strip():
-            return resolve_env_value(cookie)
-
-        env_name = params.get("cookie_env")
-        if isinstance(env_name, str) and env_name.strip():
-            return os.getenv(env_name) or None
-
-        return self.setting({}, "cookie", env_var="ZHIHU_COOKIE")
+    actions = {
+        "zhihu.fetch_answer": "_fetch_answer",
+        "zhihu.post_answer_draft": "_post_answer_draft",
+    }
 
     def _fetch_answer(self, ctx: ActionContext, params: dict[str, Any]) -> Any:
         url = str(params.get("url", "")).strip()
@@ -78,7 +58,7 @@ class ZhihuDigestPlugin(Plugin):
 
         mode = str(params.get("mode", "auto")).lower()
         timeout_seconds = float(params.get("timeout_seconds", 30))
-        cookie = self._get_cookie(params)
+        cookie = self.setting(params, "cookie", env_var="ZHIHU_COOKIE")
 
         if mode in {"auto", "playwright"}:
             return self._fetch_answer_playwright(
@@ -195,7 +175,7 @@ class ZhihuDigestPlugin(Plugin):
         if self.is_dry_run(ctx, params):
             return {"attempted": False, "saved_path": rel, "dry_run": True}
 
-        cookie = self._get_cookie(params)
+        cookie = self.setting(params, "cookie", env_var="ZHIHU_COOKIE")
         if not cookie:
             return {
                 "attempted": False,
