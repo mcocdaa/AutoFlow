@@ -23,7 +23,7 @@ hooks:
         name: "flow-success-record"
         project_id: "my-project"
         summary: "Flow executed successfully"
-        content: "Flow completed. Output: {{steps.do_work.stdout}}"
+        content: "Flow completed. Output: {{steps.do_work.output.stdout}}"
 
   # 流程失败时：记录错误日志
   on_failure:

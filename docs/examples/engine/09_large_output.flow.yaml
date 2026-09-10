@@ -1,0 +1,17 @@
+# @file /docs/examples/engine/09_large_output.flow.yaml
+# @brief 大输出外置：action_output 超过 64KB 时落盘为 artifact 索引
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-large-output
+
+steps:
+  - id: big
+    name: 输出 70KB 文本
+    action:
+      type: openclaw.exec
+      params:
+        command: >-
+          python3 -c "print('A'*70000)"
+    check:
+      type: openclaw.exit_code_zero

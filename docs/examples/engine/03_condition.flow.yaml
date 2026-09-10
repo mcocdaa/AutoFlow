@@ -1,0 +1,26 @@
+# @file /docs/examples/engine/03_condition.flow.yaml
+# @brief 条件执行：常量条件与变量比较条件，未命中步骤记为 skipped
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-condition
+
+steps:
+  - id: always
+    condition: "true"
+    action:
+      type: core.log
+      params:
+        message: "always-ran"
+  - id: skipped
+    condition: "false"
+    action:
+      type: core.log
+      params:
+        message: "should-not-run"
+  - id: var_cond
+    condition: '{{vars.mode}} == "enabled"'
+    action:
+      type: core.log
+      params:
+        message: "mode-enabled"

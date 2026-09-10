@@ -1,0 +1,27 @@
+# @file /docs/examples/engine/02_templates.flow.yaml
+# @brief 模板解析：input / vars / steps 属性链引用
+# @create 2026-09-10
+
+version: "1.0"
+name: feature-templates
+
+steps:
+  - id: greet
+    name: input 全量替换
+    action:
+      type: dummy.echo
+      params:
+        message: "{{input.name}}"
+    output_var: greeting
+  - id: report
+    name: vars 属性链 + 内联替换
+    action:
+      type: core.log
+      params:
+        message: "{{vars.greeting.message}} from {{vars.city}}"
+  - id: report2
+    name: steps 属性链引用
+    action:
+      type: core.log
+      params:
+        message: "step1 said {{steps.greet.output.message}}"
