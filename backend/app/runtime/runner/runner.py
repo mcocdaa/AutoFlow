@@ -4,6 +4,7 @@
 # @update 2026-03-15 拆分条件与模板解析到独立模块
 # @update 2026-08-08 合并 for_each 与普通步骤双路径,修复 duration_ms / check_passed
 # @update 2026-08-10 序列化函数收敛至 app.runtime.utils.serialization
+# @update 2026-08-22 抽取 _invoke_action/_finalize_run,统一 hooks 与 step 调用及收尾
 
 from __future__ import annotations
 
@@ -51,6 +52,35 @@ class Runner:
             "input": current_input,
         }
 
+    def _invoke_action(
+        self,
+        *,
+        action_type: str,
+        params: dict[str, Any],
+        run_id: str,
+        step_id: str,
+        current_input: Any,
+        runtime_vars: dict[str, Any],
+        step_outputs: dict[str, Any],
+        run_artifacts_dir: Path,
+    ) -> Any:
+        """统一 action 调用:模板解析 + 查表 + 构造上下文 + 执行"""
+        resolved_params = resolve_templates(
+            params,
+            self._template_context(step_outputs, runtime_vars, current_input),
+        )
+        handler = self._registry.get_action(action_type)
+        return handler(
+            ActionContext(
+                run_id=run_id,
+                step_id=step_id,
+                input=current_input,
+                vars=runtime_vars,
+                artifacts_dir=run_artifacts_dir,
+            ),
+            resolved_params,
+        )
+
     def _run_hooks(
         self,
         hooks: HookSpec,
@@ -70,20 +100,16 @@ class Runner:
 
         for hook_action in hook_actions:
             try:
-                resolved_params = resolve_templates(
-                    hook_action.params,
-                    self._template_context(step_outputs, runtime_vars, current_input),
+                self._invoke_action(
+                    action_type=hook_action.type,
+                    params=hook_action.params,
+                    run_id=run_id,
+                    step_id="__hook__",
+                    current_input=current_input,
+                    runtime_vars=runtime_vars,
+                    step_outputs=step_outputs,
+                    run_artifacts_dir=run_artifacts_dir,
                 )
-                handler = self._registry.get_action(hook_action.type)
-                if handler:
-                    ctx = ActionContext(
-                        run_id=run_id,
-                        step_id="__hook__",
-                        input=current_input,
-                        vars=runtime_vars,
-                        artifacts_dir=run_artifacts_dir,
-                    )
-                    handler(ctx, resolved_params)
             except Exception as e:
                 # hook 执行失败不影响主流程状态
                 logger.warning(f"Hook {hook_action.type} failed: {e}")
@@ -112,21 +138,15 @@ class Runner:
 
         for attempt in range(max(1, attempts + 1)):
             try:
-                resolved_params = resolve_templates(
-                    step.action.params,
-                    self._template_context(step_outputs, runtime_vars, current_input),
-                )
-
-                action = self._registry.get_action(step.action.type)
-                output = action(
-                    ActionContext(
-                        run_id=run_id,
-                        step_id=step.id,
-                        input=current_input,
-                        vars=runtime_vars,
-                        artifacts_dir=run_artifacts_dir,
-                    ),
-                    resolved_params,
+                output = self._invoke_action(
+                    action_type=step.action.type,
+                    params=step.action.params,
+                    run_id=run_id,
+                    step_id=step.id,
+                    current_input=current_input,
+                    runtime_vars=runtime_vars,
+                    step_outputs=step_outputs,
+                    run_artifacts_dir=run_artifacts_dir,
                 )
                 if step.check is not None:
                     check = self._registry.get_check(step.check.type)
@@ -257,6 +277,23 @@ class Runner:
             iterations=iterations,
         )
 
+    def _finalize_run(
+        self,
+        run: RunResult,
+        *,
+        status: str,
+        started_at: datetime,
+        error: str | None = None,
+    ) -> RunResult:
+        """统一 run 收尾:状态/结束时间/耗时落库"""
+        finished_at = _utc_now()
+        run.status = status
+        run.finished_at = finished_at
+        run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
+        run.error = error
+        self._store.save_run(run)
+        return run
+
     def run_flow(
         self,
         flow: FlowSpec,
@@ -334,35 +371,19 @@ class Runner:
             self._store.save_run(run)
 
             if step_error is not None:
-                finished_at = _utc_now()
-                run.status = "failed"
-                run.finished_at = finished_at
-                run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
-                run.error = step_error
-                self._store.save_run(run)
-                if flow.hooks:
-                    self._run_hooks(
-                        flow.hooks,
-                        run_id,
-                        run_artifacts_dir,
-                        runtime_vars,
-                        step_outputs,
-                        current_input,
-                        "failed",
-                    )
-                return run
+                self._finalize_run(
+                    run, status="failed", started_at=started_at, error=step_error
+                )
+                break
 
             step_outputs[step.id] = action_output
             if step.output_var is not None:
                 runtime_vars[step.output_var] = to_jsonable(action_output)
 
             current_input = action_output
+        else:
+            self._finalize_run(run, status="success", started_at=started_at)
 
-        finished_at = _utc_now()
-        run.status = "success"
-        run.finished_at = finished_at
-        run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
-        self._store.save_run(run)
         if flow.hooks:
             self._run_hooks(
                 flow.hooks,
@@ -371,6 +392,6 @@ class Runner:
                 runtime_vars,
                 step_outputs,
                 current_input,
-                "success",
+                run.status,
             )
         return run

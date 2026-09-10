@@ -8,4 +8,4 @@ defaults:
   allowed_commands: []  # 命令白名单正则列表，空列表表示不限制
 
 secrets:
-  knowflow_base_url: KNOWFLOW_BASE_URL  # KnowFlow 服务地址，对应环境变量 KNOWFLOW_BASE_URL
+  knowflow_base_url: env:KNOWFLOW_BASE_URL  # KnowFlow 服务地址，对应环境变量 KNOWFLOW_BASE_URL

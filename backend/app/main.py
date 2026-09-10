@@ -3,10 +3,10 @@
 # @create 2026-03-15 10:00:00
 # @update 2026-03-27 集成新的插件管理器系统
 # @update 2026-08-10 移除 env_secrets 文件密钥注入(allowlist 为空,属死代码)
+# @update 2026-08-22 初始化收敛为模块级单次调用,静态文件开关依赖 setting_manager 归一化
 
 import argparse
 import logging
-from contextlib import asynccontextmanager
 
 from app.api import register_routers
 from app.core.setting_manager import setting_manager
@@ -15,8 +15,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 logger = logging.getLogger(__name__)
-
-_services_initialized = False
 
 
 def parse_args():
@@ -33,32 +31,15 @@ def parse_args():
     return parser.parse_known_args()[0]
 
 
-def init_services():
-    """初始化所有服务"""
-    global _services_initialized
-    if _services_initialized:
-        return
-    args = parse_args()
-    setting_manager.init(args)
-    _services_initialized = True
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
-    init_services()
-    yield
-
+# Module-level init is the single initialization path (uvicorn imports this
+# module before serving; TestClient triggers it on import as well).
+setting_manager.init(parse_args())
 
 app = FastAPI(
     title=setting_manager.PROJECT_NAME,
     openapi_url=f"{setting_manager.API_V1_STR}/openapi.json",
     version=setting_manager.APP_VERSION,
-    lifespan=lifespan,
 )
-
-# Always call init_services() at module level (idempotent gate)
-init_services()
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,10 +57,7 @@ async def health_check():
 
 register_routers(app)
 
-if (
-    setting_manager.SERVE_STATIC_FILES == "True"
-    or setting_manager.SERVE_STATIC_FILES is True
-):
+if setting_manager.SERVE_STATIC_FILES:
     from pathlib import Path
 
     static_dir = setting_manager.STATIC_FILES_DIR

@@ -71,24 +71,20 @@ class TestLoadRegistryEntries:
 
 
 class TestLoadPluginConfig:
-    """Test config.yaml loading and secrets resolution."""
+    """Test config.yaml loading (pass-through, env: prefix preserved)."""
 
     def test_none_when_no_config(self, tmp_path: Path):
         config = _load_plugin_config(tmp_path)
         assert config is None
 
-    def test_loads_defaults_and_secrets(self, tmp_path: Path, monkeypatch):
-        monkeypatch.setenv("TEST_API_KEY", "secret-123")
-        monkeypatch.setenv("TEST_BASE_URL", "http://example.com")
-
+    def test_loads_defaults_and_secrets_verbatim(self, tmp_path: Path):
         _write_yaml(
             tmp_path / "config.yaml",
             {
                 "defaults": {"timeout": 30, "dry_run": False},
                 "secrets": {
-                    "api_key": "TEST_API_KEY",
-                    "base_url": "TEST_BASE_URL",
-                    "missing": "MISSING_VAR",
+                    "api_key": "env:TEST_API_KEY",
+                    "base_url": "http://example.com",
                 },
             },
         )
@@ -96,9 +92,8 @@ class TestLoadPluginConfig:
         assert config is not None
         assert config["defaults"] == {"timeout": 30, "dry_run": False}
         assert config["secrets"] == {
-            "api_key": "secret-123",
+            "api_key": "env:TEST_API_KEY",
             "base_url": "http://example.com",
-            "missing": None,
         }
 
     def test_no_secrets_block(self, tmp_path: Path):

@@ -33,13 +33,6 @@ def resolve_env_value(value: Any) -> Any:
     return value
 
 
-def error_result(
-    error: str, *, error_type: str = "unknown_error", **fields: Any
-) -> dict[str, Any]:
-    """统一错误返回构造(基类 error_result 的纯函数版)"""
-    return {"error": error, "error_type": error_type, **fields}
-
-
 def read_text(ctx: ActionContext, path: str, extra_roots: tuple[Path, ...] = ()) -> str:
     """安全路径读取(防穿越):仅允许 artifacts 目录、仓库根目录与 extra_roots 内"""
     p = Path(path)

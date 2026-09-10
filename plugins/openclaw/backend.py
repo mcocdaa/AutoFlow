@@ -3,12 +3,12 @@
 # @create 2026-03-15 00:00:00
 # @update 2026-08-10 迁移为 Plugin 基类新 ABI
 # @update 2026-08-11 迁移为类方法形态,config 经实例属性 self.defaults/self.secrets 访问
+# @update 2026-08-22 secrets 统一走 setting() 链(env: 前缀解析),抽出 _request_json
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import shlex
 import subprocess
@@ -29,18 +29,60 @@ class OpenClawPlugin(Plugin):
 
     name = "openclaw"
     version = "0.1.0"
+    actions = {
+        "openclaw.http_request": "_http_request",
+        "openclaw.exec": "_exec_command",
+        "openclaw.knowflow_record": "_knowflow_record",
+    }
+    checks = {
+        "openclaw.status_code_ok": "_status_code_ok",
+        "openclaw.exit_code_zero": "_exit_code_zero",
+    }
 
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        super().__init__(config)
-        self.actions = {
-            "openclaw.http_request": self._http_request,
-            "openclaw.exec": self._exec_command,
-            "openclaw.knowflow_record": self._knowflow_record,
-        }
-        self.checks = {
-            "openclaw.status_code_ok": self._status_code_ok,
-            "openclaw.exit_code_zero": self._exit_code_zero,
-        }
+    def _http_json(self, req: Request, *, timeout: float = 30) -> dict[str, Any]:
+        """执行 HTTP 请求并解析 JSON body,统一错误分类
+
+        Returns:
+            成功: {"status_code", "headers", "body"}
+            失败: {"error", "error_type", "status_code", "headers", "body"}
+        """
+        try:
+            with urlopen(req, timeout=timeout) as response:
+                raw = response.read().decode("utf-8")
+                try:
+                    body = json.loads(raw)
+                except json.JSONDecodeError:
+                    body = raw
+                return {
+                    "status_code": response.status,
+                    "headers": dict(response.headers),
+                    "body": body,
+                }
+        except HTTPError as e:
+            error_body = e.read().decode("utf-8") if e.fp else None
+            return self.error_result(
+                f"HTTP {e.code}: {error_body}",
+                error_type="http_error",
+                status_code=e.code,
+                headers=dict(e.headers) if e.headers else {},
+                body=error_body,
+            )
+        except URLError as e:
+            return self.error_result(
+                str(e.reason),
+                error_type="network_error",
+                status_code=None,
+                headers=None,
+                body=None,
+            )
+        except Exception as e:
+            return self.error_result(
+                str(e),
+                error_type="unknown_error",
+                status_code=None,
+                headers=None,
+                body=None,
+            )
 
     def _http_request(
         self, ctx: ActionContext, params: dict[str, Any]
@@ -59,55 +101,19 @@ class OpenClawPlugin(Plugin):
                 "body": None,
             }
 
-        try:
-            req = Request(url, method=method)
-            for key, value in headers.items():
-                req.add_header(key, value)
+        req = Request(url, method=method)
+        for key, value in headers.items():
+            req.add_header(key, value)
 
-            if body:
-                if isinstance(body, (dict, list)):
-                    body = json.dumps(body).encode("utf-8")
-                    req.add_header("Content-Type", "application/json")
-                elif isinstance(body, str):
-                    body = body.encode("utf-8")
-                req.data = body
+        if body:
+            if isinstance(body, (dict, list)):
+                body = json.dumps(body).encode("utf-8")
+                req.add_header("Content-Type", "application/json")
+            elif isinstance(body, str):
+                body = body.encode("utf-8")
+            req.data = body
 
-            with urlopen(req, timeout=timeout) as response:
-                response_body = response.read().decode("utf-8")
-                try:
-                    response_body = json.loads(response_body)
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    pass
-
-                return {
-                    "status_code": response.status,
-                    "headers": dict(response.headers),
-                    "body": response_body,
-                }
-        except HTTPError as e:
-            return self.error_result(
-                str(e),
-                error_type="http_error",
-                status_code=e.code,
-                headers=dict(e.headers) if e.headers else {},
-                body=e.read().decode("utf-8") if e.fp else None,
-            )
-        except URLError as e:
-            return self.error_result(
-                str(e.reason),
-                error_type="network_error",
-                status_code=None,
-                headers=None,
-                body=None,
-            )
-        except Exception as e:
-            return self.error_result(
-                str(e),
-                error_type="unknown_error",
-                status_code=None,
-                headers=None,
-                body=None,
-            )
+        return self._http_json(req, timeout=timeout)
 
     def _exec_command(
         self, ctx: ActionContext, params: dict[str, Any]
@@ -209,8 +215,7 @@ class OpenClawPlugin(Plugin):
         self, ctx: ActionContext, params: dict[str, Any]
     ) -> dict[str, Any]:
         default_base_url = (
-            self.secrets.get("knowflow_base_url")
-            or os.environ.get("KNOWFLOW_BASE_URL")
+            self.setting({}, "knowflow_base_url", env_var="KNOWFLOW_BASE_URL")
             or "http://localhost:3000"
         )
         base_url = params.get("base_url") or default_base_url
@@ -236,82 +241,68 @@ class OpenClawPlugin(Plugin):
                 "error": "project_id is required",
             }
 
-        try:
-            create_url = f"{base_url}/api/v1/item"
-            payload = {
+        create_url = f"{base_url}/api/v1/item"
+        payload = {
+            "name": name,
+            "projectId": project_id,
+            "archiveType": archive_type,
+            "summary": summary,
+            "content": content,
+        }
+        if agent_source:
+            payload["agent"] = agent_source
+
+        req = Request(
+            create_url, data=json.dumps(payload).encode("utf-8"), method="POST"
+        )
+        req.add_header("Content-Type", "application/json")
+
+        result = self._http_json(req, timeout=30)
+        if "error" in result:
+            return self.error_result(
+                result["error"],
+                error_type=result["error_type"],
+                item_id=None,
+                name=name,
+                success=False,
+            )
+
+        create_result = result["body"]
+        item_id = (
+            create_result.get("id") or create_result.get("_id")
+            if isinstance(create_result, dict)
+            else None
+        )
+        if not item_id:
+            return {
+                "item_id": None,
                 "name": name,
-                "projectId": project_id,
-                "archiveType": archive_type,
-                "summary": summary,
-                "content": content,
+                "success": False,
+                "error": "Failed to get item_id from response",
             }
 
-            if agent_source:
-                payload["agent"] = agent_source
+        update_url = (
+            f"{base_url}/api/v1/plugins/knowflow_openclaw/items/{item_id}/openclaw"
+        )
+        update_payload = {"agent": agent_source, "source": "autoflow"}
+        update_req = Request(
+            update_url,
+            data=json.dumps(update_payload).encode("utf-8"),
+            method="PUT",
+        )
+        update_req.add_header("Content-Type", "application/json")
 
-            data = json.dumps(payload).encode("utf-8")
-            req = Request(create_url, data=data, method="POST")
-            req.add_header("Content-Type", "application/json")
+        update_result = self._http_json(update_req, timeout=30)
+        update_warning = (
+            f"openclaw attribute update failed: {update_result['error']}"
+            if "error" in update_result
+            else None
+        )
 
-            with urlopen(req, timeout=30) as response:
-                create_result = json.loads(response.read().decode("utf-8"))
-                item_id = create_result.get("id") or create_result.get("_id")
-                if not item_id:
-                    return {
-                        "item_id": None,
-                        "name": name,
-                        "success": False,
-                        "error": "Failed to get item_id from response",
-                    }
-
-            update_url = (
-                f"{base_url}/api/v1/plugins/knowflow_openclaw/items/{item_id}/openclaw"
-            )
-            update_payload = {"agent": agent_source, "source": "autoflow"}
-            update_data = json.dumps(update_payload).encode("utf-8")
-
-            update_req = Request(update_url, data=update_data, method="PUT")
-            update_req.add_header("Content-Type", "application/json")
-
-            update_warning = None
-            try:
-                with urlopen(update_req, timeout=30) as response:
-                    response.read()
-            except HTTPError as e:
-                update_warning = f"openclaw attribute update failed: HTTP {e.code}"
-            except Exception as e:
-                update_warning = f"openclaw attribute update failed: {e}"
-
-            result = {"item_id": item_id, "name": name, "success": True}
-            if update_warning:
-                result["warning"] = update_warning
-            return result
-
-        except HTTPError as e:
-            error_body = e.read().decode("utf-8") if e.fp else ""
-            return self.error_result(
-                f"HTTP {e.code}: {error_body}",
-                error_type="http_error",
-                item_id=None,
-                name=name,
-                success=False,
-            )
-        except URLError as e:
-            return self.error_result(
-                str(e.reason),
-                error_type="network_error",
-                item_id=None,
-                name=name,
-                success=False,
-            )
-        except Exception as e:
-            return self.error_result(
-                str(e),
-                error_type="unknown_error",
-                item_id=None,
-                name=name,
-                success=False,
-            )
+        response = {"item_id": item_id, "name": name, "success": True}
+        if update_warning:
+            response["warning"] = update_warning
+        return response
 
     def _status_code_ok(self, ctx: CheckContext, params: dict[str, Any]) -> bool:
         expected = params.get("expected", 200)

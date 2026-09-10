@@ -1,7 +1,7 @@
 # @file /backend/app/runtime/__init__.py
-# @brief 运行时核心模块 - Registry/Runner/Store 单例初始化（基于 Hook 模式）
+# @brief 运行时核心模块 - Registry/Runner/Store 单例初始化
 # @create 2026-03-15
-# @update 2026-03-27 重构为基于 Hook 的插件系统
+# @update 2026-08-22 Registry 改为 get_registry() 内部创建,消除模块级空单例双路径
 #
 # Note: RunStore is in-memory and per-process — runs are not shared across
 # workers and are lost on restart. The `@lru_cache(maxsize=1)` singletons
@@ -12,7 +12,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from app.core.registry import registry
+from app.core.registry import Registry
 from app.runtime.actions import register_builtins
 from app.runtime.plugin_loader import load_plugins
 from app.runtime.runner import Runner
@@ -20,8 +20,9 @@ from app.runtime.storage import RunStore
 
 
 @lru_cache(maxsize=1)
-def get_registry():
-    """获取全局 registry(内置 action/check + plugins.yaml 插件统一在此注册)"""
+def get_registry() -> Registry:
+    """创建并填充全局 registry(内置 action/check + plugins.yaml 插件统一在此注册)"""
+    registry = Registry()
     register_builtins(registry)
     load_plugins(registry)
     return registry

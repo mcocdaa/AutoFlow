@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import importlib
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -60,9 +59,10 @@ def _load_registry_entries(plugins_dir: Path) -> dict[str, dict[str, Any]]:
 
 
 def _load_plugin_config(plugin_dir: Path) -> dict[str, Any] | None:
-    """加载插件目录下 config.yaml 并解析 secrets(环境变量值)
+    """加载插件目录下 config.yaml,原样透传不做键改写
 
-    无 config.yaml 时返回 None;secrets 块逐项按环境变量解析。
+    无 config.yaml 时返回 None;环境变量引用统一使用 "env:VAR" 前缀,
+    由 Plugin.setting() 链经 resolve_env_value 解析。
     """
     config_path = plugin_dir / "config.yaml"
     if not config_path.exists():
@@ -70,20 +70,10 @@ def _load_plugin_config(plugin_dir: Path) -> dict[str, Any] | None:
 
     try:
         with open(config_path, encoding="utf-8") as f:
-            config = yaml.safe_load(f) or {}
+            return yaml.safe_load(f) or {}
     except Exception as e:
         logger.warning(f"Failed to load plugin config {config_path}: {e}")
         return None
-
-    secrets = config.get("secrets")
-    if isinstance(secrets, dict):
-        resolved: dict[str, str | None] = {}
-        for key, env_var in secrets.items():
-            if isinstance(env_var, str):
-                resolved[key] = os.getenv(env_var)
-        config["secrets"] = resolved
-
-    return config
 
 
 def load_plugins(registry: Registry) -> None:
