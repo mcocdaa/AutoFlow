@@ -132,6 +132,26 @@ class TestResolveTemplatesPath:
             resolve_templates("msg={{steps.a.output.message}}+B", ctx) == "msg=hello+B"
         )
 
+    def test_multiple_templates_inline(self):
+        """以 {{ 开头且以 }} 结尾的多模板字符串仍逐一内联解析"""
+        ctx = self._context()
+        assert (
+            resolve_templates("{{steps.a.output.message}} from {{vars.item.name}}", ctx)
+            == "hello from foo"
+        )
+        assert (
+            resolve_templates("{{vars.item.name}} then {{input.items.0}}", ctx)
+            == "foo then 10"
+        )
+
+    def test_multiple_templates_with_missing_part(self):
+        """内联多模板中部分缺失时,仅保留缺失片段"""
+        ctx = self._context()
+        assert (
+            resolve_templates("{{vars.item.name}}/{{vars.unknown}}", ctx)
+            == "foo/{{vars.unknown}}"
+        )
+
     def test_vars_property_chain(self):
         """vars 的属性链与列表索引"""
         ctx = self._context()
