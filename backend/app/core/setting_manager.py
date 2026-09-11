@@ -55,10 +55,6 @@ class SettingManager:
         self.config.setdefault("PROJECT_NAME", "AutoFlow")
         self.config.setdefault("APP_VERSION", "0.1.0")
         self.config.setdefault("API_VERSION", "v1")
-        self.config.setdefault("BACKEND_INTERNAL_PORT", DEFAULT_PORT)
-        self.config.setdefault("BACKEND_EXTERNAL_PORT", 3001)
-        self.config.setdefault("FRONTEND_INTERNAL_PORT", 8000)
-        self.config.setdefault("FRONTEND_EXTERNAL_PORT", 8001)
         self.config.setdefault("LOG_LEVEL", "INFO")
         self.config.setdefault("SERVE_STATIC_FILES", False)
         self.config.setdefault("STATIC_FILES_DIR", "/app/static")
@@ -71,9 +67,7 @@ class SettingManager:
         self.config["BACKEND_DIR"] = str(BACKEND_DIR)
         self.config.setdefault("PLUGINS_DIR", str(ROOT_DIR / "plugins"))
         self.config["API_V1_STR"] = f"/api/{self.config['API_VERSION']}"
-        self.config["PORT"] = int(
-            os.getenv("PORT", self.config["BACKEND_INTERNAL_PORT"])
-        )
+        self.config["PORT"] = int(os.getenv("PORT", DEFAULT_PORT))
 
     def register_arguments(self, parser: argparse.ArgumentParser):
         """注册核心参数

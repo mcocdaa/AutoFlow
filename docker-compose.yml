@@ -1,8 +1,36 @@
 # ============================================
-# AutoFlow 默认启动: 全栈模式 (后端 + 前端)
-# 用法: docker compose -p autoflow up -d --build
-# 自包含定义见 docker/docker-compose.full.yml
+# AutoFlow 全栈: 前端静态文件 + 后端 API 同一镜像
+#
+# 用法:
+#   cp .env.example .env && vim .env       # 可选: 填 API Key 等
+#   docker compose up -d --build           # 本地构建并启动
+#   docker compose pull && docker compose up -d   # 使用 GHCR 镜像
+#
+# 访问: http://localhost:3001  (前端 / API / Swagger 同端口)
 # ============================================
 
-include:
-  - docker/docker-compose.full.yml
+services:
+  autoflow:
+    image: ghcr.io/mcocdaa/autoflow:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-3001}:3000"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - ZHIHU_COOKIE=${ZHIHU_COOKIE:-}
+      - KNOWFLOW_BASE_URL=${KNOWFLOW_BASE_URL:-}
+    volumes:
+      # 以宿主机插件目录为准,便于改插件不重建镜像
+      - ./plugins:/app/plugins:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
