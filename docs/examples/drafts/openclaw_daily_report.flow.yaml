@@ -1,5 +1,6 @@
-# @file /docs/examples/openclaw_daily_report.flow.yaml
-# @brief OpenClaw 每日晨会报告自动生成
+# @file /docs/examples/drafts/openclaw_daily_report.flow.yaml
+# @brief OpenClaw 每日晨会报告自动生成（设计草案）
+# @status 草案: 使用尚未实现的 action/check 类型与模板语法,详见 drafts/index.md
 # @description
 #   本流程用于自动化生成每日晨会报告：
 #   1. 收集各 Agent 昨日任务完成情况

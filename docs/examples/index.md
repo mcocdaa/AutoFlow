@@ -19,3 +19,4 @@ Flow 示例与模板。
 
 - [engine](engine/index.md): 引擎功能示例（逐项验证）
 - [team_flows](team_flows/index.md): 团队 Flow 示例
+- [drafts](drafts/index.md): 尚未实现能力的 OpenClaw 设计草案（不可运行）
