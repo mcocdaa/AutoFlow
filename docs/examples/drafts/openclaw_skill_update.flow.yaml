@@ -1,5 +1,6 @@
-# @file /docs/examples/openclaw_skill_update.flow.yaml
-# @brief OpenClaw 技能市场批量更新
+# @file /docs/examples/drafts/openclaw_skill_update.flow.yaml
+# @brief OpenClaw 技能市场批量更新（设计草案）
+# @status 草案: 使用尚未实现的 action/check 类型与模板语法,详见 drafts/index.md
 # @description
 #   本流程用于批量更新已安装的技能：
 #   1. 列出当前已安装的所有技能

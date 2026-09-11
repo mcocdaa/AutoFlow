@@ -1,5 +1,6 @@
-# @file /docs/examples/openclaw_project_init.flow.yaml
-# @brief OpenClaw 项目初始化
+# @file /docs/examples/drafts/openclaw_project_init.flow.yaml
+# @brief OpenClaw 项目初始化（设计草案）
+# @status 草案: 使用尚未实现的 action/check 类型与模板语法,详见 drafts/index.md
 # @description
 #   本流程用于自动化初始化新项目：
 #   1. 创建项目目录结构
