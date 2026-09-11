@@ -1,6 +1,7 @@
 # @file /docs/examples/engine/07_hooks_success.flow.yaml
 # @brief 成功钩子：on_success 执行副作用并引用 steps 输出
 # @create 2026-09-10
+# @update 2026-09-11 标记目录改为 vars.marker_dir,支持容器等不同运行环境
 
 version: "1.0"
 name: feature-hooks-success
@@ -20,7 +21,7 @@ hooks:
     - type: openclaw.exec
       params:
         safe_mode: false
-        command: "echo hook-success > /tmp/autoflow_hook_success.txt"
+        command: "echo hook-success > {{vars.marker_dir}}/autoflow_hook_success.txt"
     - type: core.log
       params:
         message: "hook saw: {{steps.work.output.stdout}}"

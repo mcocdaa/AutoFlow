@@ -1,6 +1,7 @@
 # @file /docs/examples/engine/08_hooks_failure.flow.yaml
 # @brief 失败钩子：on_failure 在步骤失败后执行
 # @create 2026-09-10
+# @update 2026-09-11 标记目录改为 vars.marker_dir,支持容器等不同运行环境
 
 version: "1.0"
 name: feature-hooks-failure
@@ -18,7 +19,7 @@ hooks:
     - type: openclaw.exec
       params:
         safe_mode: false
-        command: "echo hook-failure > /tmp/autoflow_hook_failure.txt"
+        command: "echo hook-failure > {{vars.marker_dir}}/autoflow_hook_failure.txt"
     - type: core.log
       params:
         message: "flow failed as expected"

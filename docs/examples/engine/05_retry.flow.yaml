@@ -1,6 +1,7 @@
 # @file /docs/examples/engine/05_retry.flow.yaml
-# @brief 失败重试：第一次失败，第二次成功（依赖 /tmp 标记文件模拟不稳定命令）
+# @brief 失败重试：第一次失败，第二次成功（依赖标记文件模拟不稳定命令）
 # @create 2026-09-10
+# @update 2026-09-11 标记目录改为 vars.marker_dir,支持容器等不同运行环境
 
 version: "1.0"
 name: feature-retry
@@ -12,7 +13,7 @@ steps:
       type: openclaw.exec
       params:
         safe_mode: false
-        command: "if [ -f /tmp/autoflow_retry_marker ]; then echo recovered; exit 0; else touch /tmp/autoflow_retry_marker; echo first-attempt-failed; exit 1; fi"
+        command: "if [ -f {{vars.marker_dir}}/autoflow_retry_marker ]; then echo recovered; exit 0; else touch {{vars.marker_dir}}/autoflow_retry_marker; echo first-attempt-failed; exit 1; fi"
     check:
       type: openclaw.exit_code_zero
     retry:

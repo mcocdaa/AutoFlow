@@ -1,6 +1,7 @@
 # @file /docs/examples/engine/11_openclaw_local.flow.yaml
 # @brief OpenClaw 本地闭环：HTTP 请求本服务 /health、命令执行、KnowFlow 不可达时优雅报错
 # @create 2026-09-10
+# @update 2026-09-11 健康检查地址改为 vars.health_url,支持容器内 3000 端口等场景
 
 version: "1.0"
 name: feature-openclaw-local
@@ -12,7 +13,7 @@ steps:
       type: openclaw.http_request
       params:
         method: GET
-        url: "http://localhost:3001/health"
+        url: "{{vars.health_url}}/health"
     check:
       type: openclaw.status_code_ok
       params:
