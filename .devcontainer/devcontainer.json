@@ -16,6 +16,5 @@
                 "Vue.volar"
             ]
         }
-    },
-    "postCreateCommand": "bash scripts/init-secrets.sh"
+    }
 }

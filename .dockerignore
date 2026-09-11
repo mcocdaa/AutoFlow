@@ -1,19 +1,39 @@
-secrets
-secrets/*
-*.key
-**/*.key
+# VCS / CI
+.git
+.github
+.gitignore
+
+# 文档与本地工具
+docs
+plugin_manger
+openspec
+.trae
+.claude
+.gstack
+*.md
+
+# Python
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+backend/.venv
+backend/tests
+backend/app/artifacts
+backend/.env
+
+# Node
+node_modules
+**/node_modules
+frontend/dist
+**/dist
+**/dist-electron
+
+# 环境变量与 secrets
 .env
 .env.*
 !.env.example
-backend/.env
-frontend/.env
-__pycache__/
-**/__pycache__/
-*.pyc
-.pytest_cache/
-node_modules/
-**/node_modules/
-dist/
-**/dist/
-.vscode/
-.trae/
+secrets
+
+# DevContainer
+.devcontainer

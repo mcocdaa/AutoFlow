@@ -16,10 +16,8 @@ node_modules
 dist
 dist-electron
 
-# Env files & secrets
+# Env files
 .env
-secrets/*
-!secrets/.gitkeep
 
 # Local docker override
 docker-compose.override.yml

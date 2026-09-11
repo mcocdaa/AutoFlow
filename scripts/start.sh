@@ -1,111 +1,36 @@
 #!/bin/bash
 # ============================================
-# AutoFlow 启动脚本
-# 用法:
-#   ./start.sh <mode> [service]
-#   mode: dev | prod | local
-#   service: backend | frontend | full (default: full)
+# AutoFlow 启动脚本（唯一入口）
 #
-#   local 模式说明:
-#     - frontend-local: 本地启动前端(不通过Docker)
-#     - full: 本地启动前后端(不通过Docker)
+# 用法:
+#   ./start.sh                    # Docker 全栈（默认）: 构建并启动单镜像
+#   ./start.sh local [service]    # 本地开发进程: all | backend | frontend（默认 all）
 #
 # 示例:
-#   ./start.sh dev backend         # 开发模式，仅后端(Docker)
-#   ./start.sh dev frontend        # 开发模式，仅前端(Docker)
-#   ./start.sh dev frontend-local  # 开发模式，仅前端(本地)
-#   ./start.sh local full          # 本地模式，前后端都本地启动
-#   ./start.sh prod full           # 生产模式，全栈(Docker)
+#   ./start.sh
+#   ./start.sh local
+#   ./start.sh local backend
 # ============================================
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-DOCKER_DIR="$PROJECT_ROOT/docker"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 
 usage() {
-    echo "用法: $0 <mode> [service]"
-    echo "  mode:    dev | prod | local"
-    echo "  service: backend | frontend | frontend-local | full (默认: full)"
-    echo ""
-    echo "模式说明:"
-    echo "  dev    - 开发模式，使用 Docker"
-    echo "  local  - 本地模式，不使用 Docker"
-    echo "  prod   - 生产模式，使用 Docker Compose"
-    echo ""
-    echo "服务说明:"
-    echo "  backend       - 仅后端"
-    echo "  frontend      - 仅前端 (Docker)"
-    echo "  frontend-local - 仅前端 (本地，不通过Docker)"
-    echo "  full          - 全部服务"
-    echo ""
-    echo "示例:"
-    echo "  $0 dev backend         # 开发模式，仅后端"
-    echo "  $0 dev frontend        # 开发模式，仅前端(Docker)"
-    echo "  $0 dev frontend-local  # 开发模式，仅前端(本地)"
-    echo "  $0 local full          # 本地模式，前后端都本地启动"
-    echo "  $0 prod full           # 生产模式，全栈"
+    echo "用法: $0 [docker|local] [service]"
+    echo "  docker        构建并启动全栈容器（默认）"
+    echo "  local [svc]   本地开发进程, svc: all | backend | frontend（默认 all）"
     exit 1
-}
-
-if [ $# -lt 1 ]; then
-    usage
-fi
-
-MODE="$1"
-SERVICE="${2:-full}"
-
-stop_docker_services() {
-    echo "停止已有 Docker 服务..."
-    docker compose -p autoflow -f "$DOCKER_DIR/docker-compose.base.yml" \
-        -f "$DOCKER_DIR/docker-compose.backend.yml" \
-        -f "$DOCKER_DIR/docker-compose.frontend.yml" down 2>/dev/null || true
-    echo "✓ Docker 服务已停止"
 }
 
 init_env() {
     if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-        echo "📄 创建 .env 文件..."
+        echo "[init] 未找到 .env,已从 .env.example 创建"
         cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
     fi
-}
-
-check_secrets() {
-    echo "检查 secrets..."
-    bash "$SCRIPT_DIR/check-secrets.sh"
-}
-
-start_backend_local() {
-    echo "检查后端依赖..."
-    cd "$BACKEND_DIR"
-    if [ ! -d ".venv" ]; then
-        echo "创建虚拟环境..."
-        python3 -m venv .venv
-    fi
-    source .venv/bin/activate
-    if ! pip show poetry > /dev/null 2>&1; then
-        echo "安装 Poetry..."
-        pip install poetry
-    fi
-    echo "安装后端依赖..."
-    poetry install
-    echo "启动本地后端服务..."
-    cd "$BACKEND_DIR" && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 3001 &
-    echo "✓ 本地后端已启动 (http://localhost:3001)"
-}
-
-start_frontend_local() {
-    echo "检查前端依赖..."
-    if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
-        echo "安装前端依赖..."
-        cd "$FRONTEND_DIR" && npm install
-    fi
-    echo "启动本地前端服务..."
-    cd "$FRONTEND_DIR" && DOCKER_WEB=true npm run dev &
-    echo "✓ 本地前端已启动 (http://localhost:5180)"
 }
 
 load_env() {
@@ -117,102 +42,74 @@ load_env() {
     fi
 }
 
+start_backend_local() {
+    echo "[backend] 检查依赖..."
+    cd "$BACKEND_DIR"
+    if [ ! -d ".venv" ]; then
+        python3 -m venv .venv
+    fi
+    # shellcheck disable=SC1091
+    source .venv/bin/activate
+    if ! python -m pip show poetry > /dev/null 2>&1; then
+        python -m pip install -q poetry
+    fi
+    poetry install
+    echo "[backend] 启动 http://localhost:${BACKEND_EXTERNAL_PORT:-3001}"
+    poetry run uvicorn app.main:app --reload \
+        --host "${HOST:-0.0.0.0}" --port "${BACKEND_EXTERNAL_PORT:-3001}" &
+}
+
+start_frontend_local() {
+    echo "[frontend] 检查依赖..."
+    if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+        (cd "$FRONTEND_DIR" && npm install)
+    fi
+    echo "[frontend] 启动 http://localhost:5180"
+    (cd "$FRONTEND_DIR" && DOCKER_WEB=true npm run dev) &
+}
+
+run_docker() {
+    docker compose -p autoflow up -d --build
+    echo ""
+    echo "✓ 已启动: http://localhost:${BACKEND_EXTERNAL_PORT:-3001}"
+    echo "  前端 / API / Swagger 同端口 (docs: /docs)"
+}
+
+MODE="${1:-docker}"
+
 case "$MODE" in
-    dev)
-        COMPOSE_COMMAND="docker compose"
-        COMPOSE_FILES="-f $DOCKER_DIR/docker-compose.base.yml"
-        case "$SERVICE" in
-            backend)
-                COMPOSE_FILES="$COMPOSE_FILES -f $DOCKER_DIR/docker-compose.backend.yml"
-                ;;
-            frontend|frontend-local)
-                COMPOSE_FILES="$COMPOSE_FILES -f $DOCKER_DIR/docker-compose.frontend.yml"
-                ;;
-            full)
-                COMPOSE_FILES="$COMPOSE_FILES -f $DOCKER_DIR/docker-compose.backend.yml -f $DOCKER_DIR/docker-compose.frontend.yml"
-                ;;
-            *)
-                echo "未知服务: $SERVICE"
-                usage
-                ;;
-        esac
+    docker)
+        init_env
+        load_env
+        run_docker
         ;;
     local)
+        SERVICE="${2:-all}"
+        init_env
+        load_env
         case "$SERVICE" in
-            backend)
-                load_env
-                start_backend_local
-                exit 0
-                ;;
-            frontend|frontend-local)
-                load_env
-                start_frontend_local
-                exit 0
-                ;;
-            full)
-                load_env
+            all)
                 start_backend_local
                 sleep 3
                 start_frontend_local
-                exit 0
+                echo ""
+                echo "✓ 本地开发已启动 (后端 3001 / 前端 5180), Ctrl+C 退出"
+                wait
                 ;;
-            *)
-                echo "未知服务: $SERVICE"
-                usage
-                ;;
-        esac
-        ;;
-    prod)
-        COMPOSE_COMMAND="docker compose"
-        case "$SERVICE" in
             backend)
-                COMPOSE_FILES="-f $DOCKER_DIR/docker-compose.base.yml -f $DOCKER_DIR/docker-compose.backend.yml"
+                start_backend_local
+                wait
                 ;;
-            frontend|frontend-local)
-                echo "生产模式暂不支持仅前端部署"
-                usage
-                ;;
-            full)
-                COMPOSE_FILES="-f $DOCKER_DIR/docker-compose.base.yml -f $DOCKER_DIR/docker-compose.backend.yml -f $DOCKER_DIR/docker-compose.frontend.yml"
+            frontend)
+                start_frontend_local
+                wait
                 ;;
             *)
-                echo "未知服务: $SERVICE"
                 usage
                 ;;
         esac
         ;;
     *)
-        echo "未知模式: $MODE"
         usage
         ;;
 esac
-
-cd "$DOCKER_DIR"
-init_env
-load_env
-check_secrets
-stop_docker_services
-
-echo ""
-echo "========================================"
-echo "AutoFlow 启动"
-echo "========================================"
-echo "模式: $MODE"
-echo "服务: $SERVICE"
-echo "命令: $COMPOSE_COMMAND"
-echo "========================================"
-
-$COMPOSE_COMMAND -p autoflow $COMPOSE_FILES up --build -d
-
-echo ""
-echo "✓ 启动完成"
-echo "========================================"
-echo ""
-echo "访问地址:"
-if [ "$SERVICE" = "backend" ] || [ "$SERVICE" = "full" ]; then
-    echo "   后端 API: http://localhost:${BACKEND_EXTERNAL_PORT:-3001}"
-    echo "   API文档:  http://localhost:${BACKEND_EXTERNAL_PORT:-3001}/docs"
-fi
-if [ "$SERVICE" = "frontend" ] || [ "$SERVICE" = "full" ]; then
-    echo "   前端:     http://localhost:${FRONTEND_EXTERNAL_PORT:-8001}"
-fi

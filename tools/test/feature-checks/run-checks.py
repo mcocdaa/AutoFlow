@@ -6,7 +6,14 @@
 #   python3 run-checks.py [base_url]
 #   AUTOFLOW_BASE_URL=http://localhost:3001 python3 run-checks.py
 #
-# 前置条件: 后端已通过 scripts/start.sh local backend 启动。
+# 环境变量:
+#   AUTOFLOW_BASE_URL     被测 API 地址（也可用第一个参数覆盖）
+#   AUTOFLOW_HEALTH_URL   flow 11 内部请求的地址，默认与 base_url 相同
+#                         （对容器场景可设为容器内地址，如 http://localhost:3000）
+#   AUTOFLOW_MARKER_DIR   标记文件目录，flow 05/07/08 与脚本共用，默认 /tmp
+#                         （对容器场景可挂载共享目录后指定）
+#
+# 前置条件: 后端已通过 scripts/start.sh 启动。
 # 仅使用标准库,可在任意 Python 3.12+ 环境运行。
 
 from __future__ import annotations
@@ -25,10 +32,12 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FLOWS = REPO_ROOT / "docs" / "examples" / "engine"
 BASE_URL = os.getenv("AUTOFLOW_BASE_URL", "http://localhost:3001")
+HEALTH_URL = os.getenv("AUTOFLOW_HEALTH_URL", "")
+MARKER_DIR = Path(os.getenv("AUTOFLOW_MARKER_DIR", "/tmp"))
 
-RETRY_MARKER = Path("/tmp/autoflow_retry_marker")
-HOOK_SUCCESS = Path("/tmp/autoflow_hook_success.txt")
-HOOK_FAILURE = Path("/tmp/autoflow_hook_failure.txt")
+RETRY_MARKER = MARKER_DIR / "autoflow_retry_marker"
+HOOK_SUCCESS = MARKER_DIR / "autoflow_hook_success.txt"
+HOOK_FAILURE = MARKER_DIR / "autoflow_hook_failure.txt"
 
 results: list[tuple[str, bool, str]] = []
 
@@ -132,7 +141,7 @@ def check_foreach() -> None:
 
 def check_retry() -> None:
     RETRY_MARKER.unlink(missing_ok=True)
-    run = execute("05_retry.flow.yaml")
+    run = execute("05_retry.flow.yaml", vars={"marker_dir": str(MARKER_DIR)})
     out = step(run, "flaky")["action_output"]
     check("05 run=success(重试后)", run["status"] == "success", run["status"])
     check("05 第二次尝试成功", out["stdout"].strip() == "recovered", out["stdout"])
@@ -149,7 +158,7 @@ def check_check_failure() -> None:
 
 def check_hooks_success() -> None:
     HOOK_SUCCESS.unlink(missing_ok=True)
-    run = execute("07_hooks_success.flow.yaml")
+    run = execute("07_hooks_success.flow.yaml", vars={"marker_dir": str(MARKER_DIR)})
     check("07 run=success", run["status"] == "success", run["status"])
     ok = HOOK_SUCCESS.exists() and HOOK_SUCCESS.read_text().strip() == "hook-success"
     check(
@@ -161,7 +170,7 @@ def check_hooks_success() -> None:
 
 def check_hooks_failure() -> None:
     HOOK_FAILURE.unlink(missing_ok=True)
-    run = execute("08_hooks_failure.flow.yaml")
+    run = execute("08_hooks_failure.flow.yaml", vars={"marker_dir": str(MARKER_DIR)})
     check("08 run=failed", run["status"] == "failed", run["status"])
     ok = HOOK_FAILURE.exists() and HOOK_FAILURE.read_text().strip() == "hook-failure"
     check(
@@ -261,7 +270,7 @@ def check_plugins_dry_run() -> None:
 
 
 def check_openclaw_local() -> None:
-    run = execute("11_openclaw_local.flow.yaml")
+    run = execute("11_openclaw_local.flow.yaml", vars={"health_url": HEALTH_URL})
     check("11 run=success", run["status"] == "success", run["status"])
     h = step(run, "health")["action_output"]
     check(
@@ -313,9 +322,10 @@ def check_api_edges() -> None:
 
 
 def main() -> int:
-    global BASE_URL
+    global BASE_URL, HEALTH_URL
     if len(sys.argv) > 1:
         BASE_URL = sys.argv[1]
+    HEALTH_URL = HEALTH_URL or BASE_URL
     print(f"=== AutoFlow 引擎功能 API 回归 @ {BASE_URL} ===")
 
     try:
