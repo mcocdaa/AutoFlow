@@ -27,3 +27,8 @@ export async function fetchRun(runId: string): Promise<RunResult> {
 export async function deleteRun(runId: string): Promise<void> {
   await apiClient.delete(`/runs/${runId}`)
 }
+
+export async function replayRun(runId: string): Promise<RunResult> {
+  const { data } = await apiClient.post<RunResult>(`/runs/${runId}/replay`)
+  return data
+}

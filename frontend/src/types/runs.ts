@@ -26,6 +26,20 @@ export interface RunStepResult {
   iterations: RunIteration[] | null
 }
 
+export type HookPhase = 'on_success' | 'on_failure'
+export type HookStatus = 'success' | 'failed'
+
+export interface HookResult {
+  hook: HookPhase
+  action_type: string
+  status: HookStatus
+  started_at: string
+  finished_at: string
+  duration_ms: number
+  output: unknown
+  error: string | null
+}
+
 export interface RunResult {
   run_id: string
   flow_name: string
@@ -34,6 +48,7 @@ export interface RunResult {
   finished_at: string | null
   duration_ms: number | null
   steps: RunStepResult[]
+  hook_results: HookResult[]
   error: string | null
 }
 

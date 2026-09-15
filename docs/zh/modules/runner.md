@@ -1,22 +1,50 @@
+---
+title: Runner（执行器）
+description: 执行器与调试会话模块
+keywords: [runner, session, debug, replay, hooks]
+version: "2.0"
+---
+
 # Runner（执行器）
 
-Runner 是 AutoFlow 的框架运行时核心：负责把 TriggerDoc/Flow 解析为一次可追踪的执行实例（Run），并驱动 Step 执行、校验、重试与产物收集。
+执行器负责把 Flow 解析为一次可追踪的执行实例（Run），驱动 Step 执行、校验、重试、产物收集与 hooks。
 
-## 责任边界
+## 结构
 
-- 加载 TriggerDoc 与 Flow（含版本与 schema 校验）
-- 生成 RunId，贯穿日志、产物与状态
-- 调度 Step：执行 Action →（可选）执行 Check
-- 失败处理：可重试/不可重试分类、退避、最大次数
-- 产物收集：截图/页面快照/原始响应等
+- `Runner`（`backend/app/runtime/runner/runner.py`）：门面，`run_flow()` = 创建 `RunSession` 并跑到底
+- `RunSession`（`backend/app/runtime/session.py`）：可暂停的执行会话，整条执行与调试单步共用同一实现
+  - `step()`：执行下一个待执行步骤（condition 跳过 / for_each / retry / check 语义一致）
+  - `run_to_completion()`：执行到底并触发 hooks
+  - `to_state()` / `from_state()`：JSON 会话状态，支持跨 worker 恢复
+  - `planned_steps()`：调试快照用的计划步骤信息
 
-## 状态机（建议）
+## 执行语义
 
-`pending` → `running` → `succeeded|failed|paused|canceled`
+- 步骤：`condition` 不满足记为 `skipped`；`for_each` 每次迭代记录 `iterations[item/output/error/check_passed/duration_ms]`
+- 重试：`retry.attempts` + 指数退避；check 失败按失败处理
+- 变量：`output_var` 写入运行时 vars；模板支持 `{{input}}`、`{{vars.x}}`、`{{steps.id.output}}`
+- 失败即终止（后续步骤不执行），run 状态置 `failed`
+- hooks：按 run 终态执行 `on_success` / `on_failure`，结果记录在 `RunResult.hook_results`（`status/output/error/duration_ms`），hook 失败不影响 run 状态
 
-Step 级也应有对应状态，便于断点续跑。
+## 运行记录与产物
 
-## 与插件的关系
+- 每个 run 落盘 `artifacts/<run_id>/run.json`（原子写）；执行请求落盘 `request.json`（flow_yaml/input/vars）
+- 大输出（>64KB）外置为 `{"__artifact__": {path, sha256, size}}`，经 `GET /api/v1/runs/{id}/artifacts/{path}` 下载
+- `RunStore` 直接读盘：多 worker 共享历史，进程重启后历史不丢
 
-- Runner 不理解具体业务，只按 `type` 分发到注册的 Action/Check 实现。
-- Runner 提供统一上下文：`triggerContext`、`flowParams`、`secrets`、`runMeta`。
+## 调试会话
+
+- `_sessions/<session_id>.json` 落盘 + `fcntl` 文件锁，跨 worker 一致；`session_id` 即对应 run_id
+- API：`POST /debug/sessions`、`GET /debug/sessions/{id}`、`POST .../step`、`POST .../run`、`DELETE .../{id}`
+- 快照返回：状态（paused/success/failed）、进度、计划步骤、已执行结果、hook 结果
+- 对已结束会话 `step/run` 幂等；`DELETE` 未完成的会话同时移除对应 run，已完成运行保留在历史
+
+## 回放
+
+- `POST /api/v1/runs/{run_id}/replay`：读取 `request.json` 重放请求生成新运行
+- 旧运行（无 `request.json`）返回 404 `run has no stored request`
+
+## 相关文档
+
+- 运行可观测性与单步调试设计：`docs/superpowers/specs/2026-09-15-runtime-debug-observability-design.md`
+- API 回归脚本：`tools/test/feature-checks/run-checks.py`（check 01-14）

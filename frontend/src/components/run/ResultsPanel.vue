@@ -124,6 +124,51 @@
         </a-collapse>
         <a-empty v-else description="该流程没有步骤记录" :image="emptyImage" />
       </div>
+
+      <div v-if="run.hook_results?.length" class="hooks-section">
+        <h4 class="steps-title">
+          <ApiOutlined />
+          Hooks
+        </h4>
+        <div v-for="(hook, index) in run.hook_results" :key="index" class="hook-item">
+          <div class="hook-head">
+            <a-tag :color="hook.hook === 'on_success' ? 'green' : 'red'">
+              {{ hook.hook === 'on_success' ? '成功钩子' : '失败钩子' }}
+            </a-tag>
+            <span class="hook-action af-mono">{{ hook.action_type }}</span>
+            <a-tag :color="hook.status === 'success' ? 'success' : 'error'">
+              {{ hook.status === 'success' ? '执行成功' : '执行失败' }}
+            </a-tag>
+            <span class="hook-duration">{{ hook.duration_ms }} ms</span>
+          </div>
+          <a-alert
+            v-if="hook.error"
+            :message="hook.error"
+            type="error"
+            :closable="false"
+            show-icon
+            class="hook-error"
+          />
+          <span class="output-label">输出</span>
+          <pre class="output-pre af-mono">{{ formatOutput(hook.output) }}</pre>
+          <div v-if="artifactsOfValue(hook.output).length > 0" class="artifacts">
+            <span class="output-label">产物</span>
+            <div class="artifact-list">
+              <a
+                v-for="artifact in artifactsOfValue(hook.output)"
+                :key="artifact.path"
+                class="artifact-link"
+                :href="artifactUrl(artifact.path)"
+                :download="artifact.path"
+              >
+                <FileOutlined />
+                <span class="artifact-path af-mono">{{ artifact.path }}</span>
+                <span class="artifact-size">{{ formatSize(artifact.size) }}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <a-empty
@@ -139,12 +184,14 @@
 import { computed } from 'vue'
 import { Empty } from 'ant-design-vue'
 import {
+  ApiOutlined,
   BarChartOutlined,
   FileOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons-vue'
 import { buildArtifactUrl } from '../../api'
 import { RUN_STATUS_META, STEP_STATUS_META } from '../../constants/run-status'
+import { artifactsOfValue, collectArtifacts, uniqueArtifacts } from '../../utils/artifacts'
 import type { ArtifactRef, RunResult, RunStepResult } from '../../types/runs'
 
 const props = defineProps<{
@@ -180,33 +227,10 @@ const formatSize = (size: number): string => {
   return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
-const collectArtifacts = (value: unknown, found: ArtifactRef[] = []): ArtifactRef[] => {
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectArtifacts(item, found))
-    return found
-  }
-  if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>
-    const artifact = record.__artifact__
-    if (artifact && typeof artifact === 'object') {
-      const ref = artifact as Record<string, unknown>
-      if (typeof ref.path === 'string') {
-        found.push({
-          path: ref.path,
-          sha256: typeof ref.sha256 === 'string' ? ref.sha256 : '',
-          size: typeof ref.size === 'number' ? ref.size : 0,
-        })
-      }
-    }
-    Object.values(record).forEach((item) => collectArtifacts(item, found))
-  }
-  return found
-}
-
 const artifactsOf = (step: RunStepResult): ArtifactRef[] => {
   const refs = collectArtifacts(step.action_output)
   step.iterations?.forEach((iteration) => collectArtifacts(iteration.output, refs))
-  return [...new Map(refs.map((ref) => [ref.path, ref])).values()]
+  return uniqueArtifacts(refs)
 }
 
 const artifactUrl = (path: string): string =>
@@ -275,6 +299,45 @@ const artifactUrl = (path: string): string =>
 
 .steps-section {
   margin-top: 24px;
+}
+
+.hooks-section {
+  margin-top: 24px;
+}
+
+.hook-item {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: var(--flow-bg-layer);
+  border-radius: 10px;
+}
+
+.hook-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.hook-action {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--flow-text-primary);
+}
+
+.hook-duration {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--flow-text-secondary);
+}
+
+.hook-error {
+  margin-bottom: 10px;
+}
+
+.hook-item .output-pre {
+  background: var(--flow-bg-card);
 }
 
 .steps-title {
