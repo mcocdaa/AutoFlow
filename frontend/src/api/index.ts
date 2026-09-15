@@ -6,6 +6,17 @@ interface AutoflowBridge {
 const bridge = (window as unknown as { autoflow?: AutoflowBridge }).autoflow
 const baseURL = bridge?.apiBase ? `${bridge.apiBase}/api/v1` : '/api/v1'
 
+export const API_BASE_URL = baseURL
+
+export function buildApiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`
+}
+
+export function buildArtifactUrl(runId: string, artifactPath: string): string {
+  const encodedPath = artifactPath.split('/').map(encodeURIComponent).join('/')
+  return buildApiUrl(`/runs/${encodeURIComponent(runId)}/artifacts/${encodedPath}`)
+}
+
 const apiClient = axios.create({
   baseURL,
   headers: {
@@ -13,7 +24,6 @@ const apiClient = axios.create({
   },
 })
 
-// 统一错误标准化:优先提取后端返回的 response.data.detail
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message

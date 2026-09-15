@@ -1,14 +1,14 @@
 <template>
   <div class="errors-section">
-    <div class="section-title">
+    <h3 class="section-title">
       <WarningOutlined class="title-icon" />
-      Load Errors
-    </div>
+      插件加载错误
+    </h3>
     <a-card>
-      <a-table :data-source="errors" :pagination="false" :scroll="{ x: 600 }">
-        <a-table-column title="Plugin ID" data-index="plugin_id" width="180" />
-        <a-table-column title="Path" data-index="file_path" />
-        <a-table-column title="Error" data-index="error" />
+      <a-table :data-source="errors" :pagination="false" :scroll="{ x: 640 }">
+        <a-table-column title="插件 ID" data-index="plugin_id" width="180" />
+        <a-table-column title="文件路径" data-index="file_path" />
+        <a-table-column title="错误信息" data-index="error" />
       </a-table>
     </a-card>
   </div>
@@ -31,15 +31,14 @@ defineProps<{
 .section-title {
   display: flex;
   align-items: center;
-  font-size: 18px;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--flow-text-title);
-  margin-bottom: 16px;
 }
 
 .title-icon {
-  margin-right: 8px;
   color: var(--flow-color-warning);
-  font-size: 20px;
 }
 </style>

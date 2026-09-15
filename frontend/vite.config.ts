@@ -13,6 +13,9 @@ const apiProxyConfig = {
 export default defineConfig({
   server: {
     port: 5180,
+    fs: {
+      allow: ['..'],
+    },
     proxy: apiProxyConfig,
   },
   preview: {
