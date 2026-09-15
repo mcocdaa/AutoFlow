@@ -91,6 +91,8 @@ class RunSession:
             started_at=_utc_now(),
         )
         store.save_run(run)
+        if request is not None:
+            store.save_request(run_id, request)
         return cls(
             registry,
             store,

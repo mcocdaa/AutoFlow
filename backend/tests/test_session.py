@@ -95,6 +95,24 @@ def test_step_after_finish_is_noop(tmp_path: Path) -> None:
     assert len(session.run.steps) == 2
 
 
+def test_start_persists_request(tmp_path: Path) -> None:
+    payload = {
+        "flow_yaml": 'version: "1"',
+        "input": None,
+        "vars": {"dry_run": True},
+    }
+    store = RunStore(artifacts_dir=tmp_path)
+
+    session = RunSession.start(
+        _make_registry({"test.echo": _echo_action}),
+        store,
+        _two_step_flow(),
+        request=payload,
+    )
+
+    assert RunStore(artifacts_dir=tmp_path).get_request(session.run.run_id) == payload
+
+
 def test_failing_step_finalizes_run(tmp_path: Path) -> None:
     registry = _make_registry({"test.echo": _echo_action, "test.fail": _fail_action})
     flow = FlowSpec(

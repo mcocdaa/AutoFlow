@@ -39,7 +39,38 @@ def execute_flow(req: ExecuteFlowRequest) -> RunResult:
     except FlowLoadError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     runner = get_runner()
-    return runner.run_flow(flow, input=req.input, vars=req.vars)
+    return runner.run_flow(
+        flow,
+        input=req.input,
+        vars=req.vars,
+        request={"flow_yaml": req.flow_yaml, "input": req.input, "vars": req.vars},
+    )
+
+
+@router.post("/runs/{run_id}/replay", response_model=RunResult)
+def replay_run(run_id: str) -> RunResult:
+    """重放已保存的执行请求,生成新的 run"""
+    store = get_store()
+    _require_run(store, run_id)
+    try:
+        payload = store.get_request(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run has no stored request") from e
+
+    flow_yaml = payload.get("flow_yaml")
+    if not isinstance(flow_yaml, str):
+        raise HTTPException(status_code=422, detail="stored request is invalid")
+    try:
+        flow = load_flow_spec_from_yaml_text(flow_yaml)
+    except FlowLoadError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    return get_runner().run_flow(
+        flow,
+        input=payload.get("input"),
+        vars=payload.get("vars") or {},
+        request=payload,
+    )
 
 
 @router.get("/runs", response_model=list[RunResult])

@@ -380,6 +380,32 @@ def check_debug_session() -> None:
     check("13 非法 flow=400", status == 400, str(status))
 
 
+def check_replay() -> None:
+    run = execute("01_basic_actions.flow.yaml")
+    check("14 原始 run=success", run["status"] == "success", run["status"])
+
+    status, replay = api_json("POST", f"/api/v1/runs/{run['run_id']}/replay")
+    check("14 replay=200", status == 200, str(status))
+    check(
+        "14 生成新 run",
+        replay.get("run_id") not in (None, run["run_id"]),
+        str(replay.get("run_id")),
+    )
+    check(
+        "14 回放结果一致",
+        replay.get("status") == run["status"]
+        and replay.get("flow_name") == run["flow_name"],
+        f"{replay.get('status')} {replay.get('flow_name')}",
+    )
+    status, raw = request(
+        "GET", f"/api/v1/runs/{replay['run_id']}/artifacts/request.json"
+    )
+    check("14 回放运行已存请求", status == 200 and b"flow_yaml" in raw, str(status))
+
+    status, _ = api_json("POST", "/api/v1/runs/does-not-exist/replay")
+    check("14 未知 run=404", status == 404, str(status))
+
+
 def check_api_edges() -> None:
     status, body = api_json(
         "POST", "/api/v1/runs/execute", {"flow_yaml": "- a\n- b", "vars": {}}
@@ -436,6 +462,7 @@ def main() -> int:
     _run("11", check_openclaw_local)
     _run("12", check_api_edges)
     _run("13", check_debug_session)
+    _run("14", check_replay)
 
     print()
     passed = sum(1 for _, ok, _ in results if ok)
