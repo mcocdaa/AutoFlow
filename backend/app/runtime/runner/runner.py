@@ -17,7 +17,16 @@ from pathlib import Path
 from typing import Any
 
 from app.core.registry import ActionContext, CheckContext, Registry
-from app.runtime.models import FlowSpec, HookSpec, RunResult, StepResult, StepSpec
+from app.runtime.models import (
+    ActionSpec,
+    FlowSpec,
+    HookPhase,
+    HookResult,
+    HookSpec,
+    RunResult,
+    StepResult,
+    StepSpec,
+)
 from app.runtime.storage.store import RunStore
 from app.runtime.utils import evaluate_condition, resolve_templates
 from app.runtime.utils.output_externalizer import externalize_if_large
@@ -90,29 +99,58 @@ class Runner:
         step_outputs: dict[str, Any],
         current_input: Any,
         status: str,
-    ) -> None:
-        """执行 flow hooks"""
-        hook_actions = []
+    ) -> list[HookResult]:
+        """执行 flow hooks 并记录每次结果(失败不影响主流程状态)"""
+        hook_actions: list[ActionSpec] = []
+        phase: HookPhase = "on_success" if status == "success" else "on_failure"
         if status == "success" and hooks.on_success:
             hook_actions = hooks.on_success
         elif status == "failed" and hooks.on_failure:
             hook_actions = hooks.on_failure
 
-        for hook_action in hook_actions:
+        results: list[HookResult] = []
+        for index, hook_action in enumerate(hook_actions):
+            hook_started = _utc_now()
+            output: Any | None = None
+            error: str | None = None
             try:
-                self._invoke_action(
-                    action_type=hook_action.type,
-                    params=hook_action.params,
-                    run_id=run_id,
-                    step_id="__hook__",
-                    current_input=current_input,
-                    runtime_vars=runtime_vars,
-                    step_outputs=step_outputs,
-                    run_artifacts_dir=run_artifacts_dir,
+                output = to_jsonable(
+                    self._invoke_action(
+                        action_type=hook_action.type,
+                        params=hook_action.params,
+                        run_id=run_id,
+                        step_id="__hook__",
+                        current_input=current_input,
+                        runtime_vars=runtime_vars,
+                        step_outputs=step_outputs,
+                        run_artifacts_dir=run_artifacts_dir,
+                    )
+                )
+                output = externalize_if_large(
+                    output,
+                    artifacts_dir=run_artifacts_dir,
+                    file_stem=f"hook.{phase}.{index}.output",
                 )
             except Exception as e:
                 # hook 执行失败不影响主流程状态
+                error = str(e)
                 logger.warning(f"Hook {hook_action.type} failed: {e}")
+            hook_finished = _utc_now()
+            results.append(
+                HookResult(
+                    hook=phase,
+                    action_type=hook_action.type,
+                    status="failed" if error else "success",
+                    started_at=hook_started,
+                    finished_at=hook_finished,
+                    duration_ms=int(
+                        (hook_finished - hook_started).total_seconds() * 1000
+                    ),
+                    output=output,
+                    error=error,
+                )
+            )
+        return results
 
     def _execute_once(
         self,
@@ -385,7 +423,7 @@ class Runner:
             self._finalize_run(run, status="success", started_at=started_at)
 
         if flow.hooks:
-            self._run_hooks(
+            hook_results = self._run_hooks(
                 flow.hooks,
                 run_id,
                 run_artifacts_dir,
@@ -394,4 +432,7 @@ class Runner:
                 current_input,
                 run.status,
             )
+            if hook_results:
+                run.hook_results = hook_results
+                self._store.save_run(run)
         return run
