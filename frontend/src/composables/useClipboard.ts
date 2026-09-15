@@ -25,7 +25,7 @@ export function useClipboard() {
         throw new Error('clipboard unavailable')
       }
       message.success('已复制到剪贴板')
-    } catch (err) {
+    } catch {
       message.error('复制失败')
     }
   }

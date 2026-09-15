@@ -6,12 +6,15 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { basicSetup, EditorView } from 'codemirror'
 import { yaml } from '@codemirror/lang-yaml'
+import { json } from '@codemirror/lang-json'
 
 const props = withDefaults(defineProps<{
   modelValue: string
   minHeight?: number
+  language?: 'yaml' | 'json'
 }>(), {
   minHeight: 360,
+  language: 'yaml',
 })
 
 const emit = defineEmits<{
@@ -28,7 +31,7 @@ onMounted(() => {
     parent: host.value,
     extensions: [
       basicSetup,
-      yaml(),
+      props.language === 'json' ? json() : yaml(),
       EditorView.lineWrapping,
       EditorView.theme({
         '&': {

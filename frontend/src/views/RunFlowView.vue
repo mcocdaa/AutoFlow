@@ -29,10 +29,15 @@ const store = useRunsStore()
 
 const currentRun = computed(() => store.currentRun)
 
-const handleExecute = async (yaml: string, isDryRun: boolean) => {
-  const vars = isDryRun ? { dry_run: true } : {}
+const handleExecute = async (
+  yaml: string,
+  isDryRun: boolean,
+  input: unknown,
+  vars: Record<string, unknown>,
+) => {
+  const runtimeVars = isDryRun ? { ...vars, dry_run: true } : vars
   try {
-    await store.executeFlow(yaml, {}, vars)
+    await store.executeFlow(yaml, input, runtimeVars)
   } catch (err) {
     console.error('Flow execution failed:', err)
   }

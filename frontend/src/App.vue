@@ -50,6 +50,10 @@
               <template #icon><PlayCircleOutlined /></template>
               <span>运行流程</span>
             </a-menu-item>
+            <a-menu-item key="/runs" @click="router.push('/runs')">
+              <template #icon><HistoryOutlined /></template>
+              <span>运行历史</span>
+            </a-menu-item>
           </a-menu>
           <div class="sider-footer">
             <a-button type="text" class="collapse-trigger" @click="collapsed = !collapsed">
@@ -74,6 +78,7 @@ import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   AppstoreOutlined,
+  HistoryOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PlayCircleOutlined,

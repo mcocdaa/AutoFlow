@@ -4,7 +4,8 @@
 .gitignore
 
 # 文档与本地工具
-docs
+docs/*
+!docs/examples
 plugin_manger
 openspec
 .trae

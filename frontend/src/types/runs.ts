@@ -1,9 +1,18 @@
 // Backend model alignment:
-// - StepResult / RunResult mirror backend/app/runtime/models/models.py
-// - RunStatus literal matches StepStatus/RunStatus in the backend
+// - RunIteration / RunStepResult / RunResult mirror backend/app/runtime/models/models.py
+// - RunStatus / RunStepStatus literal match StepStatus/RunStatus in the backend
 
 export type RunStepStatus = 'success' | 'failed' | 'skipped'
 export type RunStatus = 'success' | 'failed' | 'running'
+
+export interface RunIteration {
+  item: unknown
+  output: unknown
+  error: string | null
+  check_passed: boolean | null
+  duration_ms: number
+  vars_snapshot?: Record<string, unknown>
+}
 
 export interface RunStepResult {
   step_id: string
@@ -14,7 +23,7 @@ export interface RunStepResult {
   action_output: unknown
   check_passed: boolean | null
   error: string | null
-  iterations: unknown[] | null
+  iterations: RunIteration[] | null
 }
 
 export interface RunResult {
@@ -26,4 +35,10 @@ export interface RunResult {
   duration_ms: number | null
   steps: RunStepResult[]
   error: string | null
+}
+
+export interface ArtifactRef {
+  path: string
+  sha256: string
+  size: number
 }
