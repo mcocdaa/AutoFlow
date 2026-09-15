@@ -166,6 +166,13 @@ def check_hooks_success() -> None:
         ok,
         HOOK_SUCCESS.read_text() if ok else "marker missing",
     )
+    hooks = run.get("hook_results", [])
+    check(
+        "07 hook_results 记录",
+        [h["action_type"] for h in hooks] == ["openclaw.exec", "core.log"]
+        and all(h["hook"] == "on_success" and h["status"] == "success" for h in hooks),
+        str([(h.get("action_type"), h.get("status")) for h in hooks]),
+    )
 
 
 def check_hooks_failure() -> None:
@@ -177,6 +184,13 @@ def check_hooks_failure() -> None:
         "08 on_failure 副作用",
         ok,
         HOOK_FAILURE.read_text() if ok else "marker missing",
+    )
+    hooks = run.get("hook_results", [])
+    check(
+        "08 hook_results 记录",
+        [h["action_type"] for h in hooks] == ["openclaw.exec", "core.log"]
+        and all(h["hook"] == "on_failure" and h["status"] == "success" for h in hooks),
+        str([(h.get("action_type"), h.get("status")) for h in hooks]),
     )
 
 
@@ -292,6 +306,80 @@ def check_openclaw_local() -> None:
     )
 
 
+DEBUG_FLOW = """
+version: "1"
+name: debug-session-check
+steps:
+  - id: first
+    action:
+      type: dummy.echo
+      params:
+        message: "step-one"
+  - id: second
+    action:
+      type: dummy.echo
+      params:
+        message: "step-two"
+"""
+
+
+def check_debug_session() -> None:
+    status, snap = api_json(
+        "POST",
+        "/api/v1/debug/sessions",
+        {"flow_yaml": DEBUG_FLOW, "input": {}, "vars": {}},
+    )
+    check("13 创建会话", status == 200, str(status))
+    sid = snap.get("session_id", "")
+    check(
+        "13 初始快照",
+        snap.get("status") == "paused"
+        and snap.get("index") == 0
+        and snap.get("total_steps") == 2
+        and snap.get("results") == [],
+        str(snap)[:200],
+    )
+
+    status, snap = api_json("POST", f"/api/v1/debug/sessions/{sid}/step")
+    check(
+        "13 单步执行",
+        status == 200
+        and snap.get("index") == 1
+        and [r["step_id"] for r in snap.get("results", [])] == ["first"],
+        str(snap)[:200],
+    )
+
+    status, snap = api_json("POST", f"/api/v1/debug/sessions/{sid}/run")
+    check(
+        "13 运行到底",
+        status == 200
+        and snap.get("status") == "success"
+        and snap.get("index") == 2
+        and [r["step_id"] for r in snap.get("results", [])] == ["first", "second"],
+        str(snap)[:200],
+    )
+    run_id = snap.get("run_id", "")
+    check("13 调试运行进入历史", api_json("GET", f"/api/v1/runs/{run_id}")[0] == 200)
+
+    status, got = api_json("GET", f"/api/v1/debug/sessions/{sid}")
+    check(
+        "13 快照可重取",
+        status == 200 and got.get("status") == "success",
+        str(status),
+    )
+
+    status, _ = api_json("DELETE", f"/api/v1/debug/sessions/{sid}")
+    check("13 删除会话=204", status == 204, str(status))
+    status, _ = api_json("GET", f"/api/v1/debug/sessions/{sid}")
+    check("13 删除后 404", status == 404, str(status))
+    check("13 已完成运行保留", api_json("GET", f"/api/v1/runs/{run_id}")[0] == 200)
+
+    status, _ = api_json(
+        "POST", "/api/v1/debug/sessions", {"flow_yaml": "- a\n- b", "vars": {}}
+    )
+    check("13 非法 flow=400", status == 400, str(status))
+
+
 def check_api_edges() -> None:
     status, body = api_json(
         "POST", "/api/v1/runs/execute", {"flow_yaml": "- a\n- b", "vars": {}}
@@ -347,6 +435,7 @@ def main() -> int:
     _run("10", check_plugins_dry_run)
     _run("11", check_openclaw_local)
     _run("12", check_api_edges)
+    _run("13", check_debug_session)
 
     print()
     passed = sum(1 for _, ok, _ in results if ok)

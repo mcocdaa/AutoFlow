@@ -121,6 +121,20 @@ class RunSession:
     def run_artifacts_dir(self) -> Path:
         return self._store.artifacts_dir / self._run.run_id
 
+    def planned_steps(self) -> list[dict[str, Any]]:
+        """计划步骤信息(供调试快照展示,不包含执行结果)"""
+        return [
+            {
+                "id": step.id,
+                "name": step.name,
+                "for_each": step.for_each,
+                "has_condition": step.condition is not None,
+                "retry_attempts": step.retry.attempts if step.retry else 0,
+                "output_var": step.output_var,
+            }
+            for step in self._flow.steps
+        ]
+
     def step(self) -> None:
         """执行下一个待执行步骤(已结束则幂等返回)"""
         if self._finished:
