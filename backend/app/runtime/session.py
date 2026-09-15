@@ -201,6 +201,38 @@ class RunSession:
             self.step()
         return self._run
 
+    def to_state(self) -> dict[str, Any]:
+        """完整会话状态(JSON 可序列化),用于落盘/跨 worker 恢复"""
+        return {
+            "flow": self._flow.model_dump(mode="json"),
+            "request": to_jsonable(self._request),
+            "runtime_vars": to_jsonable(self._runtime_vars),
+            "step_outputs": to_jsonable(self._step_outputs),
+            "current_input": to_jsonable(self._current_input),
+            "index": self._index,
+            "run": self._run.model_dump(mode="json"),
+        }
+
+    @classmethod
+    def from_state(
+        cls,
+        registry: Registry,
+        store: RunStore,
+        state: dict[str, Any],
+    ) -> RunSession:
+        """从落盘状态重建会话"""
+        return cls(
+            registry,
+            store,
+            FlowSpec.model_validate(state["flow"]),
+            run=RunResult.model_validate(state["run"]),
+            request=state.get("request"),
+            runtime_vars=state.get("runtime_vars") or {},
+            step_outputs=state.get("step_outputs") or {},
+            current_input=state.get("current_input"),
+            index=int(state.get("index", 0)),
+        )
+
     def _finalize(self, *, status: str, error: str | None = None) -> None:
         """统一收尾:状态/结束时间/耗时落库,随后执行 hooks"""
         finished_at = _utc_now()
