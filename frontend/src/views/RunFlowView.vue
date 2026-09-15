@@ -1,25 +1,17 @@
 <template>
-  <div class="run-view">
-    <div class="page-header">
-      <div class="header-left">
-        <PlayCircleOutlined class="title-icon" />
-        <h2 class="page-title">Run Flow</h2>
-      </div>
-    </div>
+  <div class="af-page">
+    <PageHeader
+      title="运行流程"
+      description="编辑或加载 Flow YAML，执行后查看每一步的结果"
+      :icon="PlayCircleOutlined"
+    />
 
-    <a-row :gutter="24" class="main-content">
-      <a-col :xs="24" :md="12">
-        <YamlEditor
-          :loading="store.loading"
-          @execute="handleExecute"
-        />
+    <a-row :gutter="[24, 24]">
+      <a-col :xs="24" :lg="12">
+        <YamlEditor :loading="store.loading" @execute="handleExecute" />
       </a-col>
-
-      <a-col :xs="24" :md="12">
-        <ResultsPanel
-          :run="currentRun"
-          :error="store.error"
-        />
+      <a-col :xs="24" :lg="12">
+        <ResultsPanel :run="currentRun" :error="store.error" />
       </a-col>
     </a-row>
   </div>
@@ -29,6 +21,7 @@
 import { computed } from 'vue'
 import { PlayCircleOutlined } from '@ant-design/icons-vue'
 import { useRunsStore } from '../stores/runs'
+import PageHeader from '../components/shared/PageHeader.vue'
 import YamlEditor from '../components/run/YamlEditor.vue'
 import ResultsPanel from '../components/run/ResultsPanel.vue'
 
@@ -41,43 +34,7 @@ const handleExecute = async (yaml: string, isDryRun: boolean) => {
   try {
     await store.executeFlow(yaml, {}, vars)
   } catch (err) {
-    // Error is already surfaced via store.error in ResultsPanel
     console.error('Flow execution failed:', err)
   }
 }
 </script>
-
-<style scoped>
-.run-view {
-  max-width: 1400px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.title-icon {
-  font-size: 24px;
-  color: var(--flow-color-primary);
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--flow-text-title);
-  margin: 0;
-}
-
-.main-content {
-  margin-bottom: 24px;
-}
-</style>

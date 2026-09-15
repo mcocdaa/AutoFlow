@@ -1,5 +1,5 @@
 <template>
-  <a-card class="yaml-card">
+  <a-card class="editor-card">
     <template #title>
       <div class="card-header">
         <div class="card-title">
@@ -8,39 +8,31 @@
         </div>
         <a-select
           v-model:value="selectedExample"
-          placeholder="Load Example"
-          @change="handleLoadExample"
+          placeholder="加载示例"
           class="example-select"
+          @change="handleLoadExample"
         >
-          <a-select-option label="Minimal Echo" value="echo" />
-          <a-select-option label="Desktop Checkin" value="desktop" />
-          <a-select-option label="Zhihu Digest" value="zhihu" />
+          <a-select-option label="最小示例" value="echo" />
+          <a-select-option label="桌面操作" value="desktop" />
+          <a-select-option label="知乎摘要" value="zhihu" />
         </a-select>
       </div>
     </template>
-    <a-textarea
-      v-model:value="yamlContent"
-      :rows="15"
-      placeholder="Paste your flow YAML here..."
-      class="yaml-input"
-    />
-    <div class="action-buttons">
-      <div class="dry-run-wrap">
-        <a-tooltip title="Only effective for plugins that implement a simulation mode (e.g. zhihu_digest, desktop_checkin, ai_deepseek)">
-          <a-checkbox v-model:checked="isDryRun" class="dry-run-checkbox">
-            Dry Run
-          </a-checkbox>
-        </a-tooltip>
-        <span class="dry-run-hint">Simulation mode; only honored by plugins that implement it</span>
+
+    <CodeEditor v-model="yamlContent" :min-height="360" />
+
+    <div class="editor-footer">
+      <div class="dry-run">
+        <a-checkbox v-model:checked="isDryRun">模拟执行</a-checkbox>
+        <span class="dry-run-hint">仅对实现了模拟模式的插件生效</span>
       </div>
       <a-button
         type="primary"
-        @click="$emit('execute', yamlContent, isDryRun)"
         :loading="loading"
-        class="execute-button"
+        @click="emit('execute', yamlContent, isDryRun)"
       >
         <template #icon><ArrowRightOutlined /></template>
-        Execute
+        {{ loading ? '执行中' : '执行' }}
       </a-button>
     </div>
   </a-card>
@@ -48,11 +40,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import {
-  FileTextOutlined,
-  ArrowRightOutlined,
-} from '@ant-design/icons-vue'
-import { FLOW_EXAMPLES, DEFAULT_FLOW_YAML } from '../../constants/flow-examples'
+import { ArrowRightOutlined, FileTextOutlined } from '@ant-design/icons-vue'
+import { DEFAULT_FLOW_YAML, FLOW_EXAMPLES } from '../../constants/flow-examples'
+import CodeEditor from '../shared/CodeEditor.vue'
 
 defineProps<{
   loading: boolean
@@ -74,15 +64,14 @@ const handleLoadExample = (val: string) => {
 </script>
 
 <style scoped>
-.yaml-card {
-  border-radius: 12px;
+.editor-card {
   margin-bottom: 24px;
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -90,61 +79,38 @@ const handleLoadExample = (val: string) => {
 .card-title {
   display: flex;
   align-items: center;
-  font-size: 16px;
+  gap: 8px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--flow-text-title);
 }
 
 .card-icon {
-  margin-right: 8px;
   color: var(--flow-color-primary);
 }
 
 .example-select {
-  width: 200px;
+  width: 160px;
 }
 
-.yaml-input {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-}
-
-.action-buttons {
+.editor-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+  margin-top: 16px;
 }
 
-.dry-run-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dry-run-checkbox {
+.dry-run {
   display: flex;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .dry-run-hint {
   font-size: 12px;
   color: var(--flow-text-secondary);
-}
-
-.execute-button {
-  background: var(--flow-gradient-autoflow);
-  border: none;
-}
-
-.execute-button:hover {
-  opacity: 0.9;
-  background: var(--flow-gradient-autoflow) !important;
 }
 </style>

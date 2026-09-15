@@ -1,23 +1,23 @@
 <template>
-  <div class="plugins-view">
-    <div class="page-header">
-      <div class="header-left">
-        <AppstoreOutlined class="title-icon" />
-        <h2 class="page-title">Installed Plugins</h2>
-      </div>
-      <div class="header-actions">
-        <a-button @click="store.fetchPlugins" :loading="store.loading">
+  <div class="af-page">
+    <PageHeader
+      title="插件管理"
+      description="查看已加载的插件与可用的 Action / Check"
+      :icon="AppstoreOutlined"
+    >
+      <template #actions>
+        <a-button :loading="store.loading" @click="refresh">
           <template #icon><ReloadOutlined /></template>
-          Refresh
+          刷新
         </a-button>
         <a-button type="primary" @click="navigateToRunFlow">
-          <template #icon><RightOutlined /></template>
-          去创建流程
+          <template #icon><PlayCircleOutlined /></template>
+          去运行流程
         </a-button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
-    <a-alert v-if="error" :message="error" type="error" style="margin-bottom: 20px" show-icon />
+    <a-alert v-if="error" :message="error" type="error" show-icon class="page-alert" />
 
     <StatsCard
       v-if="store.plugins.length > 0"
@@ -26,112 +26,88 @@
       :checks="store.checks"
     />
 
-    <h3 class="section-title">Plugin List</h3>
-    <a-row :gutter="24" class="plugins-grid">
-      <a-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8" v-for="plugin in store.plugins" :key="plugin.name">
+    <h3 class="af-section-title">已安装插件</h3>
+    <a-row v-if="store.loading && store.plugins.length === 0" :gutter="[24, 24]">
+      <a-col v-for="n in 3" :key="n" :xs="24" :sm="12" :lg="8">
+        <a-card><a-skeleton active :paragraph="{ rows: 3 }" /></a-card>
+      </a-col>
+    </a-row>
+    <a-row v-else-if="store.plugins.length > 0" :gutter="[24, 24]">
+      <a-col
+        v-for="plugin in store.plugins"
+        :key="plugin.name"
+        :xs="24"
+        :sm="12"
+        :lg="8"
+      >
         <PluginCard :plugin="plugin" />
       </a-col>
     </a-row>
+    <a-card v-else>
+      <a-empty description="未加载任何插件" :image="emptyImage" />
+    </a-card>
 
-    <ErrorsSection v-if="store.errors && store.errors.length > 0" :errors="store.errors" />
+    <ErrorsSection v-if="store.errors.length > 0" :errors="store.errors" />
 
     <TagSection
-      title="Registered Actions"
+      title="已注册 Action"
       :icon="ThunderboltOutlined"
       :items="store.actions"
       tag-color="blue"
-      search-placeholder="Search actions"
+      search-placeholder="搜索 Action"
       @copy="copyToClipboard"
     />
 
     <TagSection
-      title="Registered Checks"
+      title="已注册 Check"
       :icon="CheckCircleOutlined"
       :items="store.checks"
       tag-color="orange"
-      search-placeholder="Search checks"
+      search-placeholder="搜索 Check"
       @copy="copyToClipboard"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePluginsStore } from '../stores/plugins'
+import { Empty } from 'ant-design-vue'
 import {
   AppstoreOutlined,
-  ReloadOutlined,
-  RightOutlined,
-  ThunderboltOutlined,
   CheckCircleOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons-vue'
+import { usePluginsStore } from '../stores/plugins'
 import { useClipboard } from '../composables/useClipboard'
+import PageHeader from '../components/shared/PageHeader.vue'
 import StatsCard from '../components/plugins/StatsCard.vue'
 import PluginCard from '../components/plugins/PluginCard.vue'
-import TagSection from '../components/shared/TagSection.vue'
 import ErrorsSection from '../components/plugins/ErrorsSection.vue'
+import TagSection from '../components/shared/TagSection.vue'
 
 const store = usePluginsStore()
 const router = useRouter()
 const { copyToClipboard } = useClipboard()
 
+const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 const error = computed(() => store.error)
+
+const refresh = () => {
+  store.fetchPlugins().catch(() => {})
+}
 
 const navigateToRunFlow = () => {
   router.push('/run')
 }
 
-onMounted(() => {
-  // executeFlow 失败时 rethrow,错误已由 store.error 展示,此处仅避免 unhandled rejection
-  store.fetchPlugins().catch(() => {})
-})
+onMounted(refresh)
 </script>
 
 <style scoped>
-.plugins-view {
-  max-width: 1400px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.title-icon {
-  font-size: 24px;
-  color: var(--flow-color-primary);
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--flow-text-title);
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--flow-text-title);
-  margin: 32px 0 16px 0;
-}
-
-.plugins-grid {
+.page-alert {
   margin-bottom: 24px;
 }
 </style>

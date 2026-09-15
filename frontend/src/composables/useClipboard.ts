@@ -24,9 +24,9 @@ export function useClipboard() {
       } else if (!fallbackCopy(text)) {
         throw new Error('clipboard unavailable')
       }
-      message.success('Copied to clipboard')
+      message.success('已复制到剪贴板')
     } catch (err) {
-      message.error('Copy failed')
+      message.error('复制失败')
     }
   }
 

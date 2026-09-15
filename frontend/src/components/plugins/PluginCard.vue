@@ -2,23 +2,17 @@
   <a-card class="plugin-card" :hoverable="true">
     <template #title>
       <div class="card-header">
-        <div class="plugin-name">{{ plugin.name }}</div>
-        <a-tag color="blue" class="version-tag">{{ plugin.version }}</a-tag>
+        <span class="plugin-name">{{ plugin.name }}</span>
+        <a-tag class="version-tag">v{{ plugin.version }}</a-tag>
       </div>
     </template>
-    <div class="plugin-body">
-      <div class="plugin-description">{{ description }}</div>
-      <div class="plugin-status">
-        <CheckCircleOutlined class="status-icon" />
-        <span>Active</span>
-      </div>
-    </div>
+    <p v-if="description" class="plugin-description">{{ description }}</p>
+    <p v-else class="plugin-description is-muted">暂无描述</p>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CheckCircleOutlined } from '@ant-design/icons-vue'
 import { getPluginDescription } from '../../constants/plugins'
 import type { Plugin } from '../../types/plugins'
 
@@ -31,47 +25,37 @@ const description = computed(() => getPluginDescription(props.plugin.name))
 
 <style scoped>
 .plugin-card {
-  border-radius: 12px;
-  margin-bottom: 16px;
+  height: 100%;
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .plugin-name {
+  font-size: 15px;
   font-weight: 600;
-  font-size: 16px;
   color: var(--flow-text-title);
+  word-break: break-all;
 }
 
 .version-tag {
-  font-size: 12px;
-}
-
-.plugin-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex: none;
+  margin-inline-end: 0;
+  color: var(--flow-text-secondary);
 }
 
 .plugin-description {
-  font-size: 14px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--flow-text-secondary);
-  line-height: 1.5;
 }
 
-.plugin-status {
-  display: flex;
-  align-items: center;
-  color: var(--flow-color-success);
-  font-weight: 500;
-  gap: 8px;
-}
-
-.status-icon {
-  font-size: 16px;
+.plugin-description.is-muted {
+  color: var(--flow-text-disabled);
 }
 </style>
