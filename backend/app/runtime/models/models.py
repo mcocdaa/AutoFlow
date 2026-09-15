@@ -55,6 +55,8 @@ class FlowSpec(_Base):
 
 StepStatus = Literal["success", "failed", "skipped"]
 RunStatus = Literal["success", "failed", "running"]
+HookPhase = Literal["on_success", "on_failure"]
+HookStatus = Literal["success", "failed"]
 
 
 class StepResult(_Base):
@@ -69,6 +71,17 @@ class StepResult(_Base):
     iterations: list[dict] | None = None
 
 
+class HookResult(_Base):
+    hook: HookPhase
+    action_type: str
+    status: HookStatus
+    started_at: datetime
+    finished_at: datetime
+    duration_ms: int
+    output: Any | None = None
+    error: str | None = None
+
+
 class RunResult(_Base):
     run_id: str
     flow_name: str
@@ -77,4 +90,5 @@ class RunResult(_Base):
     finished_at: datetime | None = None
     duration_ms: int | None = None
     steps: list[StepResult] = Field(default_factory=list)
+    hook_results: list[HookResult] = Field(default_factory=list)
     error: str | None = None

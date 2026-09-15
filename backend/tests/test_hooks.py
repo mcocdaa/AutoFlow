@@ -258,3 +258,70 @@ class TestHooks:
 
         assert result.status == "failed"
         assert hook_called == ["foreach-failure-hook"]
+
+    def test_hook_results_recorded_on_success(self, tmp_path):
+        """on_success hook 的执行结果写入 run.hook_results"""
+
+        def hook_action(ctx, params):
+            return {"recorded": True}
+
+        registry = _make_registry(
+            actions={"test.echo": _echo_action, "test.hook": hook_action}
+        )
+        store = _make_store(tmp_path)
+        runner = Runner(registry, store)
+
+        hooks = HookSpec(
+            on_success=[ActionSpec(type="test.hook", params={"msg": "ok"})],
+        )
+        result = runner.run_flow(_simple_flow(hooks=hooks))
+
+        assert len(result.hook_results) == 1
+        hook = result.hook_results[0]
+        assert hook.hook == "on_success"
+        assert hook.action_type == "test.hook"
+        assert hook.status == "success"
+        assert hook.output == {"recorded": True}
+        assert hook.error is None
+        assert hook.duration_ms >= 0
+
+    def test_hook_failure_recorded_without_changing_run_status(self, tmp_path):
+        """hook 失败写入 hook_results,但不影响 run 状态"""
+
+        def bad_hook(ctx, params):
+            raise RuntimeError("hook exploded!")
+
+        registry = _make_registry(
+            actions={"test.echo": _echo_action, "test.bad_hook": bad_hook}
+        )
+        store = _make_store(tmp_path)
+        runner = Runner(registry, store)
+
+        hooks = HookSpec(on_success=[ActionSpec(type="test.bad_hook", params={})])
+        result = runner.run_flow(_simple_flow(hooks=hooks))
+
+        assert result.status == "success"
+        assert len(result.hook_results) == 1
+        hook = result.hook_results[0]
+        assert hook.status == "failed"
+        assert hook.error is not None and "hook exploded" in hook.error
+        assert hook.output is None
+
+    def test_hook_results_persisted(self, tmp_path):
+        """hook_results 随 run.json 落盘,可被再次读取"""
+
+        def hook_action(ctx, params):
+            return {"persisted": True}
+
+        registry = _make_registry(
+            actions={"test.echo": _echo_action, "test.hook": hook_action}
+        )
+        store = _make_store(tmp_path)
+        runner = Runner(registry, store)
+
+        hooks = HookSpec(on_success=[ActionSpec(type="test.hook", params={})])
+        result = runner.run_flow(_simple_flow(hooks=hooks))
+
+        stored = store.get_run(result.run_id)
+        assert len(stored.hook_results) == 1
+        assert stored.hook_results[0].output == {"persisted": True}

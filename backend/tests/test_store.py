@@ -76,3 +76,31 @@ def test_list_runs_skips_corrupt_file(tmp_path: Path) -> None:
     runs = store.list_runs()
 
     assert [run.run_id for run in runs] == ["run-a"]
+
+
+def test_request_round_trip_across_instances(tmp_path: Path) -> None:
+    payload = {
+        "flow_yaml": 'version: "1"',
+        "input": {"items": [1, 2]},
+        "vars": {"dry_run": True},
+    }
+    RunStore(artifacts_dir=tmp_path).save_request("run-a", payload)
+
+    assert RunStore(artifacts_dir=tmp_path).get_request("run-a") == payload
+
+
+def test_get_request_missing_raises_key_error(tmp_path: Path) -> None:
+    store = RunStore(artifacts_dir=tmp_path)
+
+    with pytest.raises(KeyError):
+        store.get_request("run-a")
+
+
+def test_delete_run_removes_request(tmp_path: Path) -> None:
+    store = RunStore(artifacts_dir=tmp_path)
+    store.save_run(_make_run("run-a"))
+    store.save_request("run-a", {"flow_yaml": 'version: "1"', "vars": {}})
+
+    store.delete_run("run-a")
+
+    assert not (tmp_path / "run-a").exists()

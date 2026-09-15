@@ -1,36 +1,26 @@
 # @file /backend/app/runtime/runner/runner.py
-# @brief Flow 执行器
+# @brief Flow 执行器门面(执行逻辑位于 app.runtime.session.RunSession)
 # @create 2026-02-21 00:00:00
 # @update 2026-03-15 拆分条件与模板解析到独立模块
 # @update 2026-08-08 合并 for_each 与普通步骤双路径,修复 duration_ms / check_passed
 # @update 2026-08-10 序列化函数收敛至 app.runtime.utils.serialization
 # @update 2026-08-22 抽取 _invoke_action/_finalize_run,统一 hooks 与 step 调用及收尾
+# @update 2026-09-15 执行逻辑下沉 RunSession,Runner 仅保留门面
 
 from __future__ import annotations
 
-import copy
-import logging
-import time
-import uuid
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from app.core.registry import ActionContext, CheckContext, Registry
-from app.runtime.models import FlowSpec, HookSpec, RunResult, StepResult, StepSpec
+from app.core.registry import Registry
+from app.runtime.models import FlowSpec, RunResult
+from app.runtime.session import RunSession
 from app.runtime.storage.store import RunStore
-from app.runtime.utils import evaluate_condition, resolve_templates
-from app.runtime.utils.output_externalizer import externalize_if_large
-from app.runtime.utils.serialization import safe_deep_copy, to_jsonable
-
-logger = logging.getLogger(__name__)
-
-
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
 
 
 class Runner:
+    """Flow 执行器门面:run_flow 等价于 RunSession 跑到底"""
+
     def __init__(self, registry: Registry, store: RunStore) -> None:
         self._registry = registry
         self._store = store
@@ -39,359 +29,20 @@ class Runner:
     def artifacts_dir(self) -> Path:
         return self._store.artifacts_dir
 
-    def _template_context(
-        self,
-        step_outputs: dict[str, Any],
-        runtime_vars: dict[str, Any],
-        current_input: Any,
-    ) -> dict[str, Any]:
-        """统一模板解析上下文构造(消除 4 处重复)"""
-        return {
-            "steps": step_outputs,
-            "vars": runtime_vars,
-            "input": current_input,
-        }
-
-    def _invoke_action(
-        self,
-        *,
-        action_type: str,
-        params: dict[str, Any],
-        run_id: str,
-        step_id: str,
-        current_input: Any,
-        runtime_vars: dict[str, Any],
-        step_outputs: dict[str, Any],
-        run_artifacts_dir: Path,
-    ) -> Any:
-        """统一 action 调用:模板解析 + 查表 + 构造上下文 + 执行"""
-        resolved_params = resolve_templates(
-            params,
-            self._template_context(step_outputs, runtime_vars, current_input),
-        )
-        handler = self._registry.get_action(action_type)
-        return handler(
-            ActionContext(
-                run_id=run_id,
-                step_id=step_id,
-                input=current_input,
-                vars=runtime_vars,
-                artifacts_dir=run_artifacts_dir,
-            ),
-            resolved_params,
-        )
-
-    def _run_hooks(
-        self,
-        hooks: HookSpec,
-        run_id: str,
-        run_artifacts_dir: Path,
-        runtime_vars: dict[str, Any],
-        step_outputs: dict[str, Any],
-        current_input: Any,
-        status: str,
-    ) -> None:
-        """执行 flow hooks"""
-        hook_actions = []
-        if status == "success" and hooks.on_success:
-            hook_actions = hooks.on_success
-        elif status == "failed" and hooks.on_failure:
-            hook_actions = hooks.on_failure
-
-        for hook_action in hook_actions:
-            try:
-                self._invoke_action(
-                    action_type=hook_action.type,
-                    params=hook_action.params,
-                    run_id=run_id,
-                    step_id="__hook__",
-                    current_input=current_input,
-                    runtime_vars=runtime_vars,
-                    step_outputs=step_outputs,
-                    run_artifacts_dir=run_artifacts_dir,
-                )
-            except Exception as e:
-                # hook 执行失败不影响主流程状态
-                logger.warning(f"Hook {hook_action.type} failed: {e}")
-
-    def _execute_once(
-        self,
-        *,
-        run_id: str,
-        step: StepSpec,
-        current_input: Any,
-        runtime_vars: dict[str, Any],
-        step_outputs: dict[str, Any],
-        run_artifacts_dir: Path,
-    ) -> tuple[Any, bool | None, str | None]:
-        """执行一次 action(+check),失败按 retry 配置重试
-
-        Returns:
-            (output, check_passed, error)
-        """
-        output: Any | None = None
-        check_passed: bool | None = None
-        error: str | None = None
-
-        attempts = step.retry.attempts if step.retry else 0
-        backoff = step.retry.backoff_seconds if step.retry else 0.0
-
-        for attempt in range(max(1, attempts + 1)):
-            try:
-                output = self._invoke_action(
-                    action_type=step.action.type,
-                    params=step.action.params,
-                    run_id=run_id,
-                    step_id=step.id,
-                    current_input=current_input,
-                    runtime_vars=runtime_vars,
-                    step_outputs=step_outputs,
-                    run_artifacts_dir=run_artifacts_dir,
-                )
-                if step.check is not None:
-                    check = self._registry.get_check(step.check.type)
-                    check_passed = check(
-                        CheckContext(
-                            run_id=run_id,
-                            step_id=step.id,
-                            action_output=output,
-                            vars=runtime_vars,
-                        ),
-                        step.check.params,
-                    )
-                    if not check_passed:
-                        raise RuntimeError(f"check failed: {step.check.type}")
-                return output, check_passed, None
-            except Exception as e:
-                error = str(e)
-                if attempt >= attempts:
-                    break
-                if backoff > 0:
-                    time.sleep(backoff * (2**attempt))
-
-        return output, check_passed, error
-
-    def _execute_step(
-        self,
-        *,
-        run_id: str,
-        step: StepSpec,
-        current_input: Any,
-        runtime_vars: dict[str, Any],
-        step_outputs: dict[str, Any],
-        run_artifacts_dir: Path,
-    ) -> tuple[list[dict] | None, Any, bool | None, bool, str | None]:
-        """执行单个 step(for_each 时对每个 item 执行并收集 iterations)
-
-        Returns:
-            (iterations, action_output, check_passed, success, step_error)
-        """
-        iterations: list[dict] | None = None
-        step_error: str | None = None
-        action_output: Any | None = None
-        check_passed: bool | None = None
-
-        if step.for_each is not None:
-            iterations = []
-            loop_list = resolve_templates(
-                step.for_each,
-                self._template_context(step_outputs, runtime_vars, current_input),
-            )
-            if not isinstance(loop_list, list):
-                loop_list = [loop_list]
-
-            for item in loop_list:
-                runtime_vars[step.for_item_var] = item
-
-                iter_started = _utc_now()
-                iter_output, iter_check_passed, iter_error = self._execute_once(
-                    run_id=run_id,
-                    step=step,
-                    current_input=current_input,
-                    runtime_vars=runtime_vars,
-                    step_outputs=step_outputs,
-                    run_artifacts_dir=run_artifacts_dir,
-                )
-                iter_finished = _utc_now()
-
-                runtime_vars_clean = {
-                    k: v for k, v in runtime_vars.items() if k != step.for_item_var
-                }
-
-                iterations.append(
-                    {
-                        "item": item,
-                        "output": safe_deep_copy(iter_output),
-                        "error": iter_error,
-                        "check_passed": iter_check_passed,
-                        "duration_ms": int(
-                            (iter_finished - iter_started).total_seconds() * 1000
-                        ),
-                        "vars_snapshot": safe_deep_copy(runtime_vars_clean),
-                    }
-                )
-
-                action_output = iter_output
-                if iter_check_passed is not None:
-                    check_passed = iter_check_passed
-                if iter_error is not None:
-                    step_error = f"Iteration error for item '{item}': {iter_error}"
-                    break
-        else:
-            action_output, check_passed, step_error = self._execute_once(
-                run_id=run_id,
-                step=step,
-                current_input=current_input,
-                runtime_vars=runtime_vars,
-                step_outputs=step_outputs,
-                run_artifacts_dir=run_artifacts_dir,
-            )
-
-        success = step_error is None
-        if step.for_each is not None:
-            runtime_vars.pop(step.for_item_var, None)
-        return iterations, action_output, check_passed, success, step_error
-
-    def _make_step_result(
-        self,
-        *,
-        step_id: str,
-        status: str,
-        started_at: datetime,
-        finished_at: datetime,
-        action_output: Any,
-        check_passed: bool | None,
-        error: str | None,
-        iterations: list[dict] | None = None,
-    ) -> StepResult:
-        """统一 StepResult 构造(消除 skipped/正常两处重复)"""
-        return StepResult(
-            step_id=step_id,
-            status=status,
-            started_at=started_at,
-            finished_at=finished_at,
-            duration_ms=int((finished_at - started_at).total_seconds() * 1000),
-            action_output=action_output,
-            check_passed=check_passed,
-            error=error,
-            iterations=iterations,
-        )
-
-    def _finalize_run(
-        self,
-        run: RunResult,
-        *,
-        status: str,
-        started_at: datetime,
-        error: str | None = None,
-    ) -> RunResult:
-        """统一 run 收尾:状态/结束时间/耗时落库"""
-        finished_at = _utc_now()
-        run.status = status
-        run.finished_at = finished_at
-        run.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
-        run.error = error
-        self._store.save_run(run)
-        return run
-
     def run_flow(
         self,
         flow: FlowSpec,
         *,
-        input: Any | None = None,
+        input: Any = None,
         vars: dict[str, Any] | None = None,
+        request: dict[str, Any] | None = None,
     ) -> RunResult:
-        run_id = str(uuid.uuid4())
-        run_artifacts_dir = self._store.artifacts_dir / run_id
-        run_artifacts_dir.mkdir(parents=True, exist_ok=True)
-        started_at = _utc_now()
-        run = RunResult(
-            run_id=run_id, flow_name=flow.name, status="running", started_at=started_at
+        session = RunSession.start(
+            self._registry,
+            self._store,
+            flow,
+            input=input,
+            vars=vars,
+            request=request,
         )
-        self._store.save_run(run)
-
-        current_input = input
-        runtime_vars: dict[str, Any] = copy.deepcopy(dict(vars or {}))
-        step_outputs: dict[str, Any] = {}
-        for step in flow.steps:
-            step_started = _utc_now()
-
-            if step.condition is not None:
-                resolved_condition = resolve_templates(
-                    step.condition,
-                    self._template_context(step_outputs, runtime_vars, current_input),
-                )
-                if not evaluate_condition(str(resolved_condition)):
-                    step_finished = _utc_now()
-                    run.steps.append(
-                        self._make_step_result(
-                            step_id=step.id,
-                            status="skipped",
-                            started_at=step_started,
-                            finished_at=step_finished,
-                            action_output=None,
-                            check_passed=None,
-                            error=None,
-                        )
-                    )
-                    self._store.save_run(run)
-                    continue
-
-            iterations, action_output, check_passed, success, step_error = (
-                self._execute_step(
-                    run_id=run_id,
-                    step=step,
-                    current_input=current_input,
-                    runtime_vars=runtime_vars,
-                    step_outputs=step_outputs,
-                    run_artifacts_dir=run_artifacts_dir,
-                )
-            )
-
-            step_finished = _utc_now()
-            if action_output is not None:
-                action_output = externalize_if_large(
-                    action_output,
-                    artifacts_dir=run_artifacts_dir,
-                    file_stem=f"{step.id}.action_output",
-                )
-
-            run.steps.append(
-                self._make_step_result(
-                    step_id=step.id,
-                    status="success" if success else "failed",
-                    started_at=step_started,
-                    finished_at=step_finished,
-                    action_output=action_output,
-                    check_passed=check_passed,
-                    error=step_error,
-                    iterations=iterations,
-                )
-            )
-            self._store.save_run(run)
-
-            if step_error is not None:
-                self._finalize_run(
-                    run, status="failed", started_at=started_at, error=step_error
-                )
-                break
-
-            step_outputs[step.id] = action_output
-            if step.output_var is not None:
-                runtime_vars[step.output_var] = to_jsonable(action_output)
-
-            current_input = action_output
-        else:
-            self._finalize_run(run, status="success", started_at=started_at)
-
-        if flow.hooks:
-            self._run_hooks(
-                flow.hooks,
-                run_id,
-                run_artifacts_dir,
-                runtime_vars,
-                step_outputs,
-                current_input,
-                run.status,
-            )
-        return run
+        return session.run_to_completion()

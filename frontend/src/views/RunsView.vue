@@ -64,6 +64,16 @@
     </a-card>
 
     <a-drawer v-model:open="detailOpen" title="执行详情" width="720">
+      <template #extra>
+        <a-button
+          v-if="detailRun"
+          :loading="replayLoading"
+          @click="replay"
+        >
+          <template #icon><RedoOutlined /></template>
+          回放
+        </a-button>
+      </template>
       <a-spin :spinning="detailLoading">
         <ResultsPanel :run="detailRun" :error="detailError" />
       </a-spin>
@@ -74,9 +84,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { Empty, message } from 'ant-design-vue'
-import { HistoryOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import { HistoryOutlined, RedoOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import { getErrorMessage } from '../api'
-import { fetchRun as apiFetchRun } from '../api/runs'
+import { fetchRun as apiFetchRun, replayRun } from '../api/runs'
 import { RUN_STATUS_META } from '../constants/run-status'
 import { useRunsStore } from '../stores/runs'
 import PageHeader from '../components/shared/PageHeader.vue'
@@ -123,6 +133,29 @@ const remove = async (runId: string) => {
     message.success('已删除该运行记录')
   } catch (err) {
     message.error(getErrorMessage(err))
+  }
+}
+
+const replayLoading = ref(false)
+
+const replay = async () => {
+  if (!detailRun.value) return
+  replayLoading.value = true
+  try {
+    const newRun = await replayRun(detailRun.value.run_id)
+    detailRun.value = newRun
+    detailError.value = null
+    message.success(`回放完成：${newRun.run_id.slice(0, 8)}`)
+    store.fetchRuns().catch(() => {})
+  } catch (err) {
+    const text = getErrorMessage(err)
+    if (text.includes('no stored request')) {
+      message.warning('该运行没有保存请求（旧版本运行），无法回放')
+    } else {
+      message.error(text)
+    }
+  } finally {
+    replayLoading.value = false
   }
 }
 

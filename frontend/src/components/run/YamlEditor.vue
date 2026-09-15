@@ -25,21 +25,11 @@
 
     <CodeEditor v-model="yamlContent" :min-height="360" />
 
-    <a-collapse v-model:activeKey="paramsOpen" ghost class="params-collapse">
-      <a-collapse-panel key="params" header="高级参数（input / vars）">
-        <p v-if="exampleHint" class="params-hint">{{ exampleHint }}</p>
-        <div class="params-grid">
-          <div class="param-block">
-            <span class="param-label">input（JSON）</span>
-            <CodeEditor v-model="inputText" language="json" :min-height="120" />
-          </div>
-          <div class="param-block">
-            <span class="param-label">vars（JSON）</span>
-            <CodeEditor v-model="varsText" language="json" :min-height="120" />
-          </div>
-        </div>
-      </a-collapse-panel>
-    </a-collapse>
+    <FlowParamsEditor
+      v-model:input-text="inputText"
+      v-model:vars-text="varsText"
+      :hint="exampleHint"
+    />
 
     <div class="editor-footer">
       <div class="dry-run">
@@ -56,10 +46,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { message } from 'ant-design-vue'
 import { ArrowRightOutlined, FileTextOutlined } from '@ant-design/icons-vue'
 import { DEFAULT_FLOW_YAML, FLOW_EXAMPLES } from '../../constants/flow-examples'
+import { parseJsonInput, parseJsonObject } from '../../utils/json'
 import CodeEditor from '../shared/CodeEditor.vue'
+import FlowParamsEditor from './FlowParamsEditor.vue'
 
 defineProps<{
   loading: boolean
@@ -79,42 +70,21 @@ const selectedExample = ref<string>()
 const isDryRun = ref(false)
 const inputText = ref('{}')
 const varsText = ref('{}')
-const paramsOpen = ref<string[]>([])
 const exampleHint = ref('')
-
-type JsonParseResult = { ok: true; value: unknown } | { ok: false }
-
-const parseJson = (text: string, label: string): JsonParseResult => {
-  const trimmed = text.trim()
-  if (!trimmed) return { ok: true, value: {} }
-  try {
-    return { ok: true, value: JSON.parse(trimmed) }
-  } catch (err) {
-    message.error(`${label} 不是合法 JSON：${(err as Error).message}`)
-    return { ok: false }
-  }
-}
 
 const handleLoadExample = (key: string) => {
   const example = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!example) return
   yamlContent.value = example.yaml
   exampleHint.value = example.hint ?? ''
-  if (example.hint) {
-    paramsOpen.value = ['params']
-  }
 }
 
 const handleExecute = () => {
-  const input = parseJson(inputText.value, 'input')
+  const input = parseJsonInput(inputText.value, 'input')
   if (!input.ok) return
-  const vars = parseJson(varsText.value, 'vars')
-  if (!vars.ok) return
-  if (typeof vars.value !== 'object' || vars.value === null || Array.isArray(vars.value)) {
-    message.error('vars 需要是 JSON 对象')
-    return
-  }
-  emit('execute', yamlContent.value, isDryRun.value, input.value, vars.value as Record<string, unknown>)
+  const vars = parseJsonObject(varsText.value, 'vars')
+  if (!vars) return
+  emit('execute', yamlContent.value, isDryRun.value, input.value, vars)
 }
 </script>
 
@@ -150,41 +120,6 @@ const handleExecute = () => {
 
 .params-collapse {
   margin-top: 12px;
-}
-
-.params-collapse :deep(.ant-collapse-header) {
-  padding: 8px 0;
-  font-size: 13px;
-  color: var(--flow-text-secondary);
-}
-
-.params-collapse :deep(.ant-collapse-content-box) {
-  padding: 4px 0 0;
-}
-
-.params-hint {
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: var(--flow-text-secondary);
-}
-
-.params-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.param-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.param-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--flow-text-primary);
 }
 
 .editor-footer {

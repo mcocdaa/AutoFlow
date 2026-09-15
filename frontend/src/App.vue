@@ -50,6 +50,10 @@
               <template #icon><PlayCircleOutlined /></template>
               <span>运行流程</span>
             </a-menu-item>
+            <a-menu-item key="/debug" @click="router.push('/debug')">
+              <template #icon><BugOutlined /></template>
+              <span>单步调试</span>
+            </a-menu-item>
             <a-menu-item key="/runs" @click="router.push('/runs')">
               <template #icon><HistoryOutlined /></template>
               <span>运行历史</span>
@@ -78,6 +82,7 @@ import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   AppstoreOutlined,
+  BugOutlined,
   HistoryOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,

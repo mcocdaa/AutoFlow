@@ -11,6 +11,7 @@ import json
 import logging
 import shutil
 from pathlib import Path
+from typing import Any
 
 from app.runtime.models import RunResult
 from app.runtime.utils.serialization import safe_deep_copy
@@ -42,6 +43,23 @@ class RunStore:
         tmp_path = run_dir / "run.json.tmp"
         tmp_path.write_text(payload, encoding="utf-8")
         tmp_path.replace(run_dir / "run.json")
+
+    def save_request(self, run_id: str, payload: dict[str, Any]) -> None:
+        """持久化执行请求(flow_yaml/input/vars),用于回放"""
+        run_dir = self._artifacts_dir / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        tmp_path = run_dir / "request.json.tmp"
+        tmp_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+            encoding="utf-8",
+        )
+        tmp_path.replace(run_dir / "request.json")
+
+    def get_request(self, run_id: str) -> dict[str, Any]:
+        path = self._artifacts_dir / run_id / "request.json"
+        if not path.is_file():
+            raise KeyError(run_id)
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def get_run(self, run_id: str) -> RunResult:
         path = self._artifacts_dir / run_id / "run.json"
