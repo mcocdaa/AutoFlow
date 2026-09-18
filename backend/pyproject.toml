@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "autoflow-backend"
-version = "0.1.0"
+version = "1.1.0"
 description = "AutoFlow Backend API and Execution Engine"
 authors = ["AutoFlow Team <team@autoflow.dev>"]
 packages = [{ include = "app" }]

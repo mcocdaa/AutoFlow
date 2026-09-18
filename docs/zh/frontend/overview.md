@@ -34,5 +34,5 @@ version: "2.0"
 ## 待补齐（文档愿景）
 
 - 录制：捕获鼠标/键盘/窗口/元素信息（Electron preload/IPC 未实现）
-- 可视化编排：Step/Action/Check 图形化编辑
+- 只读流程图：Step/Action/Check 拓扑与执行高亮（自由连线画布不在当前路线）
 - 移动端（UniApp）：任务查看与状态跟踪

@@ -86,10 +86,10 @@ curl -s http://localhost:3001/api/v1/runs/execute \
   -H 'Content-Type: application/json' \
   --data "$(jq -n --rawfile f docs/examples/engine/01_basic_actions.flow.yaml '{flow_yaml:$f}')"
 
-# 单元测试（130 项）
+# 单元测试（152 项）
 backend/.venv/bin/python -m pytest -q
 
-# API 回归（51 项，需后端运行在 3001）
+# API 回归（69 项，需后端运行在 3001）
 ./tools/test/feature-checks/run-checks.sh
 ```
 
