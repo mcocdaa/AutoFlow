@@ -93,3 +93,5 @@ class RunResult(_Base):
     steps: list[StepResult] = Field(default_factory=list)
     hook_results: list[HookResult] = Field(default_factory=list)
     error: str | None = None
+    parent_run_id: str | None = None
+    fork_step_index: int | None = None

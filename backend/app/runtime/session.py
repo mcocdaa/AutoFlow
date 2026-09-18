@@ -137,6 +137,70 @@ class RunSession:
             for step in self._flow.steps
         ]
 
+    @classmethod
+    def fork_from_run(
+        cls,
+        registry: Registry,
+        store: RunStore,
+        flow: FlowSpec,
+        *,
+        source_run: RunResult,
+        request: dict[str, Any] | None,
+        next_step_index: int,
+    ) -> RunSession:
+        """从历史运行的第 next_step_index 步继续,按 session.step() 语义重建状态
+
+        - next_step_index = k: 重试第 k 步;= k+1: 从第 k 步之后继续
+        - 前缀步骤结果原样复制,lineage 写入 parent_run_id/fork_step_index
+        """
+        if next_step_index < 0 or next_step_index > len(source_run.steps):
+            raise ValueError(
+                f"next_step_index 超出范围: {next_step_index} "
+                f"(0..{len(source_run.steps)})"
+            )
+        if next_step_index > len(flow.steps):
+            raise ValueError(f"next_step_index 超出 Flow 步骤数: {next_step_index}")
+
+        prefix = [copy.deepcopy(step) for step in source_run.steps[:next_step_index]]
+        runtime_vars = copy.deepcopy(dict((request or {}).get("vars") or {}))
+        step_outputs: dict[str, Any] = {}
+        current_input = (request or {}).get("input")
+        for index, result in enumerate(prefix):
+            if result.status != "success":
+                continue
+            if result.action_output is not None:
+                step_outputs[result.step_id] = result.action_output
+            step_spec = flow.steps[index]
+            if step_spec.output_var is not None:
+                runtime_vars[step_spec.output_var] = to_jsonable(result.action_output)
+            current_input = result.action_output
+
+        run_id = str(uuid.uuid4())
+        (store.artifacts_dir / run_id).mkdir(parents=True, exist_ok=True)
+        run = RunResult(
+            run_id=run_id,
+            flow_name=flow.name,
+            status="running",
+            started_at=_utc_now(),
+            steps=prefix,
+            parent_run_id=source_run.run_id,
+            fork_step_index=next_step_index,
+        )
+        store.save_run(run)
+        if request is not None:
+            store.save_request(run_id, request)
+        return cls(
+            registry,
+            store,
+            flow,
+            run=run,
+            request=request,
+            runtime_vars=runtime_vars,
+            step_outputs=step_outputs,
+            current_input=current_input,
+            index=next_step_index,
+        )
+
     def step(self) -> None:
         """执行下一个待执行步骤(已结束则幂等返回)"""
         if self._finished:

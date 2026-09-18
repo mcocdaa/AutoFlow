@@ -23,6 +23,11 @@ class CreateSessionRequest(BaseModel):
     vars: dict[str, Any] = Field(default_factory=dict)
 
 
+class ForkSessionRequest(BaseModel):
+    run_id: str
+    next_step_index: int
+
+
 class DebugStepInfo(BaseModel):
     id: str
     name: str | None = None
@@ -43,6 +48,8 @@ class DebugSessionSnapshot(BaseModel):
     results: list[StepResult]
     hook_results: list[HookResult]
     error: str | None = None
+    parent_run_id: str | None = None
+    fork_step_index: int | None = None
 
 
 def _session_store() -> SessionStore:
@@ -66,6 +73,8 @@ def _snapshot(session_id: str, session: RunSession) -> DebugSessionSnapshot:
         results=run.steps,
         hook_results=run.hook_results,
         error=run.error,
+        parent_run_id=run.parent_run_id,
+        fork_step_index=run.fork_step_index,
     )
 
 
@@ -96,6 +105,45 @@ def create_session(req: CreateSessionRequest) -> DebugSessionSnapshot:
         vars=req.vars,
         request={"flow_yaml": req.flow_yaml, "input": req.input, "vars": req.vars},
     )
+    session_id = session.run.run_id
+    store.save(session_id, session.to_state())
+    return _snapshot(session_id, session)
+
+
+@router.post("/debug/sessions/fork", response_model=DebugSessionSnapshot)
+def fork_session(req: ForkSessionRequest) -> DebugSessionSnapshot:
+    """从历史运行分叉出调试会话(重建状态,支持失败步重试)"""
+    run_store = get_store()
+    try:
+        source = run_store.get_run(req.run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run not found") from e
+    try:
+        payload = run_store.get_request(req.run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="run has no stored request") from e
+
+    flow_yaml = payload.get("flow_yaml")
+    if not isinstance(flow_yaml, str):
+        raise HTTPException(status_code=422, detail="stored request is invalid")
+    try:
+        flow = load_flow_spec_from_yaml_text(flow_yaml)
+    except FlowLoadError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    try:
+        session = RunSession.fork_from_run(
+            get_registry(),
+            run_store,
+            flow,
+            source_run=source,
+            request=payload,
+            next_step_index=req.next_step_index,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    store = _session_store()
     session_id = session.run.run_id
     store.save(session_id, session.to_state())
     return _snapshot(session_id, session)

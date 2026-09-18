@@ -45,6 +45,33 @@ def test_run_visible_to_other_store_instance(tmp_path: Path) -> None:
     assert run.started_at == datetime(2026, 9, 15, 10, 0, tzinfo=UTC)
 
 
+def test_lineage_round_trip(tmp_path: Path) -> None:
+    run = _make_run("run-fork")
+    run.parent_run_id = "run-base"
+    run.fork_step_index = 2
+    RunStore(artifacts_dir=tmp_path).save_run(run)
+
+    loaded = RunStore(artifacts_dir=tmp_path).get_run("run-fork")
+
+    assert loaded.parent_run_id == "run-base"
+    assert loaded.fork_step_index == 2
+
+
+def test_legacy_run_without_lineage_is_readable(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run-old"
+    run_dir.mkdir()
+    (run_dir / "run.json").write_text(
+        '{"run_id":"run-old","flow_name":"demo","status":"success",'
+        '"started_at":"2026-09-15T10:00:00Z","steps":[]}',
+        encoding="utf-8",
+    )
+
+    loaded = RunStore(artifacts_dir=tmp_path).get_run("run-old")
+
+    assert loaded.parent_run_id is None
+    assert loaded.fork_step_index is None
+
+
 def test_list_runs_sorted_by_started_at_desc(tmp_path: Path) -> None:
     store = RunStore(artifacts_dir=tmp_path)
     store.save_run(_make_run("run-a", seconds=0))
