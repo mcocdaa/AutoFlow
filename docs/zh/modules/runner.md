@@ -1,8 +1,8 @@
 ---
 title: Runner（执行器）
-description: 执行器与调试会话模块
-keywords: [runner, session, debug, replay, hooks]
-version: "2.0"
+description: 执行器与调试/分叉/对比模块
+keywords: [runner, session, debug, replay, fork, diff]
+version: "2.1"
 ---
 
 # Runner（执行器）
@@ -16,6 +16,7 @@ version: "2.0"
   - `step()`：执行下一个待执行步骤（condition 跳过 / for_each / retry / check 语义一致）
   - `run_to_completion()`：执行到底并触发 hooks
   - `to_state()` / `from_state()`：JSON 会话状态，支持跨 worker 恢复
+  - `fork_from_run()`：从历史运行第 N 步重建状态并继续（时间旅行），见下文
   - `planned_steps()`：调试快照用的计划步骤信息
 
 ## 执行语义
@@ -44,7 +45,22 @@ version: "2.0"
 - `POST /api/v1/runs/{run_id}/replay`：读取 `request.json` 重放请求生成新运行
 - 旧运行（无 `request.json`）返回 404 `run has no stored request`
 
+## 分叉（时间旅行）
+
+- `POST /api/v1/debug/sessions/fork {run_id, next_step_index}`：从历史运行分叉出**调试会话**（可单步/继续/运行到底）
+- `next_step_index = k` 表示重试第 k 步；`k+1` 表示从第 k 步之后继续（跳过）；越界 400，无 `request.json` 404
+- 状态从 `run.json` 前缀 + `request.json`（input/vars）按 `session.step()` 语义重建：`current_input`/`step_outputs`/`runtime_vars`，无需额外落盘
+- lineage：新 `RunResult` 记录 `parent_run_id` 与 `fork_step_index`，前缀步骤原样保留，前缀耗时不重复计时
+
+## 运行对比（diff）
+
+- `GET /api/v1/runs/{base_id}/diff/{target_id}`：按 `(step_id, 出现序号)` 对齐步骤，输出
+  - 汇总：两边 `flow_name/status/started_at/duration_ms`
+  - 步骤：`status_changed`、`check_changed`、`base_error/target_error`、`output_changed` 与 `output_diff`（叶子级 `{path, base, target}`，上限 100 条）
+- 深层差异由 `app/runtime/utils/diff.py::deep_diff` 计算（字典/列表/标量/长度变化）
+
 ## 相关文档
 
 - 运行可观测性与单步调试设计：`docs/superpowers/specs/2026-09-15-runtime-debug-observability-design.md`
-- API 回归脚本：`tools/test/feature-checks/run-checks.py`（check 01-14）
+- 时间旅行调试设计：`docs/superpowers/specs/2026-09-18-time-travel-debug-design.md`
+- API 回归脚本：`tools/test/feature-checks/run-checks.py`（check 01-17）
