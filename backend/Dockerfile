@@ -6,7 +6,7 @@
 # ============================================
 
 # ---------- 构建前端静态文件 ----------
-FROM node:22-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 
 WORKDIR /build/frontend
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
