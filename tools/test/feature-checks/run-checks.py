@@ -493,6 +493,97 @@ def check_mcp_bridge() -> None:
     )
 
 
+DIFF_CHECK_FLOW = (
+    'version: "1"\nname: diff-check\nsteps:\n'
+    "  - id: echo\n    action:\n      type: dummy.echo\n"
+    "      params: {message: '{{input.name}}'}\n"
+)
+
+
+def check_fork() -> None:
+    run = execute("01_basic_actions.flow.yaml")
+
+    status, snapshot = api_json(
+        "POST",
+        "/api/v1/debug/sessions/fork",
+        {"run_id": run["run_id"], "next_step_index": 1},
+    )
+    check(
+        "16 分叉创建",
+        status == 200
+        and snapshot.get("index") == 1
+        and len(snapshot.get("results", [])) == 1
+        and snapshot.get("parent_run_id") == run["run_id"]
+        and snapshot.get("fork_step_index") == 1,
+        f"HTTP {status}",
+    )
+
+    session_id = snapshot.get("session_id", "")
+    api_json("POST", f"/api/v1/debug/sessions/{session_id}/step")
+    status, finished = api_json("POST", f"/api/v1/debug/sessions/{session_id}/run")
+    check(
+        "16 分叉执行到底",
+        status == 200
+        and finished.get("status") == "success"
+        and len(finished.get("results", [])) == 3,
+        f"HTTP {status} status={finished.get('status')}",
+    )
+
+    status, forked_run = api_json("GET", f"/api/v1/runs/{session_id}")
+    check(
+        "16 lineage 落盘",
+        status == 200
+        and forked_run.get("parent_run_id") == run["run_id"]
+        and forked_run.get("fork_step_index") == 1,
+        f"HTTP {status}",
+    )
+
+    status, _ = api_json(
+        "POST",
+        "/api/v1/debug/sessions/fork",
+        {"run_id": run["run_id"], "next_step_index": 99},
+    )
+    check("16 越界=400", status == 400, f"HTTP {status}")
+
+
+def check_run_diff() -> None:
+    runs = []
+    for name in ("A", "B"):
+        status, run = api_json(
+            "POST",
+            "/api/v1/runs/execute",
+            {"flow_yaml": DIFF_CHECK_FLOW, "input": {"name": name}, "vars": {}},
+        )
+        if status != 200:
+            raise RuntimeError(f"execute diff-check -> HTTP {status}: {run}")
+        runs.append(run)
+
+    status, diff = api_json(
+        "GET", f"/api/v1/runs/{runs[0]['run_id']}/diff/{runs[1]['run_id']}"
+    )
+    check(
+        "17 diff 200",
+        status == 200 and len(diff.get("steps", [])) == 1,
+        f"HTTP {status}",
+    )
+    step = (diff.get("steps") or [{}])[0]
+    check(
+        "17 输出差异路径",
+        step.get("output_changed") is True
+        and any(e.get("path") == "$.message" for e in step.get("output_diff", [])),
+        str(step.get("output_diff")),
+    )
+    check(
+        "17 汇总信息",
+        diff.get("base", {}).get("status") == "success"
+        and diff.get("target", {}).get("run_id") == runs[1]["run_id"],
+        str(diff.get("base")),
+    )
+
+    status, _ = api_json("GET", f"/api/v1/runs/{runs[0]['run_id']}/diff/missing")
+    check("17 未知 run=404", status == 404, f"HTTP {status}")
+
+
 def check_api_edges() -> None:
     status, body = api_json(
         "POST", "/api/v1/runs/execute", {"flow_yaml": "- a\n- b", "vars": {}}
@@ -551,6 +642,8 @@ def main() -> int:
     _run("13", check_debug_session)
     _run("14", check_replay)
     _run("15", check_mcp_bridge)
+    _run("16", check_fork)
+    _run("17", check_run_diff)
 
     print()
     passed = sum(1 for _, ok, _ in results if ok)
