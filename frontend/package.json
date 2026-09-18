@@ -30,7 +30,7 @@
     "@vitejs/plugin-vue": "^6.0.9",
     "@vue/eslint-config-typescript": "^14.9.0",
     "electron": "^44.3.0",
-    "electron-builder": "^24.6.4",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.11.0",
     "typescript": "~5.9.3",
