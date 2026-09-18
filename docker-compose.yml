@@ -28,6 +28,8 @@ services:
     volumes:
       # 以宿主机插件目录为准,便于改插件不重建镜像
       - ./plugins:/app/plugins:ro
+      # 宿主机 Flow 目录,MCP list_flows/run_flow 可发现
+      - ./flows:/app/flows:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
       interval: 30s

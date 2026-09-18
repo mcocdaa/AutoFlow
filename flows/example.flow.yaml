@@ -1,0 +1,16 @@
+version: "1"
+name: example
+description: "MCP 示例流程：记录日志并回显输入"
+steps:
+  - id: log
+    name: "记录开始"
+    action:
+      type: core.log
+      params:
+        message: "example flow start"
+  - id: echo
+    name: "回显输入"
+    action:
+      type: dummy.echo
+      params:
+        message: "hello from flows/"
