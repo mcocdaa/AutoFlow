@@ -3,7 +3,7 @@
 # 纯开发环境，与生产无关
 # ============================================
 
-FROM mcr.microsoft.com/devcontainers/python:3.12
+FROM mcr.microsoft.com/devcontainers/python:3.14
 
 # 安装 Node.js 22
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
