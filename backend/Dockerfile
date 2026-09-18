@@ -17,7 +17,7 @@ COPY docs/examples /build/docs/examples
 RUN npm run build:web
 
 # ---------- 运行镜像 ----------
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PORT=3000 \
     SERVE_STATIC_FILES=true \
