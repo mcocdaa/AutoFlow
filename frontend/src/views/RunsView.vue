@@ -6,6 +6,10 @@
       :icon="HistoryOutlined"
     >
       <template #actions>
+        <a-button :disabled="selectedRunIds.length !== 2" @click="openDiff">
+          <template #icon><DiffOutlined /></template>
+          对比{{ selectedRunIds.length === 2 ? '' : '（选 2 条）' }}
+        </a-button>
         <a-button :loading="store.loading" @click="refresh">
           <template #icon><ReloadOutlined /></template>
           刷新
@@ -20,6 +24,7 @@
         v-if="store.runs.length > 0"
         :data-source="store.runs"
         :row-key="rowKey"
+        :row-selection="rowSelection"
         :pagination="{ pageSize: 10, hideOnSinglePage: true }"
       >
         <a-table-column title="流程" data-index="flow_name" />
@@ -75,31 +80,68 @@
         </a-button>
       </template>
       <a-spin :spinning="detailLoading">
-        <ResultsPanel :run="detailRun" :error="detailError" />
+        <ResultsPanel
+          :run="detailRun"
+          :error="detailError"
+          :forkable="!!detailRun && detailRun.status !== 'running'"
+          @fork="forkFromStep"
+        />
       </a-spin>
     </a-drawer>
+
+    <a-modal
+      v-model:open="diffOpen"
+      title="运行对比"
+      width="860"
+      :footer="null"
+    >
+      <a-spin :spinning="diffLoading">
+        <RunDiffPanel :diff="diffData" />
+      </a-spin>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Empty, message } from 'ant-design-vue'
-import { HistoryOutlined, RedoOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import {
+  DiffOutlined,
+  HistoryOutlined,
+  RedoOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons-vue'
 import { getErrorMessage } from '../api'
-import { fetchRun as apiFetchRun, replayRun } from '../api/runs'
+import { forkDebugSession } from '../api/debug'
+import { fetchRun as apiFetchRun, fetchRunDiff, replayRun } from '../api/runs'
 import { RUN_STATUS_META } from '../constants/run-status'
 import { useRunsStore } from '../stores/runs'
 import PageHeader from '../components/shared/PageHeader.vue'
 import ResultsPanel from '../components/run/ResultsPanel.vue'
-import type { RunResult, RunStatus } from '../types/runs'
+import RunDiffPanel from '../components/run/RunDiffPanel.vue'
+import type { RunDiff, RunResult, RunStatus } from '../types/runs'
 
 const store = useRunsStore()
+const router = useRouter()
 
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detailError = ref<string | null>(null)
 const detailRun = ref<RunResult | null>(null)
+
+const selectedRunIds = ref<string[]>([])
+const rowSelection = computed(() => ({
+  selectedRowKeys: selectedRunIds.value,
+  onChange: (keys: (string | number)[]) => {
+    selectedRunIds.value = keys.map(String)
+  },
+}))
+
+const diffOpen = ref(false)
+const diffLoading = ref(false)
+const diffData = ref<RunDiff | null>(null)
 
 const rowKey = (record: RunResult): string => record.run_id
 const runStatusMeta = (status: RunStatus) => RUN_STATUS_META[status]
@@ -130,9 +172,54 @@ const openDetail = async (runId: string) => {
 const remove = async (runId: string) => {
   try {
     await store.removeRun(runId)
+    selectedRunIds.value = selectedRunIds.value.filter((id) => id !== runId)
     message.success('已删除该运行记录')
   } catch (err) {
     message.error(getErrorMessage(err))
+  }
+}
+
+const openDiff = async () => {
+  if (selectedRunIds.value.length !== 2) return
+  const selected = store.runs
+    .filter((run) => selectedRunIds.value.includes(run.run_id))
+    .sort((a, b) => a.started_at.localeCompare(b.started_at))
+  if (selected.length !== 2) {
+    message.warning('所选运行已不存在，请刷新后重试')
+    return
+  }
+  diffOpen.value = true
+  diffLoading.value = true
+  diffData.value = null
+  try {
+    diffData.value = await fetchRunDiff(selected[0].run_id, selected[1].run_id)
+  } catch (err) {
+    message.error(getErrorMessage(err))
+    diffOpen.value = false
+  } finally {
+    diffLoading.value = false
+  }
+}
+
+const forkLoading = ref(false)
+
+const forkFromStep = async (nextStepIndex: number) => {
+  if (!detailRun.value || forkLoading.value) return
+  forkLoading.value = true
+  try {
+    const snapshot = await forkDebugSession(detailRun.value.run_id, nextStepIndex)
+    message.success('已创建分叉调试会话')
+    detailOpen.value = false
+    router.push({ path: '/debug', query: { session: snapshot.session_id } })
+  } catch (err) {
+    const text = getErrorMessage(err)
+    if (text.includes('no stored request')) {
+      message.warning('该运行没有保存请求（旧版本运行），无法分叉')
+    } else {
+      message.error(text)
+    }
+  } finally {
+    forkLoading.value = false
   }
 }
 

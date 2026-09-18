@@ -14,6 +14,17 @@ export async function createDebugSession(
   return data
 }
 
+export async function forkDebugSession(
+  runId: string,
+  nextStepIndex: number,
+): Promise<DebugSessionSnapshot> {
+  const { data } = await apiClient.post<DebugSessionSnapshot>('/debug/sessions/fork', {
+    run_id: runId,
+    next_step_index: nextStepIndex,
+  })
+  return data
+}
+
 export async function fetchDebugSession(
   sessionId: string,
 ): Promise<DebugSessionSnapshot> {

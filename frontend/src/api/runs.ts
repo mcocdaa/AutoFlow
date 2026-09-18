@@ -1,5 +1,5 @@
 import apiClient from './index'
-import type { RunResult } from '../types/runs'
+import type { RunDiff, RunResult } from '../types/runs'
 
 export async function fetchRuns(): Promise<RunResult[]> {
   const { data } = await apiClient.get<RunResult[]>('/runs')
@@ -30,5 +30,15 @@ export async function deleteRun(runId: string): Promise<void> {
 
 export async function replayRun(runId: string): Promise<RunResult> {
   const { data } = await apiClient.post<RunResult>(`/runs/${runId}/replay`)
+  return data
+}
+
+export async function fetchRunDiff(
+  baseRunId: string,
+  targetRunId: string,
+): Promise<RunDiff> {
+  const { data } = await apiClient.get<RunDiff>(
+    `/runs/${baseRunId}/diff/${targetRunId}`,
+  )
   return data
 }

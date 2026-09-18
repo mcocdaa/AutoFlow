@@ -88,6 +88,9 @@
             <div class="session-progress">
               <span>进度 {{ session.index }} / {{ session.total_steps }}</span>
               <span class="session-run af-mono">run: {{ session.run_id.slice(0, 8) }}</span>
+              <span v-if="session.parent_run_id" class="session-fork af-mono">
+                分叉自 {{ session.parent_run_id.slice(0, 8) }} · 第 {{ session.fork_step_index }} 步
+              </span>
             </div>
 
             <a-alert
@@ -456,10 +459,18 @@ onMounted(async () => {
 .session-progress {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   margin: 12px 0;
   font-size: 12px;
   color: var(--flow-text-secondary);
+}
+
+.session-run {
+  margin-left: auto;
+}
+
+.session-fork {
+  color: var(--flow-color-primary);
 }
 
 .session-error {

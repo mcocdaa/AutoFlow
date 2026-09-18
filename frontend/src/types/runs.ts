@@ -50,6 +50,44 @@ export interface RunResult {
   steps: RunStepResult[]
   hook_results: HookResult[]
   error: string | null
+  parent_run_id: string | null
+  fork_step_index: number | null
+}
+
+export interface RunDiffSummary {
+  run_id: string
+  flow_name: string
+  status: RunStatus
+  started_at: string
+  duration_ms: number | null
+}
+
+export interface OutputDiffEntry {
+  path: string
+  base: unknown
+  target: unknown
+}
+
+export interface RunStepDiff {
+  step_id: string
+  base_index: number | null
+  target_index: number | null
+  base_status: RunStepStatus | null
+  target_status: RunStepStatus | null
+  status_changed: boolean
+  base_check_passed: boolean | null
+  target_check_passed: boolean | null
+  check_changed: boolean
+  base_error: string | null
+  target_error: string | null
+  output_changed: boolean
+  output_diff: OutputDiffEntry[]
+}
+
+export interface RunDiff {
+  base: RunDiffSummary
+  target: RunDiffSummary
+  steps: RunStepDiff[]
 }
 
 export interface ArtifactRef {

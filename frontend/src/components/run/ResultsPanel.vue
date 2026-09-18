@@ -32,6 +32,12 @@
           <span class="meta-label">开始</span>
           <span class="meta-value">{{ formatTime(run.started_at) }}</span>
         </div>
+        <div v-if="run.parent_run_id" class="meta-item">
+          <span class="meta-label">分叉自</span>
+          <span class="meta-value af-mono">
+            {{ run.parent_run_id }} · 第 {{ run.fork_step_index }} 步
+          </span>
+        </div>
       </div>
 
       <a-alert v-if="run.error" :message="run.error" type="error" show-icon class="run-error" />
@@ -42,7 +48,7 @@
           步骤
         </h4>
         <a-collapse v-if="run.steps.length > 0" class="steps-collapse">
-          <a-collapse-panel v-for="step in run.steps" :key="step.step_id">
+          <a-collapse-panel v-for="(step, index) in run.steps" :key="step.step_id">
             <template #header>
               <div class="step-header">
                 <span class="step-status" :class="'is-' + step.status"></span>
@@ -55,6 +61,23 @@
                   {{ STEP_STATUS_META[step.status].text }}
                 </a-tag>
                 <span class="step-duration">{{ step.duration_ms }} ms</span>
+                <a-dropdown v-if="forkable" class="step-fork" @click.stop>
+                  <a-button type="link" size="small" @click.stop>
+                    分叉
+                    <DownOutlined />
+                  </a-button>
+                  <template #overlay>
+                    <a-menu @click="onForkMenuClick($event, index)">
+                      <a-menu-item key="retry">重试该步</a-menu-item>
+                      <a-menu-item
+                        key="after"
+                        :disabled="index >= run.steps.length - 1"
+                      >
+                        从下一步继续
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
               </div>
             </template>
 
@@ -186,6 +209,7 @@ import { Empty } from 'ant-design-vue'
 import {
   ApiOutlined,
   BarChartOutlined,
+  DownOutlined,
   FileOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons-vue'
@@ -197,7 +221,16 @@ import type { ArtifactRef, RunResult, RunStepResult } from '../../types/runs'
 const props = defineProps<{
   run: RunResult | null
   error: string | null
+  forkable?: boolean
 }>()
+
+const emit = defineEmits<{
+  (e: 'fork', nextStepIndex: number): void
+}>()
+
+const onForkMenuClick = (event: { key: string | number }, index: number) => {
+  emit('fork', event.key === 'retry' ? index : index + 1)
+}
 
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 
@@ -395,6 +428,10 @@ const artifactUrl = (path: string): string =>
   margin-left: auto;
   font-size: 12px;
   color: var(--flow-text-secondary);
+}
+
+.step-fork {
+  margin-left: 8px;
 }
 
 .step-error {
