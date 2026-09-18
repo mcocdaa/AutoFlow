@@ -53,7 +53,7 @@ class SettingManager:
             self.config[key] = value
 
         self.config.setdefault("PROJECT_NAME", "AutoFlow")
-        self.config.setdefault("APP_VERSION", "0.1.0")
+        self.config.setdefault("APP_VERSION", "1.1.0")
         self.config.setdefault("API_VERSION", "v1")
         self.config.setdefault("LOG_LEVEL", "INFO")
         self.config.setdefault("SERVE_STATIC_FILES", False)
@@ -62,10 +62,18 @@ class SettingManager:
         self.config["SERVE_STATIC_FILES"] = _is_truthy(
             os.getenv("SERVE_STATIC_FILES", self.config["SERVE_STATIC_FILES"])
         )
+        self.config.setdefault("MCP_ENABLED", True)
+        self.config.setdefault("MCP_TOKEN", "")
+        self.config["MCP_ENABLED"] = _is_truthy(
+            os.getenv("MCP_ENABLED", self.config["MCP_ENABLED"])
+        )
 
         self.config["ROOT_DIR"] = str(ROOT_DIR)
         self.config["BACKEND_DIR"] = str(BACKEND_DIR)
         self.config.setdefault("PLUGINS_DIR", str(ROOT_DIR / "plugins"))
+        self.config.setdefault("FLOWS_DIR", str(ROOT_DIR / "flows"))
+        if not self.config.get("FLOWS_DIR"):
+            self.config["FLOWS_DIR"] = str(ROOT_DIR / "flows")
         self.config["API_V1_STR"] = f"/api/{self.config['API_VERSION']}"
         self.config["PORT"] = int(os.getenv("PORT", DEFAULT_PORT))
 
