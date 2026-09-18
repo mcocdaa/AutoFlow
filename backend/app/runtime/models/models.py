@@ -49,6 +49,7 @@ class HookSpec(_Base):
 class FlowSpec(_Base):
     version: str
     name: str
+    description: str | None = None
     steps: list[StepSpec]
     hooks: HookSpec | None = None
 

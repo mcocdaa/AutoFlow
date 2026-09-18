@@ -7,9 +7,13 @@
 
 import argparse
 import logging
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from app.api import register_routers
 from app.core.setting_manager import setting_manager
+from app.mcp import MCPBinding, create_mcp_binding, install_mcp
+from app.runtime import get_registry, get_runner, get_store
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -35,10 +39,39 @@ def parse_args():
 # module before serving; TestClient triggers it on import as well).
 setting_manager.init(parse_args())
 
+
+def _create_mcp_binding() -> MCPBinding | None:
+    """按配置构建 MCP 绑定(MCP_ENABLED=0 时不挂载)"""
+    if not setting_manager.MCP_ENABLED:
+        return None
+    return create_mcp_binding(
+        get_registry(),
+        get_store(),
+        get_runner(),
+        flows_dir=Path(setting_manager.FLOWS_DIR),
+        token=str(setting_manager.MCP_TOKEN or ""),
+        version=str(setting_manager.APP_VERSION),
+    )
+
+
+mcp_binding = _create_mcp_binding()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """MCP 会话管理器需要由根应用托管(挂载子应用的 lifespan 不会执行)"""
+    if mcp_binding is None:
+        yield
+        return
+    async with mcp_binding.lifespan():
+        yield
+
+
 app = FastAPI(
     title=setting_manager.PROJECT_NAME,
     openapi_url=f"{setting_manager.API_V1_STR}/openapi.json",
     version=setting_manager.APP_VERSION,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -56,6 +89,10 @@ async def health_check():
 
 
 register_routers(app)
+
+# MCP 路由需在静态资源兜底挂载("/")之前注入
+if mcp_binding is not None:
+    install_mcp(app, mcp_binding)
 
 if setting_manager.SERVE_STATIC_FILES:
     from pathlib import Path

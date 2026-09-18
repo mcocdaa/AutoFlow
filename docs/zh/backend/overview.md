@@ -5,6 +5,7 @@
 ## 建议边界
 
 - 对外 API：触发执行、查询状态、查看日志与产物
+- MCP：`POST /mcp`（Streamable HTTP），工具清单见 [`../modules/mcp.md`](../modules/mcp.md)
 - 调度：定时/事件触发的统一入口（与 Runner 组合）
 - 存储：执行记录、产物索引、Secrets 元信息（不存明文）
 

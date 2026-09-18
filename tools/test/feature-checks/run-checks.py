@@ -406,6 +406,93 @@ def check_replay() -> None:
     check("14 未知 run=404", status == 404, str(status))
 
 
+def _mcp_call(payload: dict, headers: dict[str, str] | None = None) -> tuple[int, Any]:
+    """MCP JSON-RPC 调用（Accept 必须包含 text/event-stream）"""
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(BASE_URL + "/mcp", data=data, method="POST")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("Accept", "application/json, text/event-stream")
+    for key, value in (headers or {}).items():
+        req.add_header(key, value)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            raw = resp.read()
+            return resp.status, json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        return e.code, {}
+    except json.JSONDecodeError:
+        return 0, {}
+
+
+def check_mcp_bridge() -> None:
+    token = os.getenv("AUTOFLOW_MCP_TOKEN", "")
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+    status, body = _mcp_call(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "run-checks", "version": "0"},
+            },
+        },
+        headers,
+    )
+    check("15 initialize 200", status == 200, f"HTTP {status}")
+    server_name = ((body.get("result") or {}).get("serverInfo") or {}).get("name")
+    check("15 serverInfo.name=AutoFlow", server_name == "AutoFlow", str(server_name))
+
+    status, body = _mcp_call(
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, headers
+    )
+    tools = {t["name"] for t in (body.get("result") or {}).get("tools", [])}
+    required = {"run_flow", "get_run", "replay_run", "get_artifact"}
+    check("15 tools 含核心工具", required <= tools, str(sorted(tools)))
+
+    status, body = _mcp_call(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "list_capabilities", "arguments": {}},
+        },
+        headers,
+    )
+    capabilities = json.loads(body["result"]["content"][0]["text"])
+    check(
+        "15 list_capabilities",
+        body["result"]["isError"] is False and len(capabilities["actions"]) > 0,
+        str(len(capabilities["actions"])),
+    )
+
+    inline = (
+        'version: "1"\nname: mcp-check\nsteps:\n'
+        "  - id: echo\n    action:\n      type: dummy.echo\n"
+        "      params: {message: mcp-ok}\n"
+    )
+    status, body = _mcp_call(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "run_flow",
+                "arguments": {"flow_yaml": inline, "wait": True},
+            },
+        },
+        headers,
+    )
+    run = json.loads(body["result"]["content"][0]["text"])
+    check(
+        "15 run_flow 内联执行",
+        body["result"]["isError"] is False and run["status"] == "success",
+        str(run.get("status")),
+    )
+
+
 def check_api_edges() -> None:
     status, body = api_json(
         "POST", "/api/v1/runs/execute", {"flow_yaml": "- a\n- b", "vars": {}}
@@ -463,6 +550,7 @@ def main() -> int:
     _run("12", check_api_edges)
     _run("13", check_debug_session)
     _run("14", check_replay)
+    _run("15", check_mcp_bridge)
 
     print()
     passed = sum(1 for _, ok, _ in results if ok)

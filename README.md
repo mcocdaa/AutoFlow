@@ -7,7 +7,8 @@
 - **可观测执行**：步骤 / 检查 / 迭代 / 产物 / Hooks 全量记录，大输出自动外置为产物
 - **单步调试**：创建调试会话，单步 / 继续（到断点）/ 停止；会话落盘，刷新可恢复
 - **运行回放**：执行请求随运行落盘，一键重放生成新运行，历史即回归样本
-- **Agent 集成**：OpenClaw 双向调用（Flow 驱动 Agent、Agent 触达 AutoFlow），MCP 暴露在路线图中
+- **Agent 接入（MCP）**：`/mcp` 暴露 Flow 工具（发现 / 执行 / 查询 / 回放 / 产物），Claude Code、Cursor 等可直接调用
+- **OpenClaw 双向调用**：Flow 驱动 Agent、Agent 触达 AutoFlow（反向 Agent-step 在路线图中）
 
 前端、后端、API 文档打包在**同一个镜像**中，部署一条命令即可。
 
@@ -81,6 +82,8 @@ npm run dev
 | `DEEPSEEK_API_KEY` | 空 | AI 总结插件密钥（留空则不可用） |
 | `ZHIHU_COOKIE` | 空 | 知乎抓取 Cookie |
 | `KNOWFLOW_BASE_URL` | 空 | KnowFlow 服务地址 |
+| `MCP_ENABLED` | `true` | 是否挂载 `/mcp`（MCP Server） |
+| `MCP_TOKEN` | 空 | `/mcp` 的 Bearer token，留空不鉴权 |
 | `AUTOFLOW_AI_DRY_RUN` 等 | 空 | 插件空跑开关（`1/true/on`） |
 
 ## 🧪 运行与测试
@@ -122,6 +125,7 @@ AutoFlow/
 ## 📚 文档
 
 - [文档中心](docs/index.md)
+- [MCP 模块](docs/zh/modules/mcp.md)
 - [插件开发指南](plugin_manger/docs/index.md)
 - [示例 Flow](docs/examples/index.md)
 - [架构说明](docs/architecture/index.md)

@@ -60,7 +60,7 @@ version: "1.0"
 
 定位：**Agent 的确定性执行层**——AI 负责提议，引擎负责可验证、可回放、可审计地执行。按优先级排序，先形成「AI 提议 → 单步验证 → 可回放分叉 → 回归对比」闭环。
 
-- **MCP / Agent 双向桥**：Flow/Action 以 MCP tool 暴露给 Agent 调用（调用即获得历史、产物、可回放）；反向补齐 `openclaw.spawn_agent` 等 Agent-step（差距清单见 `docs/examples/drafts/`），带结构化输出契约与 Check
+- **MCP / Agent 双向桥**：✅ 第一期已交付（`/mcp` Streamable HTTP，工具：发现/执行/查询/回放/产物，见 [MCP 模块](zh/modules/mcp.md)）；反向补齐 `openclaw.spawn_agent` 等 Agent-step 待做（差距清单见 `docs/examples/drafts/`），带结构化输出契约与 Check
 - **时间旅行调试**：从任意历史运行的任意步分叉出新调试会话继续执行；两次运行做步骤级 diff（输出/Check/产物）
 - **Check-first 可验证执行**：Flow 静态 lint（未知 action/check 类型、模板引用、参数 schema）；断言覆盖率；重放旧运行并对比即"流程回归 CI"
 - **录制 → Flow（桌面闭环）**：Electron preload/IPC 录制鼠标键盘 → 生成 YAML 与候选 Check，AI 命名补全（与 desktop 插件配合）

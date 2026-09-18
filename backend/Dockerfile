@@ -42,6 +42,7 @@ RUN poetry config virtualenvs.create false \
 # 源码 + 内置插件 + 前端静态文件
 COPY backend/ ./
 COPY plugins/ /app/plugins/
+COPY flows/ /app/flows/
 COPY --from=frontend-builder /build/frontend/dist /app/static
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
