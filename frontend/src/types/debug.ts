@@ -20,4 +20,6 @@ export interface DebugSessionSnapshot {
   results: RunStepResult[]
   hook_results: HookResult[]
   error: string | null
+  parent_run_id: string | null
+  fork_step_index: number | null
 }
