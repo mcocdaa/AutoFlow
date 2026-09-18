@@ -34,7 +34,7 @@
     "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.11.0",
     "typescript": "~5.4.5",
-    "vite": "^4.4.5",
+    "vite": "^8.3.0",
     "vite-plugin-electron": "^0.14.0",
     "vite-plugin-electron-renderer": "^1.0.0",
     "vue-tsc": "^1.8.5"
