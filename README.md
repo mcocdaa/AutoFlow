@@ -2,7 +2,12 @@
 
 [![CI](https://github.com/mcocdaa/AutoFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/mcocdaa/AutoFlow/actions/workflows/ci.yml)
 
-**AutoFlow** 是一款面向"替换重复性劳动"的自动化（RPA）框架：用统一的流程描述（Flow）把触发（Trigger）→ 执行（Action）→ 校验（Check）串起来，并通过插件化机制接入具体业务。
+**AutoFlow** 是面向 Agent 团队的自动化（RPA）执行引擎——**Agent 的确定性执行层**：AI 负责提议，引擎负责可验证、可回放、可审计地执行。用统一的流程描述（Flow）把触发（Trigger）→ 执行（Action）→ 校验（Check）串起来，并通过插件化机制接入具体业务。
+
+- **可观测执行**：步骤 / 检查 / 迭代 / 产物 / Hooks 全量记录，大输出自动外置为产物
+- **单步调试**：创建调试会话，单步 / 继续（到断点）/ 停止；会话落盘，刷新可恢复
+- **运行回放**：执行请求随运行落盘，一键重放生成新运行，历史即回归样本
+- **Agent 集成**：OpenClaw 双向调用（Flow 驱动 Agent、Agent 触达 AutoFlow），MCP 暴露在路线图中
 
 前端、后端、API 文档打包在**同一个镜像**中，部署一条命令即可。
 
