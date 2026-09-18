@@ -5,12 +5,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from app.runtime import get_runner, get_store
 from app.runtime.loaders import FlowLoadError, load_flow_spec_from_yaml_text
-from app.runtime.models import RunResult
+from app.runtime.models import RunResult, RunStatus, StepStatus
 from app.runtime.storage import RunStore
+from app.runtime.utils.diff import align_steps, step_diff
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -83,6 +85,68 @@ def list_runs() -> list[RunResult]:
 def get_run(run_id: str) -> RunResult:
     store = get_store()
     return _require_run(store, run_id)
+
+
+class RunDiffSummary(BaseModel):
+    run_id: str
+    flow_name: str
+    status: RunStatus
+    started_at: datetime
+    duration_ms: int | None = None
+
+
+class OutputDiffEntry(BaseModel):
+    path: str
+    base: Any = None
+    target: Any = None
+
+
+class StepDiff(BaseModel):
+    step_id: str
+    base_index: int | None = None
+    target_index: int | None = None
+    base_status: StepStatus | None = None
+    target_status: StepStatus | None = None
+    status_changed: bool = False
+    base_check_passed: bool | None = None
+    target_check_passed: bool | None = None
+    check_changed: bool = False
+    base_error: str | None = None
+    target_error: str | None = None
+    output_changed: bool = False
+    output_diff: list[OutputDiffEntry] = Field(default_factory=list)
+
+
+class RunDiff(BaseModel):
+    base: RunDiffSummary
+    target: RunDiffSummary
+    steps: list[StepDiff]
+
+
+def _summary(run: RunResult) -> RunDiffSummary:
+    return RunDiffSummary(
+        run_id=run.run_id,
+        flow_name=run.flow_name,
+        status=run.status,
+        started_at=run.started_at,
+        duration_ms=run.duration_ms,
+    )
+
+
+@router.get("/runs/{run_id}/diff/{target_id}", response_model=RunDiff)
+def diff_runs(run_id: str, target_id: str) -> RunDiff:
+    """步骤级对比两次运行(状态/检查/错误/输出差异路径)"""
+    store = get_store()
+    base = _require_run(store, run_id)
+    target = _require_run(store, target_id)
+
+    steps = [
+        StepDiff(**step_diff(base_index, base_step, target_index, target_step))
+        for base_index, base_step, target_index, target_step in align_steps(
+            base.steps, target.steps
+        )
+    ]
+    return RunDiff(base=_summary(base), target=_summary(target), steps=steps)
 
 
 @router.get("/runs/{run_id}/artifacts/{file_path:path}")
