@@ -33,7 +33,7 @@
     "electron-builder": "^24.6.4",
     "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.11.0",
-    "typescript": "~5.4.5",
+    "typescript": "~7.0.2",
     "vite": "^4.4.5",
     "vite-plugin-electron": "^0.14.0",
     "vite-plugin-electron-renderer": "^1.0.0",
