@@ -10,6 +10,8 @@ export default defineConfigWithVueTs(
   {
     rules: {
       'vue/multi-word-component-names': 'off',
+      'vue/no-mutating-props': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 )

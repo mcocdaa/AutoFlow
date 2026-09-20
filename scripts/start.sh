@@ -45,17 +45,9 @@ load_env() {
 start_backend_local() {
     echo "[backend] 检查依赖..."
     cd "$BACKEND_DIR"
-    if [ ! -d ".venv" ]; then
-        python3 -m venv .venv
-    fi
-    # shellcheck disable=SC1091
-    source .venv/bin/activate
-    if ! python -m pip show poetry > /dev/null 2>&1; then
-        python -m pip install -q poetry
-    fi
-    poetry install
+    uv sync
     echo "[backend] 启动 http://localhost:${BACKEND_EXTERNAL_PORT:-3001}"
-    poetry run uvicorn app.main:app --reload \
+    uv run uvicorn app.main:app --reload \
         --host "${HOST:-0.0.0.0}" --port "${BACKEND_EXTERNAL_PORT:-3001}" &
 }
 

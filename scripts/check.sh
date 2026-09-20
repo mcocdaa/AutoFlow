@@ -6,9 +6,9 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_ROOT/backend"
 echo "==> [AutoFlow] Backend ruff check..."
-poetry run ruff check app ../plugins
+uv run ruff check --config pyproject.toml app ../plugins
 echo "==> [AutoFlow] Backend pytest..."
-poetry run pytest -q
+uv run pytest -q
 
 cd "$PROJECT_ROOT/frontend"
 echo "==> [AutoFlow] Frontend lint..."

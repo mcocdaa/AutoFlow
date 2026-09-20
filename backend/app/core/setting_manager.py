@@ -68,6 +68,16 @@ class SettingManager:
             os.getenv("MCP_ENABLED", self.config["MCP_ENABLED"])
         )
 
+        self.config.setdefault("RUN_STORE_GC_ENABLED", True)
+        self.config["RUN_STORE_GC_ENABLED"] = _is_truthy(
+            os.getenv("RUN_STORE_GC_ENABLED", self.config["RUN_STORE_GC_ENABLED"])
+        )
+        self.config.setdefault("RUN_STORE_MAX_AGE_DAYS", 30)
+        self.config.setdefault("RUN_STORE_MAX_TOTAL_BYTES", 5 * 1024 * 1024 * 1024)
+        self.config.setdefault("RUN_STORE_GC_INTERVAL_SECONDS", 3600)
+        self.config.setdefault("WEBHOOK_SECRET", "")
+        self.config.setdefault("VAULT_SECRET_KEY", "")
+
         self.config["ROOT_DIR"] = str(ROOT_DIR)
         self.config["BACKEND_DIR"] = str(BACKEND_DIR)
         self.config.setdefault("PLUGINS_DIR", str(ROOT_DIR / "plugins"))
