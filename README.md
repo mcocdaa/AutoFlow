@@ -1,6 +1,13 @@
 # AutoFlow
 
+> 面向 Agent 团队的确定性自动化执行引擎（Trigger → Action → Check）。
+
+[![Family: *Flow](https://img.shields.io/badge/family-*Flow-8A2BE2.svg)](https://github.com/mcocdaa)
 [![CI](https://github.com/mcocdaa/AutoFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/mcocdaa/AutoFlow/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mcocdaa/AutoFlow?display_name=tag&sort=semver)](https://github.com/mcocdaa/AutoFlow/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](docker-compose.yml)
 
 **AutoFlow** 是面向 Agent 团队的自动化（RPA）执行引擎——**Agent 的确定性执行层**：AI 负责提议，引擎负责可验证、可回放、可审计地执行。用统一的流程描述（Flow）把触发（Trigger）→ 执行（Action）→ 校验（Check）串起来，并通过插件化机制接入具体业务。
 
