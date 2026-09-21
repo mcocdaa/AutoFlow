@@ -1055,9 +1055,7 @@ def _fetch_answer_playwright(
 
         title = None
         try:
-            title = (
-                page.locator("h1.QuestionHeader-title").first.inner_text().strip()
-            )
+            title = page.locator("h1.QuestionHeader-title").first.inner_text().strip()
         except Exception:
             title = None
     finally:

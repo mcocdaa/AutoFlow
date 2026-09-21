@@ -105,7 +105,7 @@ class Plugin:
 
     name: str
     version: str = "0.1.0"
-    dry_run_env: str | None = None   # optional: deployment-level dry-run env var name
+    dry_run_env: str | None = None  # optional: deployment-level dry-run env var name
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
@@ -162,11 +162,11 @@ In the class-method form, handlers are **instance methods** with the signature `
 ```python
 @dataclass(frozen=True)
 class ActionContext:
-    run_id: str              # run ID
-    step_id: str             # step ID
-    input: Any | None        # previous step's input
-    vars: dict[str, Any]     # variables dictionary
-    artifacts_dir: Path      # artifacts directory
+    run_id: str  # run ID
+    step_id: str  # step ID
+    input: Any | None  # previous step's input
+    vars: dict[str, Any]  # variables dictionary
+    artifacts_dir: Path  # artifacts directory
 ```
 
 Commonly used:
@@ -181,10 +181,10 @@ The return value is unconstrained, but a dict with key info is recommended:
 
 ```python
 return {
-    "result": True,           # execution result
-    "data": processed_data,   # concrete data
-    "message": "success",     # human-readable message
-    "dry_run": False,         # whether simulation mode (optional)
+    "result": True,  # execution result
+    "data": processed_data,  # concrete data
+    "message": "success",  # human-readable message
+    "dry_run": False,  # whether simulation mode (optional)
 }
 ```
 
@@ -210,10 +210,10 @@ CheckHandler = Callable[[CheckContext, dict[str, Any]], bool]
 ```python
 @dataclass(frozen=True)
 class CheckContext:
-    run_id: str               # run ID
-    step_id: str              # step ID
-    action_output: Any | None # previous action output
-    vars: dict[str, Any]      # variables dictionary
+    run_id: str  # run ID
+    step_id: str  # step ID
+    action_output: Any | None  # previous action output
+    vars: dict[str, Any]  # variables dictionary
 ```
 
 Commonly used:
@@ -224,7 +224,7 @@ Commonly used:
 ### Returning True/False
 
 ```python
-return True   # check passed
+return True  # check passed
 return False  # check failed
 ```
 

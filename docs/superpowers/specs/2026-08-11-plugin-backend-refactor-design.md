@@ -38,13 +38,21 @@
 class Plugin:
     name: str
     version: str = "0.1.0"
-    dry_run_env: str | None = None      # 新增:dry_run 部署级环境变量名(替代各插件模块级 _DRY_RUN_ENV 常量)
+    dry_run_env: str | None = (
+        None  # 新增:dry_run 部署级环境变量名(替代各插件模块级 _DRY_RUN_ENV 常量)
+    )
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
-        self.defaults = dict(self.config.get("defaults", {}))   # 实例级,替代 openclaw 模块级 _DEFAULTS
-        self.secrets = dict(self.config.get("secrets", {}))     # 实例级,替代模块级 _SECRETS
-        self.actions: dict[str, ActionHandler] = {}             # 实例属性,子类 __init__ 绑定实例方法
+        self.defaults = dict(
+            self.config.get("defaults", {})
+        )  # 实例级,替代 openclaw 模块级 _DEFAULTS
+        self.secrets = dict(
+            self.config.get("secrets", {})
+        )  # 实例级,替代模块级 _SECRETS
+        self.actions: dict[
+            str, ActionHandler
+        ] = {}  # 实例属性,子类 __init__ 绑定实例方法
         self.checks: dict[str, CheckHandler] = {}
 
     def register(self, registry: Registry) -> None:
@@ -61,15 +69,22 @@ class Plugin:
         """统一 dry_run 判定:params.dry_run > ctx.vars.dry_run > 环境变量 self.dry_run_env"""
         # 保留原 helpers.dry_run_enabled 的语义(env 参数改为读取 self.dry_run_env)
 
-    def setting(self, params: dict[str, Any], key: str, *, env_var: str | None = None,
-                default: Any = None) -> Any:
+    def setting(
+        self,
+        params: dict[str, Any],
+        key: str,
+        *,
+        env_var: str | None = None,
+        default: Any = None,
+    ) -> Any:
         """统一取值链:params[key] > self.defaults[key] > self.secrets[key] > os.getenv(env_var) > default
         env_var 仅当调用方显式指定时参与(secrets 已含 env 解析结果,避免重复)。
         值为 str 且 strip() 为空时视为未设置,继续向下一层回退(与 zhihu _get_cookie 现有语义一致);
         返回值为 str 且以 "env:" 前缀开头时,按 resolve_env_value 解析为环境变量值。"""
 
-    def error_result(self, error: str, *, error_type: str = "unknown_error",
-                     **fields: Any) -> dict[str, Any]:
+    def error_result(
+        self, error: str, *, error_type: str = "unknown_error", **fields: Any
+    ) -> dict[str, Any]:
         """统一错误返回构造:{"error":..., "error_type":..., **fields}"""
 ```
 

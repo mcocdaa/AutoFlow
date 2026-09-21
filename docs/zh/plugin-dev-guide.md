@@ -104,7 +104,7 @@ class Plugin:
 
     name: str
     version: str = "0.1.0"
-    dry_run_env: str | None = None   # 可选：部署级 dry_run 环境变量名
+    dry_run_env: str | None = None  # 可选：部署级 dry_run 环境变量名
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
@@ -163,11 +163,11 @@ ActionHandler = Callable[[ActionContext, dict[str, Any]], Any]
 ```python
 @dataclass(frozen=True)
 class ActionContext:
-    run_id: str              # 流程 ID
-    step_id: str             # 步骤 ID
-    input: Any | None        # 上一步输入
-    vars: dict[str, Any]     # 变量字典
-    artifacts_dir: Path      # 产物目录
+    run_id: str  # 流程 ID
+    step_id: str  # 步骤 ID
+    input: Any | None  # 上一步输入
+    vars: dict[str, Any]  # 变量字典
+    artifacts_dir: Path  # 产物目录
 ```
 
 常用的内容包括：
@@ -182,10 +182,10 @@ Action 的返回值不限定，但建议返回包含关键信息的字典：
 
 ```python
 return {
-    "result": True,           # 执行结果
-    "data": 处理后的数据,     # 具体数据
-    "message": "成功执行",     # 人可读的信息
-    "dry_run": False,        # 是否为模拟模式（可选）
+    "result": True,  # 执行结果
+    "data": 处理后的数据,  # 具体数据
+    "message": "成功执行",  # 人可读的信息
+    "dry_run": False,  # 是否为模拟模式（可选）
 }
 ```
 
@@ -213,10 +213,10 @@ CheckHandler = Callable[[CheckContext, dict[str, Any]], bool]
 ```python
 @dataclass(frozen=True)
 class CheckContext:
-    run_id: str               # 流程 ID
-    step_id: str              # 步骤 ID
-    action_output: Any | None # 上一步 Action 输出
-    vars: dict[str, Any]      # 变量字典
+    run_id: str  # 流程 ID
+    step_id: str  # 步骤 ID
+    action_output: Any | None  # 上一步 Action 输出
+    vars: dict[str, Any]  # 变量字典
 ```
 
 常用的内容包括：
@@ -227,7 +227,7 @@ class CheckContext:
 ### 返回 True/False
 
 ```python
-return True   # 检查通过
+return True  # 检查通过
 return False  # 检查失败
 ```
 

@@ -76,10 +76,10 @@ run_flow(flow: FlowSpec, input, vars) → RunResult
 
 ```python
 class Registry:
-    _actions: dict[str, ActionHandler]   # type_name → handler
-    _checks: dict[str, CheckHandler]     # type_name → handler
-    _plugins: list[PluginInfo]           # 已加载的插件列表
-    _plugin_errors: list[...]            # 加载失败的插件
+    _actions: dict[str, ActionHandler]  # type_name → handler
+    _checks: dict[str, CheckHandler]  # type_name → handler
+    _plugins: list[PluginInfo]  # 已加载的插件列表
+    _plugin_errors: list[...]  # 加载失败的插件
 ```
 
 **核心方法**：
@@ -134,8 +134,10 @@ load_plugins_into_registry(registry)
 name = "my-plugin"
 version = "0.1.0"
 
+
 def register():
     return MyPlugin()
+
 
 class MyPlugin:
     actions = {
@@ -191,9 +193,12 @@ backend/plugins/openclaw/
 name = "openclaw"
 version = "0.1.0"
 
+
 def register():
     from .actions import spawn_agent, exec_command, knowflow_record
+
     return OpenClawPlugin()
+
 
 class OpenClawPlugin:
     actions = {
@@ -212,6 +217,7 @@ class OpenClawPlugin:
 from typing import Any
 from app.runtime.registry import ActionContext
 
+
 def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
     """
     params:
@@ -223,6 +229,7 @@ def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
     # 调用 OpenClaw 的 sessions_spawn API
     # 需要通过环境变量或配置获取 OpenClaw API endpoint
     import requests
+
     endpoint = os.getenv("OPENCLAW_API_URL", "http://localhost:8080")
     resp = requests.post(
         f"{endpoint}/api/v1/sessions/spawn",
@@ -243,6 +250,7 @@ def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
 from typing import Any
 from app.runtime.registry import ActionContext
 
+
 def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
     """
     params:
@@ -253,6 +261,7 @@ def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
       - content: str
     """
     import requests
+
     endpoint = os.getenv("OPENCLAW_API_URL", "http://localhost:8080")
     resp = requests.post(
         f"{endpoint}/api/v1/knowflow/record",
@@ -275,6 +284,7 @@ def handle(ctx: ActionContext, params: dict[str, Any]) -> Any:
 ```python
 # OpenClaw 插件示例 (pseudo-code)
 # 注册工具: autoflow_run
+
 
 def autoflow_run(flow_id: str, input: Any = None, vars: dict = None) -> RunResult:
     """
@@ -348,6 +358,7 @@ class StepSpec(_Base):
     # ... 现有字段
     condition: ConditionSpec | None = None  # 新增
 
+
 class ConditionSpec(_Base):
     expr: str  # 例如: "${{vars.env}} == 'prod'"
     # 或使用结构化:
@@ -378,6 +389,7 @@ for step in flow.steps:
 class StepSpec(_Base):
     # ... 现有字段
     loop: LoopSpec | None = None  # 新增
+
 
 class LoopSpec(_Base):
     items: str  # 例如: "${{vars.item_list}}"
