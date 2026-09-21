@@ -42,9 +42,13 @@
           :trigger="null"
         >
           <a-menu v-model:selectedKeys="selectedKeys" mode="inline" class="app-menu">
-            <a-menu-item key="/" @click="router.push('/')">
-              <template #icon><AppstoreOutlined /></template>
-              <span>插件管理</span>
+            <a-menu-item key="/canvas" @click="router.push('/canvas')">
+              <template #icon><ApartmentOutlined /></template>
+              <span>可视化编排</span>
+            </a-menu-item>
+            <a-menu-item key="/hub" @click="router.push('/hub')">
+              <template #icon><ShopOutlined /></template>
+              <span>流程市场</span>
             </a-menu-item>
             <a-menu-item key="/run" @click="router.push('/run')">
               <template #icon><PlayCircleOutlined /></template>
@@ -57,6 +61,14 @@
             <a-menu-item key="/runs" @click="router.push('/runs')">
               <template #icon><HistoryOutlined /></template>
               <span>运行历史</span>
+            </a-menu-item>
+            <a-menu-item key="/plugins" @click="router.push('/plugins')">
+              <template #icon><AppstoreOutlined /></template>
+              <span>插件管理</span>
+            </a-menu-item>
+            <a-menu-item key="/secrets" @click="router.push('/secrets')">
+              <template #icon><KeyOutlined /></template>
+              <span>凭据保密柜</span>
             </a-menu-item>
           </a-menu>
           <div class="sider-footer">
@@ -81,13 +93,16 @@
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
+  ApartmentOutlined,
   AppstoreOutlined,
   BugOutlined,
   HistoryOutlined,
+  KeyOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PlayCircleOutlined,
   PlusOutlined,
+  ShopOutlined,
 } from '@ant-design/icons-vue'
 import { FDS_THEME } from './theme/flow-design-theme'
 
@@ -101,11 +116,11 @@ watch(() => route.path, (path) => {
 }, { immediate: true })
 
 const goHome = () => {
-  router.push('/')
+  router.push('/canvas')
 }
 
 const navigateToRunFlow = () => {
-  router.push('/run')
+  router.push('/canvas')
 }
 </script>
 

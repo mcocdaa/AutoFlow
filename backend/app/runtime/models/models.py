@@ -29,6 +29,12 @@ class RetrySpec(_Base):
     backoff_seconds: float = 0.0
 
 
+class TriggerSpec(_Base):
+    cron: str | None = None
+    webhook_enabled: bool = False
+    webhook_token: str | None = None
+
+
 class StepSpec(_Base):
     id: str
     name: str | None = None
@@ -39,6 +45,7 @@ class StepSpec(_Base):
     for_each: str | None = None
     for_item_var: str = "item"
     condition: str | None = None
+    depends_on: list[str] | None = None
 
 
 class HookSpec(_Base):
@@ -50,6 +57,8 @@ class FlowSpec(_Base):
     version: str
     name: str
     description: str | None = None
+    cron: str | None = None
+    trigger: TriggerSpec | None = None
     steps: list[StepSpec]
     hooks: HookSpec | None = None
 

@@ -21,9 +21,16 @@ from app.runtime.storage.store import RunStore
 class Runner:
     """Flow 执行器门面:run_flow 等价于 RunSession 跑到底"""
 
-    def __init__(self, registry: Registry, store: RunStore) -> None:
+    def __init__(
+        self,
+        registry: Registry,
+        store: RunStore,
+        *,
+        max_workers: int | None = None,
+    ) -> None:
         self._registry = registry
         self._store = store
+        self._max_workers = max_workers
 
     @property
     def artifacts_dir(self) -> Path:
@@ -36,6 +43,7 @@ class Runner:
         input: Any = None,
         vars: dict[str, Any] | None = None,
         request: dict[str, Any] | None = None,
+        max_workers: int | None = None,
     ) -> RunResult:
         session = RunSession.start(
             self._registry,
@@ -44,5 +52,6 @@ class Runner:
             input=input,
             vars=vars,
             request=request,
+            max_workers=max_workers if max_workers is not None else self._max_workers,
         )
         return session.run_to_completion()

@@ -17,14 +17,19 @@ from app.mcp.auth import MCPTokenMiddleware
 from app.mcp.tools import (
     McpDeps,
     get_artifact,
+    get_flow,
     get_run,
+    get_run_diff,
     list_capabilities,
     list_flows,
     list_runs,
     replay_run_sync,
     run_flow_sync,
+    search_flow_hub,
     start_replay_async,
     start_run_async,
+    time_travel_run,
+    validate_flow,
 )
 from app.runtime.runner import Runner
 from app.runtime.storage.store import RunStore
@@ -155,6 +160,53 @@ def create_mcp_binding(
         return await anyio.to_thread.run_sync(
             get_artifact, deps, run_id, path, max_bytes
         )
+
+    @server.tool(
+        name="get_flow",
+        description="查看指定 Flow 的 YAML 源码、步骤结构及说明",
+    )
+    async def get_flow_tool(flow_name: str) -> dict[str, Any]:
+        return await anyio.to_thread.run_sync(get_flow, deps, flow_name)
+
+    @server.tool(
+        name="validate_flow",
+        description="校验 Flow YAML 语法与步骤结构有效性",
+    )
+    async def validate_flow_tool(flow_yaml: str) -> dict[str, Any]:
+        return await anyio.to_thread.run_sync(validate_flow, deps, flow_yaml)
+
+    @server.tool(
+        name="time_travel_run",
+        description=(
+            "时间旅行单步回放工具：从指定历史运行(run_id)的某一步骤(step_index)分叉重跑。"
+            "run_to_completion=true 执行到底返回完整结果；run_to_completion=false 执行单步调试"
+        ),
+    )
+    async def time_travel_run_tool(
+        run_id: str,
+        step_index: int,
+        run_to_completion: bool = True,
+    ) -> dict[str, Any]:
+        return await anyio.to_thread.run_sync(
+            time_travel_run, deps, run_id, step_index, run_to_completion
+        )
+
+    @server.tool(
+        name="get_run_diff",
+        description="对比两次运行（如原始运行 vs 分叉重跑）在步骤状态、Check 断言及输出上的细粒度差异",
+    )
+    async def get_run_diff_tool(run_id_a: str, run_id_b: str) -> dict[str, Any]:
+        return await anyio.to_thread.run_sync(get_run_diff, deps, run_id_a, run_id_b)
+
+    @server.tool(
+        name="search_flow_hub",
+        description="检索 Flow Hub 流程市场上的精选开箱即用流程模板（SRE自愈、采集研报、安全调用链等）",
+    )
+    async def search_flow_hub_tool(
+        category: str | None = None,
+        query: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return await anyio.to_thread.run_sync(search_flow_hub, category, query)
 
     transport = TransportSecuritySettings(enable_dns_rebinding_protection=False)
     mcp_app = server.streamable_http_app(

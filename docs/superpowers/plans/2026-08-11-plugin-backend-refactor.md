@@ -196,8 +196,11 @@ class TestIsDryRun:
             dry_run_env = "AUTOFLOW_TEST_DRY_RUN"
 
         ctx = ActionContext(
-            run_id="r", step_id="s", input=None,
-            vars={"dry_run": True}, artifacts_dir=tmp_path,
+            run_id="r",
+            step_id="s",
+            input=None,
+            vars={"dry_run": True},
+            artifacts_dir=tmp_path,
         )
         assert P().is_dry_run(ctx, {}) is True
 
@@ -241,8 +244,11 @@ class TestIsDryRun:
             dry_run_env = "AUTOFLOW_TEST_DRY_RUN"
 
         ctx = ActionContext(
-            run_id="r", step_id="s", input=None,
-            vars={"dry_run": True}, artifacts_dir=tmp_path,
+            run_id="r",
+            step_id="s",
+            input=None,
+            vars={"dry_run": True},
+            artifacts_dir=tmp_path,
         )
         assert P().is_dry_run(ctx, {"dry_run": False}) is False
 
@@ -280,7 +286,9 @@ class TestSetting:
     def test_false_is_not_skipped(self, tmp_path: Path) -> None:
         assert Plugin().setting({"k": False}, "k", default="d") is False
 
-    def test_secrets_empty_string_falls_through(self, tmp_path: Path, monkeypatch) -> None:
+    def test_secrets_empty_string_falls_through(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
         monkeypatch.setenv("TEST_K", "env-value")
         p = Plugin(config={"secrets": {"k": "  "}})
         assert p.setting({}, "k", env_var="TEST_K") == "env-value"
@@ -924,7 +932,9 @@ class ZhihuDigestPlugin(Plugin):
 
             title = None
             try:
-                title = page.locator("h1.QuestionHeader-title").first.inner_text().strip()
+                title = (
+                    page.locator("h1.QuestionHeader-title").first.inner_text().strip()
+                )
             except Exception:
                 title = None
         finally:
@@ -1256,7 +1266,10 @@ def test_api_key_env_prefix(monkeypatch) -> None:
 
 def test_api_key_from_secrets(monkeypatch) -> None:
     monkeypatch.setenv("DEEPSEEK_API_KEY", "k-secret")
-    assert _plugin(config={"secrets": {"api_key": "k-secret"}})._get_deepseek_api_key({}) == "k-secret"
+    assert (
+        _plugin(config={"secrets": {"api_key": "k-secret"}})._get_deepseek_api_key({})
+        == "k-secret"
+    )
 
 
 def test_api_key_missing_raises(monkeypatch) -> None:
@@ -1336,7 +1349,9 @@ class OpenClawPlugin(Plugin):
             "openclaw.exit_code_zero": self._exit_code_zero,
         }
 
-    def _http_request(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
+    def _http_request(
+        self, ctx: ActionContext, params: dict[str, Any]
+    ) -> dict[str, Any]:
         method = params.get("method", "GET").upper()
         url = params.get("url")
         headers = params.get("headers", {})
@@ -1401,7 +1416,9 @@ class OpenClawPlugin(Plugin):
                 body=None,
             )
 
-    def _exec_command(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
+    def _exec_command(
+        self, ctx: ActionContext, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a shell command with optional safety controls.
 
         Security note: When safe_mode is False, commands run with shell=True,
@@ -1495,7 +1512,9 @@ class OpenClawPlugin(Plugin):
                 stderr=str(e),
             )
 
-    def _knowflow_record(self, ctx: ActionContext, params: dict[str, Any]) -> dict[str, Any]:
+    def _knowflow_record(
+        self, ctx: ActionContext, params: dict[str, Any]
+    ) -> dict[str, Any]:
         default_base_url = (
             self.secrets.get("knowflow_base_url")
             or os.environ.get("KNOWFLOW_BASE_URL")
@@ -1826,16 +1845,17 @@ git commit -m "refactor(plugins): migrate example plugins to class methods"
 将:
 
 ```python
-    actions: dict[str, ActionHandler] = {}  # 类属性默认(兼容旧 ABI);Task 8 移除
-    checks: dict[str, CheckHandler] = {}
+actions: dict[str, ActionHandler] = {}  # 类属性默认(兼容旧 ABI);Task 8 移除
+checks: dict[str, CheckHandler] = {}
 
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
-        self.config = config or {}
-        self.defaults = dict(self.config.get("defaults", {}))
-        self.secrets = dict(self.config.get("secrets", {}))
-        # 兼容过渡:复制子类类属性声明(旧 ABI);新 ABI 在子类 __init__ 覆盖为实例绑定方法
-        self.actions: dict[str, ActionHandler] = dict(type(self).actions)
-        self.checks: dict[str, CheckHandler] = dict(type(self).checks)
+
+def __init__(self, config: dict[str, Any] | None = None) -> None:
+    self.config = config or {}
+    self.defaults = dict(self.config.get("defaults", {}))
+    self.secrets = dict(self.config.get("secrets", {}))
+    # 兼容过渡:复制子类类属性声明(旧 ABI);新 ABI 在子类 __init__ 覆盖为实例绑定方法
+    self.actions: dict[str, ActionHandler] = dict(type(self).actions)
+    self.checks: dict[str, CheckHandler] = dict(type(self).checks)
 ```
 
 替换为:
@@ -2129,14 +2149,15 @@ git commit -m "refactor(backend): dedup template context and StepResult construc
 `init()` 中三处 `getattr(args, x, self.config.get(...))` 收敛为私有局部 helper(注意 config 键大写,回退键用 `name.upper()`):
 
 ```python
-        def _arg(name: str, default: Any) -> Any:
-            return getattr(args, name, self.config.get(name.upper(), default))
+def _arg(name: str, default: Any) -> Any:
+    return getattr(args, name, self.config.get(name.upper(), default))
 
-        self.config["HOST"] = _arg("host", "0.0.0.0")
-        self.config["PORT"] = _arg("port", 3001)
-        self.config["LOG_LEVEL"] = _arg("log_level", "INFO")
 
-        cors_origins_val = _arg("cors_origins", "*")
+self.config["HOST"] = _arg("host", "0.0.0.0")
+self.config["PORT"] = _arg("port", 3001)
+self.config["LOG_LEVEL"] = _arg("log_level", "INFO")
+
+cors_origins_val = _arg("cors_origins", "*")
 ```
 
 注意:CORS_ORIGINS 处理逻辑(列表/逗号拆分)保持不变。行为零变化:--host/--log-level/--cors-origins 的 argparse 默认与 `_load_env` setdefault 同源;--port 保持原默认(3001)。

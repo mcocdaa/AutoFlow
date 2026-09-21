@@ -29,6 +29,7 @@ def _get_path(value: Any, parts: list[str]) -> Any:
 _STEPS_RE = re.compile(r"^steps\.(?P<name>\w+)\.output(?:\.(?P<path>.+))?$")
 _VARS_RE = re.compile(r"^vars\.(?P<name>\w+)(?:\.(?P<path>.+))?$")
 _INPUT_RE = re.compile(r"^input(?:\.(?P<path>.+))?$")
+_SECRETS_RE = re.compile(r"^(?:secrets|vault)\.(?P<name>\w+)(?:\.(?P<path>.+))?$")
 
 # 模板占位符不允许嵌套花括号,避免 "{{A}} x {{B}}" 被误判为单个模板
 _TEMPLATE_RE = re.compile(r"\{\{([^{}]+)\}\}")
@@ -37,6 +38,7 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (_STEPS_RE, "steps"),
     (_VARS_RE, "vars"),
     (_INPUT_RE, "input"),
+    (_SECRETS_RE, "secrets"),
 ]
 
 

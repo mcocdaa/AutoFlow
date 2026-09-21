@@ -210,3 +210,115 @@ def get_artifact(
         "truncated": size > max_bytes,
         "text": data.decode("utf-8", errors="replace"),
     }
+
+
+def get_flow(deps: McpDeps, flow_name: str) -> dict[str, Any]:
+    """获取指定 Flow 的 YAML 源码、步骤结构及说明"""
+    path, text = resolve_flow(deps.flows_dir, flow_name)
+    flow = load_flow_spec_from_yaml_text(text)
+    return {
+        "flow_name": flow.name,
+        "path": str(path),
+        "description": flow.description,
+        "steps_count": len(flow.steps),
+        "steps": [s.model_dump(mode="json") for s in flow.steps],
+        "cron": getattr(flow, "cron", None),
+        "raw_yaml": text,
+    }
+
+
+def validate_flow(deps: McpDeps, flow_yaml: str) -> dict[str, Any]:
+    """校验 Flow YAML 是否合法"""
+    try:
+        flow = load_flow_spec_from_yaml_text(flow_yaml)
+        return {
+            "valid": True,
+            "flow_name": flow.name,
+            "steps_count": len(flow.steps),
+            "error": None,
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "flow_name": None,
+            "steps_count": 0,
+            "error": str(e),
+        }
+
+
+def time_travel_run(
+    deps: McpDeps,
+    run_id: str,
+    step_index: int,
+    run_to_completion: bool = True,
+) -> dict[str, Any]:
+    """时间旅行回放：从历史 run 的指定步骤分叉并继续执行"""
+    source = deps.store.get_run(run_id)
+    payload = _load_request(deps, run_id)
+    flow_yaml = payload.get("flow_yaml")
+    if not isinstance(flow_yaml, str):
+        raise ValueError(f"stored request is invalid: {run_id}")
+    flow = load_flow_spec_from_yaml_text(flow_yaml)
+
+    session = RunSession.fork_from_run(
+        deps.registry,
+        deps.store,
+        flow,
+        source_run=source,
+        request=payload,
+        next_step_index=step_index,
+    )
+    if run_to_completion:
+        result = session.run_to_completion()
+        return _run_json(result)
+    else:
+        session.step()
+        deps.store.save_run(session.run)
+        return {
+            "session_id": session.run.run_id,
+            "run": _run_json(session.run),
+            "current_index": session.index,
+            "status": session.run.status,
+        }
+
+
+def get_run_diff(deps: McpDeps, run_id_a: str, run_id_b: str) -> dict[str, Any]:
+    """步骤级对比两次运行的输出差异、检查结果与错误"""
+    run_a = deps.store.get_run(run_id_a)
+    run_b = deps.store.get_run(run_id_b)
+    from app.runtime.utils.diff import align_steps, step_diff
+
+    steps = [
+        step_diff(base_index, base_step, target_index, target_step)
+        for base_index, base_step, target_index, target_step in align_steps(
+            run_a.steps, run_b.steps
+        )
+    ]
+    return {
+        "base_run_id": run_id_a,
+        "target_run_id": run_id_b,
+        "base_status": run_a.status,
+        "target_status": run_b.status,
+        "steps": steps,
+    }
+
+
+def search_flow_hub(
+    category: str | None = None, query: str | None = None
+) -> list[dict[str, Any]]:
+    """搜索 Flow Hub 流程市场上的模板"""
+    from app.api.v1.hub import CURATED_HUB_FLOWS
+
+    flows = CURATED_HUB_FLOWS
+    if category:
+        flows = [f for f in flows if f["category"] == category]
+    if query:
+        q = query.lower()
+        flows = [
+            f
+            for f in flows
+            if q in f["name"].lower()
+            or q in f["title"].lower()
+            or q in f["description"].lower()
+        ]
+    return flows

@@ -456,14 +456,15 @@ action:
 ```python
 # 运行时上下文结构
 class ExecutionContext:
-    flow_params: dict           # Flow 注入参数
+    flow_params: dict  # Flow 注入参数
     steps: dict[str, StepContext]  # 各 Step 结果
-    globals: dict               # 全局变量
-    locals: dict                # 当前作用域变量
+    globals: dict  # 全局变量
+    locals: dict  # 当前作用域变量
+
 
 class StepContext:
     status: StepStatus
-    output: Any                 # Action 输出
+    output: Any  # Action 输出
     check_passed: bool
     duration_ms: int
 ```
@@ -496,14 +497,15 @@ class StepSpec(_Base):
     check: CheckSpec | None = None
     retry: RetrySpec | None = None
     # 新增
-    output_as: str | None = None    # 输出变量名
-    condition: str | None = None    # 执行条件表达式
-    loop: LoopSpec | None = None    # 循环配置
+    output_as: str | None = None  # 输出变量名
+    condition: str | None = None  # 执行条件表达式
+    loop: LoopSpec | None = None  # 循环配置
+
 
 class LoopSpec(_Base):
     type: Literal["forEach", "while"]
-    items: str | None = None        # forEach: 列表表达式
-    condition: str | None = None    # while: 条件表达式
+    items: str | None = None  # forEach: 列表表达式
+    condition: str | None = None  # while: 条件表达式
     item_var: str = "item"
     index_var: str = "index"
     max_iterations: int = 100
@@ -684,13 +686,14 @@ permissions:
 # plugins/openclaw/openclaw/actions.py
 from app.runtime.plugin import ActionHandler, ExecutionContext
 
+
 class SpawnAgentHandler(ActionHandler):
     action_type = "openclaw.spawn_agent"
 
     async def execute(self, params: dict, ctx: ExecutionContext) -> dict:
         client = OpenClawClient(
             api_key=ctx.secrets.get("openclaw.api_key"),
-            gateway_url=ctx.config.get("openclaw.gateway_url")
+            gateway_url=ctx.config.get("openclaw.gateway_url"),
         )
 
         # 渲染模板参数
@@ -700,7 +703,7 @@ class SpawnAgentHandler(ActionHandler):
         result = await client.spawn_agent(
             agent=params.get("agent"),
             task=task,
-            timeout_ms=params.get("timeout_ms", 300000)
+            timeout_ms=params.get("timeout_ms", 300000),
         )
 
         return {
@@ -708,7 +711,7 @@ class SpawnAgentHandler(ActionHandler):
             "status": result.status,
             "result": result.output,
             "artifacts": result.artifacts,
-            "duration_ms": result.duration_ms
+            "duration_ms": result.duration_ms,
         }
 ```
 
@@ -723,7 +726,7 @@ def autoflow_run_flow(
     flow_ref: str,
     params: dict = None,
     wait_for_completion: bool = True,
-    timeout_seconds: int = 300
+    timeout_seconds: int = 300,
 ) -> dict:
     """
     运行 AutoFlow 流程
@@ -739,21 +742,20 @@ def autoflow_run_flow(
     """
     runtime = AutoFlowRuntime(base_url=CONFIG["autoflow_api_url"])
 
-    run = runtime.start_flow(
-        flow_ref=flow_ref,
-        params=params or {}
-    )
+    run = runtime.start_flow(flow_ref=flow_ref, params=params or {})
 
     if wait_for_completion:
         return runtime.wait_for_completion(run.run_id, timeout_seconds)
 
     return {"run_id": run.run_id, "status": "started"}
 
+
 @tool
 def autoflow_list_flows() -> list:
     """列出所有可用的 Flow"""
     runtime = AutoFlowRuntime(...)
     return runtime.list_flows()
+
 
 @tool
 def autoflow_get_run_status(run_id: str) -> dict:
@@ -772,9 +774,7 @@ async def handle_user_request(task: str):
 
     # 2. 运行 Flow
     result = await autoflow_run_flow(
-        flow_ref=flow.ref,
-        params={"user_task": task},
-        wait_for_completion=True
+        flow_ref=flow.ref, params={"user_task": task}, wait_for_completion=True
     )
 
     # 3. 根据结果决定下一步
@@ -783,8 +783,7 @@ async def handle_user_request(task: str):
     else:
         # 失败时 spawn 专门 Agent 处理
         return await spawn_agent(
-            agent="qa_ops",
-            task=f"Flow 执行失败，请分析: {result['error']}"
+            agent="qa_ops", task=f"Flow 执行失败，请分析: {result['error']}"
         )
 ```
 

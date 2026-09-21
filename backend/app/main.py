@@ -59,12 +59,53 @@ mcp_binding = _create_mcp_binding()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """MCP 会话管理器需要由根应用托管(挂载子应用的 lifespan 不会执行)"""
-    if mcp_binding is None:
-        yield
-        return
-    async with mcp_binding.lifespan():
-        yield
+    """根应用托管 MCP 会话、GC 协程与 Cron 调度协程"""
+    import asyncio
+    import sys
+
+    is_testing = "pytest" in sys.modules
+    stop_event = asyncio.Event()
+    bg_tasks: list[asyncio.Task] = []
+
+    if not is_testing:
+        if setting_manager.RUN_STORE_GC_ENABLED:
+            from app.runtime.storage import RunStoreGC
+
+            gc = RunStoreGC(
+                get_store(),
+                max_age_days=int(setting_manager.RUN_STORE_MAX_AGE_DAYS or 30),
+                max_total_bytes=int(
+                    setting_manager.RUN_STORE_MAX_TOTAL_BYTES or 5 * 1024 * 1024 * 1024
+                ),
+                interval_seconds=float(
+                    setting_manager.RUN_STORE_GC_INTERVAL_SECONDS or 3600
+                ),
+            )
+            bg_tasks.append(asyncio.create_task(gc.start_gc_loop(stop_event)))
+
+        from app.runtime.cron.scheduler import get_cron_scheduler
+
+        scheduler = get_cron_scheduler()
+        bg_tasks.append(
+            asyncio.create_task(
+                scheduler.start_scheduler_loop(stop_event, check_interval_seconds=5.0)
+            )
+        )
+
+    try:
+        if mcp_binding is not None:
+            async with mcp_binding.lifespan():
+                yield
+        else:
+            yield
+    finally:
+        stop_event.set()
+        for task in bg_tasks:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
 
 
 app = FastAPI(

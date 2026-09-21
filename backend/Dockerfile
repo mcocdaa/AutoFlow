@@ -22,7 +22,8 @@ FROM python:3.14-slim
 ENV PORT=3000 \
     SERVE_STATIC_FILES=true \
     STATIC_FILES_DIR=/app/static \
-    PYTHONPATH=/app/backend:/app
+    PYTHONPATH=/app/backend:/app \
+    PATH="/app/backend/.venv/bin:$PATH"
 EXPOSE 3000
 
 WORKDIR /app/backend
@@ -31,13 +32,12 @@ WORKDIR /app/backend
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Poetry (版本与 backend/poetry.lock 生成环境保持一致)
-RUN pip install --no-cache-dir poetry==2.3.3
+# 安装 uv (直接从官方镜像复制，极速零依赖)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # 依赖层缓存: 先装依赖,后拷源码
-COPY backend/pyproject.toml backend/poetry.lock ./
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi --no-root
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 # 源码 + 内置插件 + 前端静态文件
 COPY backend/ ./

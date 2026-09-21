@@ -202,10 +202,10 @@ class StepSpec(_Base):
     output_var: str | None = None
 
     # === 新增字段 ===
-    condition: str | None = None      # if/else 条件表达式
-    for_each: str | None = None       # for 循环列表表达式
-    for_each_as: str = "item"         # 循环变量名
-    for_index_as: str = "index"       # 索引变量名
+    condition: str | None = None  # if/else 条件表达式
+    for_each: str | None = None  # for 循环列表表达式
+    for_each_as: str = "item"  # 循环变量名
+    for_index_as: str = "index"  # 索引变量名
 ```
 
 ### 4.2 StepResult 新增字段
@@ -222,9 +222,11 @@ class StepResult(_Base):
     error: str | None = None
 
     # === 新增字段 ===
-    skipped_reason: str | None = None  # 跳过原因（condition_false / empty_for_each_list）
+    skipped_reason: str | None = (
+        None  # 跳过原因（condition_false / empty_for_each_list）
+    )
     parent_step_id: str | None = None  # 父 step ID（用于 for 循环子步骤）
-    iteration_index: int | None = None # 迭代索引（用于 for 循环子步骤）
+    iteration_index: int | None = None  # 迭代索引（用于 for 循环子步骤）
 ```
 
 ### 4.3 StepStatus 扩展
@@ -269,19 +271,22 @@ def evaluate_condition(condition: str | None, context: dict[str, Any]) -> bool:
         result = eval(resolved, {"__builtins__": {}}, allowed_names)
         return bool(result)
     except Exception as e:
-        raise ValueError(f"Condition evaluation failed: {condition}, resolved: {resolved}, error: {e}")
+        raise ValueError(
+            f"Condition evaluation failed: {condition}, resolved: {resolved}, error: {e}"
+        )
 
 
 def resolve_templates_in_condition(condition: str, context: dict[str, Any]) -> str:
     """
     解析条件表达式中的模板变量，返回可 eval 的字符串
     """
+
     def replace_template(match):
         template = match.group(1).strip()
         value = resolve_template_value(template, context)
         return repr(value)  # 使用 repr 确保字符串正确转义
 
-    return re.sub(r'\{\{(.+?)\}\}', replace_template, condition)
+    return re.sub(r"\{\{(.+?)\}\}", replace_template, condition)
 
 
 def resolve_template_value(template: str, context: dict[str, Any]) -> Any:
@@ -289,13 +294,13 @@ def resolve_template_value(template: str, context: dict[str, Any]) -> Any:
     解析单个模板变量，返回原始值
     """
     # {{steps.X.output}}
-    steps_match = re.match(r'^steps\.(\w+)\.output$', template)
+    steps_match = re.match(r"^steps\.(\w+)\.output$", template)
     if steps_match:
         step_id = steps_match.group(1)
         return context.get("steps", {}).get(step_id)
 
     # {{vars.X}}
-    vars_match = re.match(r'^vars\.(\w+)$', template)
+    vars_match = re.match(r"^vars\.(\w+)$", template)
     if vars_match:
         var_name = vars_match.group(1)
         return context.get("vars", {}).get(var_name)
@@ -309,7 +314,7 @@ def resolve_template_value(template: str, context: dict[str, Any]) -> Any:
         return context.get("forEach", {}).get(template)
 
     # {{forEach.item}}, {{forEach.index}}
-    foreach_match = re.match(r'^forEach\.(\w+)$', template)
+    foreach_match = re.match(r"^forEach\.(\w+)$", template)
     if foreach_match:
         key = foreach_match.group(1)
         return context.get("forEach", {}).get(key)
@@ -320,7 +325,13 @@ def resolve_template_value(template: str, context: dict[str, Any]) -> Any:
 ### 5.2 修改 run_flow 方法
 
 ```python
-def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, Any] | None = None) -> RunResult:
+def run_flow(
+    self,
+    flow: FlowSpec,
+    *,
+    input: Any | None = None,
+    vars: dict[str, Any] | None = None,
+) -> RunResult:
     # ... 初始化代码保持不变 ...
 
     for step in flow.steps:
@@ -328,7 +339,7 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
         if step.condition is not None:
             condition_passed = evaluate_condition(
                 step.condition,
-                {"steps": step_outputs, "vars": runtime_vars, "input": current_input}
+                {"steps": step_outputs, "vars": runtime_vars, "input": current_input},
             )
             if not condition_passed:
                 # 创建 skipped step result
@@ -346,10 +357,15 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
 
         # === 新增：for 循环处理 ===
         if step.for_each is not None:
-            items = resolve_templates(step.for_each, {"steps": step_outputs, "vars": runtime_vars, "input": current_input})
+            items = resolve_templates(
+                step.for_each,
+                {"steps": step_outputs, "vars": runtime_vars, "input": current_input},
+            )
 
             if not isinstance(items, list):
-                raise TypeError(f"for_each must resolve to a list, got {type(items).__name__}")
+                raise TypeError(
+                    f"for_each must resolve to a list, got {type(items).__name__}"
+                )
 
             if len(items) == 0:
                 # 空列表，标记为 skipped
@@ -379,7 +395,7 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                     "forEach": {
                         step.for_each_as: item,
                         step.for_index_as: idx,
-                    }
+                    },
                 }
 
                 # 执行单次迭代
@@ -408,7 +424,9 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
                 status="success" if all_success else "failed",
                 started_at=parent_step_started,
                 finished_at=parent_step_finished,
-                duration_ms=int((parent_step_finished - parent_step_started).total_seconds() * 1000),
+                duration_ms=int(
+                    (parent_step_finished - parent_step_started).total_seconds() * 1000
+                ),
                 action_output=last_output if all_success else None,
             )
             # 注意：父 step 不加入 run.steps，或者作为汇总记录
@@ -435,7 +453,11 @@ def run_flow(self, flow: FlowSpec, *, input: Any | None = None, vars: dict[str, 
         # === 原有单 step 执行逻辑 ===
         step_result = self._execute_single_step(
             step=step,
-            context={"steps": step_outputs, "vars": runtime_vars, "input": current_input},
+            context={
+                "steps": step_outputs,
+                "vars": runtime_vars,
+                "input": current_input,
+            },
             run_id=run_id,
             run_artifacts_dir=run_artifacts_dir,
         )
@@ -469,10 +491,7 @@ def _execute_single_step(
     for attempt in range(max(1, attempts + 1)):
         try:
             # 解析 action params 中的模板变量
-            resolved_params = resolve_templates(
-                step.action.params,
-                context
-            )
+            resolved_params = resolve_templates(step.action.params, context)
 
             action = self._registry.get_action(step.action.type)
             action_output = action(
@@ -516,11 +535,15 @@ def _execute_single_step(
     action_output = externalize_if_large(
         action_output,
         artifacts_dir=run_artifacts_dir,
-        file_stem=f"{step.id}.{iteration_index}.action_output" if iteration_index is not None else f"{step.id}.action_output"
+        file_stem=f"{step.id}.{iteration_index}.action_output"
+        if iteration_index is not None
+        else f"{step.id}.action_output",
     )
 
     return StepResult(
-        step_id=f"{step.id}[{iteration_index}]" if iteration_index is not None else step.id,
+        step_id=f"{step.id}[{iteration_index}]"
+        if iteration_index is not None
+        else step.id,
         status=status,
         started_at=step_started,
         finished_at=step_finished,

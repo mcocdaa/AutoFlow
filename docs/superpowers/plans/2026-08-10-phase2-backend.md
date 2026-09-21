@@ -464,8 +464,6 @@ def _deep_copy_or_str(value: Any) -> Any:
         return copy.deepcopy(value)
     except Exception:
         return str(value)
-
-
 ```
 
 整块删除(`class Runner` 直接跟在 `def _utc_now()` 之后)。
@@ -670,13 +668,11 @@ class PluginsResponse(BaseModel):
 将:
 
 ```python
-    plugins = [
-        PluginItem(name=p.name, version=p.version) for p in registry.list_plugins()
-    ]
-    errors = [
-        PluginErrorItem(plugin_id=e.plugin_id, file_path=e.file_path, error=e.error)
-        for e in registry.list_plugin_errors()
-    ]
+plugins = [PluginItem(name=p.name, version=p.version) for p in registry.list_plugins()]
+errors = [
+    PluginErrorItem(plugin_id=e.plugin_id, file_path=e.file_path, error=e.error)
+    for e in registry.list_plugin_errors()
+]
 ```
 
 替换为:
