@@ -779,69 +779,121 @@ flowchart TD
 
 ---
 
-## 9. 未来分期演进里程碑规划（P0 / P1 / P2）
+## 9. 未来分期演进里程碑规划与当前实施状态追踪（P0 / P1 / P2）
 
-我们为 AutoFlow 规划了清晰、可度量、分阶段落地的产品演进路线图：
+我们为 AutoFlow 规划了清晰、可度量、分阶段落地的产品演进路线图，并在此对标当前的工程实施进展：
 
 ```mermaid
 gantt
-    title AutoFlow 演进路线规划图
+    title AutoFlow 演进路线规划与落地达成图
     dateFormat  YYYY-MM
-    section P0 阶段：稳固底座与第一印象
-    Poetry 向 uv 极速迁移           :active, p0_1, 2026-09, 2026-10
-    产物 TTL 与 LRU 垃圾回收         :p0_2, 2026-09, 2026-10
-    Vue Flow 核心可视化画布与状态反馈 :p0_3, 2026-10, 2026-11
-    Cron 定时调度引擎与前端可视化   :p0_4, 2026-10, 2026-11
-    section P1 阶段：拓宽边界与生产可用
-    DAG 依赖解析与多步骤异步并行     :p1_1, 2026-11, 2026-12
-    Webhook 外部事件网关与验签      :p1_2, 2026-11, 2026-12
-    Secrets 保密柜与全链路脱敏      :p1_3, 2026-12, 2027-01
-    MCP 高级特性 (Resources/Prompts):p1_4, 2026-12, 2027-01
-    section P2 阶段：智能闭环与生态互联
-    AI 自主修补与动态 Flow 生成     :p2_1, 2027-01, 2027-02
-    Electron 原生桌面键鼠录制回放   :p2_2, 2027-02, 2027-03
-    分布式轻量 Worker 边缘纳管      :p2_3, 2027-02, 2027-03
+    section P0 阶段：稳固底座与第一印象 (已 100% 交付)
+    Poetry 向 uv 极速迁移           :done, p0_1, 2026-09, 2026-09
+    产物 TTL 与 LRU 垃圾回收         :done, p0_2, 2026-09, 2026-09
+    Vue Flow 核心可视化画布与双向同步 :done, p0_3, 2026-09, 2026-09
+    节点动态状态呼吸光效与交互反馈   :done, p0_4, 2026-09, 2026-09
+    Cron 定时调度引擎与前端配置     :done, p0_5, 2026-09, 2026-09
+    section P1 阶段：拓宽边界与生产可用 (已 95% 交付)
+    DAG 依赖解析与多步骤异步并行     :done, p1_1, 2026-09, 2026-09
+    Webhook 外部事件网关与验签      :done, p1_2, 2026-09, 2026-09
+    Secrets 保密柜与全链路脱敏      :done, p1_3, 2026-09, 2026-09
+    MCP 标准对齐 (12 大核心工具)     :done, p1_4, 2026-09, 2026-09
+    Flow Hub 流程市场 (前瞻版本)    :done, p1_5, 2026-09, 2026-09
+    官方连接器插件矩阵丰富          :active, p1_6, 2026-09, 2026-11
+    section P2 阶段：智能协同与生态互联 (规划中)
+    Flow Hub 分布式云端共享与私有源   :p2_0, 2026-11, 2027-01
+    Agent 自主修补与自愈执行         :p2_1, 2026-12, 2027-02
+    Electron 原生桌面键鼠录制回放   :p2_2, 2027-01, 2027-03
+    分布式轻量 Worker 边缘纳管      :p2_3, 2027-02, 2027-04
 ```
 
 ---
 
-### 9.1 P0 阶段：稳固底座 & 核心体验飞跃（周期：1 - 2 个月）
+### 9.1 P0 阶段：稳固底座 & 核心体验飞跃（实施状态：已 100% 交付）
 
 **核心目标**：彻底解决构建缓慢与存储膨胀隐患，重塑前端第一印象，具备定时自驱动能力。
 
-| 任务项 | 归属模块 | 交付标准与指标 |
-| :--- | :--- | :--- |
-| **Poetry 向 uv 迁移** | 构建与工程 | `pyproject.toml` 标准化，生成 `uv.lock`，优化多阶段 Dockerfile，镜像构建耗时降低 80% 以上。 |
-| **产物与历史垃圾回收机制** | 存储层 | 实现 `RunStoreGC`，支持按保留天数（TTL）与磁盘上限（LRU）定时自动清除旧产物与死会话。 |
-| **Vue Flow 可视化画布集成** | 前端交互 | 引入 `@vue-flow/core`，完成 YAML 与节点拓扑的双向无缝同步，提供拖拽编排。 |
-| **节点动态状态呼吸光效** | 前端体验 | 节点支持 Pending/Running/Success/Failed/Skipped 动画反馈，支持流向粒子效果。 |
-| **Cron 定时调度器与前端配置** | 调度引擎 | 引入 `croniter` 协程调度守护任务，前端提供可视化 Cron 选择器与未来 5 次触发预测。 |
+| 任务项 | 归属模块 | 交付标准与指标 | 完成状态 | 代码落地与交付凭据 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Poetry 向 uv 迁移** | 构建与工程 | `pyproject.toml` 标准化 (PEP 621)，生成跨平台 `uv.lock`，优化多阶段 Dockerfile 挂载缓存，后端 CI 全面迁移至 `uv run`。 | **已完成 (100%)** | [`backend/pyproject.toml`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/pyproject.toml)<br>[`backend/Dockerfile`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/Dockerfile)<br>[`.github/workflows/ci.yml`](file:///home/mcocdaa/AI_CODE/AutoFlow/.github/workflows/ci.yml) |
+| **产物与历史垃圾回收机制** | 存储层 | 实现 `RunStoreGC`，支持 30 天 TTL 淘汰、5GB LRU 磁盘限额清理孤儿产物，清理超 24h 未更新的死调试会话，后台协程自动巡检。 | **已完成 (100%)** | [`backend/app/runtime/storage/gc.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/runtime/storage/gc.py)<br>[`backend/tests/test_gc.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/tests/test_gc.py) |
+| **Vue Flow 可视化画布集成** | 前端交互 | 引入 `@vue-flow/core`，构建 3 栏式 Studio（左侧组件托盘、中间交互画布、右侧属性面板与 YAML 视图），支持拖拽编排与双向无缝同步。 | **已完成 (100%)** | [`frontend/src/views/FlowCanvasView.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/views/FlowCanvasView.vue)<br>[`PalettePanel.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/components/canvas/PalettePanel.vue)<br>[`PropertyPanel.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/components/canvas/PropertyPanel.vue) |
+| **节点动态状态呼吸光效** | 前端体验 | 自定义节点 `FlowNode` 实现全生命周期状态响应：Pending（灰色）、Running（呼吸蓝光+动效）、Success（翡翠绿+打勾）、Retrying（黄色脉冲）、Failed（绯红抖动）。 | **已完成 (100%)** | [`frontend/src/components/canvas/FlowNode.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/components/canvas/FlowNode.vue) |
+| **Cron 定时调度引擎与前端配置** | 调度引擎 | 内置基于 `croniter` 的异步调度器 `CronScheduler`，挂载至应用生命周期；提供 REST API（启停/状态/未来 5 次触发预测）；前端时间轴与配置器集成。 | **已完成 (100%)** | [`backend/app/runtime/cron/scheduler.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/runtime/cron/scheduler.py)<br>[`backend/app/api/v1/cron.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/api/v1/cron.py) |
 
 ---
 
-### 9.2 P1 阶段：拓展边界 & 生产级可用（周期：2 - 4 个月）
+### 9.2 P1 阶段：拓展边界 & 生产级可用（实施状态：已 95% 交付）
 
-**核心目标**：实现 DAG 拓扑多步骤并行执行，补齐外部事件网关与企业级安全合规体系。
+**核心目标**：实现 DAG 拓扑多步骤并行执行，补齐外部事件网关、企业级安全凭据保密柜、标准 MCP 服务对齐与 Flow Hub 流程市场。
 
-| 任务项 | 归属模块 | 交付标准与指标 |
-| :--- | :--- | :--- |
-| **DAG 步骤依赖与并行执行** | 执行引擎 | `StepSpec` 支持 `depends_on`，基于 `asyncio.TaskGroup` 调度并行任务，支持调试分层波次。 |
-| **Webhook 外部事件网关** | 触发网关 | 提供动态安全 Webhook 端点，支持 HMAC 签名防篡改验证，支持第三方事件自动注入 Flow。 |
-| **Secrets 保密柜与全链路脱敏** | 安全与合规 | AES-256-GCM 本地加密存储凭据，日志与大输出产物自动打码脱敏，杜绝明文凭据泄露。 |
-| **MCP 高级协议能力扩展** | Agent 协议 | 完善 MCP Resources（直接以 URI 形式暴露 Flow 产物与运行历史）与 MCP Prompts 模板。 |
-| **官方连接器插件矩阵丰富** | 插件生态 | 新增常用企业级插件：PostgreSQL 读写、Redis 缓存操作、Git 仓库自动化、Slack/飞书机器人通知。 |
+| 任务项 | 归属模块 | 交付标准与指标 | 完成状态 | 代码落地与交付凭据 |
+| :--- | :--- | :--- | :--- | :--- |
+| **DAG 步骤依赖与并行执行** | 执行引擎 | `StepSpec` 扩展 `depends_on`；实现 DAG 拓扑排序、有向环检测、分层波次计算与线程池并发调度；前端提供瀑布流甘特图与关键瓶颈分析。 | **已完成 (100%)** | [`backend/app/runtime/dag.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/runtime/dag.py)<br>[`backend/app/runtime/session.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/runtime/session.py)<br>[`ExecutionTimeline.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/components/canvas/ExecutionTimeline.vue)<br>[`backend/tests/test_dag.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/tests/test_dag.py) |
+| **Webhook 外部事件网关** | 触发网关 | 提供安全端点 `/api/v1/webhooks/{flow_name}/{token}`，支持 HMAC-SHA256 验签、$\pm 5$ 分钟防重放时间戳保护，自动将 Query/Body/Headers 注入 `input`。 | **已完成 (100%)** | [`backend/app/api/v1/webhooks.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/api/v1/webhooks.py)<br>[`backend/tests/test_new_features.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/tests/test_new_features.py) |
+| **Secrets 保密柜与全链路脱敏** | 安全与合规 | 实现 AES-256-GCM 本地加密保险箱，提供 REST 管理接口；运行时支持 `{{ secrets.KEY }}` 模板解析；自动正则脱敏日志、历史快照与调试输出中的敏感内容。 | **已完成 (100%)** | [`backend/app/core/secrets_vault.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/core/secrets_vault.py)<br>[`backend/app/api/v1/secrets.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/api/v1/secrets.py)<br>[`frontend/src/views/SecretsView.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/views/SecretsView.vue) |
+| **MCP 标准对齐与多 Agent 连接** | Agent 协议 | 基于官方 `mcp` SDK 原生挂载 `/mcp`（Streamable HTTP）；提供 12 大标准化 MCP 工具，无缝直连 Claude Code、Cursor、OpenClaw、Codex 及 DSH；附带 Agent 接入配置引导。 | **已完成 (100%)** | [`backend/app/mcp/server.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/mcp/server.py)<br>[`backend/app/mcp/tools.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/mcp/tools.py) |
+| **Flow Hub 流程分发市场 (前瞻版)** | 流程生态 | 打造前瞻型 Flow Hub 市场，提供 SRE 告警自愈、知乎采集与 AI 研报、Agent 安全工具链、Git 巡检等精选模板；支持一键安装、画布加载与 MCP 动态检索。 | **已完成 (90%)** | [`backend/app/api/v1/hub.py`](file:///home/mcocdaa/AI_CODE/AutoFlow/backend/app/api/v1/hub.py)<br>[`frontend/src/views/FlowHubView.vue`](file:///home/mcocdaa/AI_CODE/AutoFlow/frontend/src/views/FlowHubView.vue) |
+| **官方连接器插件矩阵丰富** | 插件生态 | 内置 `dummy`、`openclaw`、`ai_deepseek`、`zhihu_digest`、`desktop_checkin`；提供原子 Shell、HTTP、知识沉淀能力。常见 DB/Git/Slack 插件持续拓展中。 | **进行中 (60%)** | [`plugins/`](file:///home/mcocdaa/AI_CODE/AutoFlow/plugins) |
 
 ---
 
-### 9.3 P2 阶段：智能协同 & 跨平台生态闭环（周期：4 - 6 个月）
+### 9.3 Flow Hub 流程分发市场前瞻架构与演进路线图
 
-**核心目标**：打通“AI 意图自主组装”与“桌面原生键鼠录制”，实现人机协同的终极自动化。
+作为面向 AI Agent 团队的核心资产分发平台，**Flow Hub** 的战略意义在于：**让非确定性的 Agent 能够一键消费、复用由人类工程师或专家团队验证过的确定性工作流资产**。
 
-| 任务项 | 归属模块 | 交付标准与指标 |
-| :--- | :--- | :--- |
-| **Agent 自主修补与动态流生成** | 智能协同 | Check 失败时向 Agent 抛出受控上下文，Agent 能够提议替换步骤并由引擎分叉自愈执行。 |
-| **Electron 桌面键鼠录制回放** | 桌面 RPA | 利用 Electron 主进程监听全局系统事件，一键录制用户桌面操作，自动逆向生成 Flow YAML。 |
-| **分布式轻量 Worker 边缘纳管** | 分布式架构 | 支持总控 Server 统一编排，轻量级 Python Worker 部署于多台远程机房或边缘终端受控执行。 |
+```mermaid
+flowchart TD
+    subgraph FlowHubArchitecture["Flow Hub 进阶演进架构 (Hub Evolution Roadmap)"]
+        direction TB
+        subgraph Stage1["Phase I: 本地内置精选与客户端集成 (已完成)"]
+            A1["Curated Templates (SRE / Scraper / Agent Chain / Git)"]
+            A2["一键安装至 flows/ 与 Vue Flow 画布载入"]
+            A3["MCP search_flow_hub 工具暴露"]
+        end
+
+        subgraph Stage2["Phase II: 远程注册表与云端共享 (P2-A: 近期规划)"]
+            B1["远程 Registry 索引服务 (HTTPS API / GitHub Releases)"]
+            B2["YAML 规范语义化版本管理 (semver) 与依赖锁定"]
+            B3["模板数字签名验证 (Cosign / HMAC) 与静态代码安全性审计"]
+        end
+
+        subgraph Stage3["Phase III: Agent 协作共创与动态分发 (P2-B: 远期蓝图)"]
+            C1["Agent 自主发布 Flow: Agent 成功沉淀的复杂链条一键导出为 Hub 资产"]
+            C2["私有企业源纳管: 支持企业内网私有 Flow Hub 与权限隔离"]
+            C3["按需动态流拉取与沙箱即时装载 (Dynamic JIT Flow Invocation)"]
+        end
+
+        Stage1 --> Stage2 --> Stage3
+    end
+```
+
+#### Flow Hub 三期演进路线建议：
+
+1. **第一期（已达成 - Current v1.2.0）**：
+   - **内置精选集市**：后端内置生产级场景工作流，覆盖 SRE 告警自愈、智能采集、Agent 校验管道及 Git 卫生巡检；
+   - **双模交互消费**：Web UI 一键下载至本地 `flows/`，或直接加载至 Vue Flow 画布中二次定制；
+   - **Agent MCP 穿透**：通过 MCP 工具 `search_flow_hub`，Agent 可自主探索市场模板并获取其 YAML 源码，动态挂载为自身工具。
+
+2. **第二期（P2-A：2026 Q4 - 远程 Hub 共享与安全性建设）**：
+   - **开放式远端仓库同步**：支持从 GitHub 仓库或指定私有 HTTP Registry 订阅 Flow 模板包，支持在线热拉取与离线缓存；
+   - **版本依赖与兼容性校验**：引入语义化版本（如 `sre_auto_remediation@^1.2.0`），自动检查所需插件与 Action/Check 是否在本机安装；
+   - **静态安全性沙箱审计**：在安装第三方 Flow 时自动进行安全扫描（检查高危命令如 `rm -rf`、敏感目录挂载、明文凭据反模式），并提示风险等级。
+
+3. **第三期（P2-B：2027 Q1 - Agent 自主沉淀与企业级私有 Hub）**：
+   - **Agent 沉淀回流（Agent-to-Hub Pipeline）**：当 Claude Code 或 OpenClaw 完成一次多步骤探索排障后，可通过标准 MCP 工具将调试成功的会话结构直接“固化”并“发布”为新的 Flow 模板；
+   - **企业级私有 Flow Hub**：支持私有部署、基于 RBAC 的凭据与流程访问控制，实现团队跨机房跨环境的自动化流程标准化资产沉淀。
+
+---
+
+### 9.4 P2 阶段：智能协同 & 跨平台生态闭环（规划周期：2026 Q4 - 2027 Q2）
+
+| 任务项 | 归属模块 | 交付标准与指标 | 计划阶段 |
+| :--- | :--- | :--- | :--- |
+| **Flow Hub 远端私有源与版本管理** | 流程生态 | 支持配置远程 HTTPS / Git 流程源，支持语义化版本锁定与自动升级提示。 | P2-A (2026 Q4) |
+| **Agent 自主修补与自愈执行** | 智能协同 | Check 失败时向 Agent 抛出结构化断言上下文，Agent 提议替换步骤并由引擎分叉自愈执行。 | P2-A (2026 Q4) |
+| **Electron 桌面键鼠录制回放** | 桌面 RPA | 利用 Electron 主进程监听全局系统事件，一键录制用户桌面操作，自动逆向生成 Flow YAML。 | P2-B (2027 Q1) |
+| **分布式轻量 Worker 边缘纳管** | 分布式架构 | 支持总控 Server 统一编排，轻量级 Python Worker 部署于多台远程机房或边缘终端受控执行。 | P2-B (2027 Q2) |
 
 ---
 
