@@ -24,9 +24,27 @@
 
       <div class="toolbar-actions">
         <a-select
+          v-model:value="selectedServerFlow"
+          placeholder="服务端流程 (flows/)"
+          style="width: 185px"
+          size="small"
+          allow-clear
+          :loading="loadingServerFlows"
+          @change="handleSelectServerFlow"
+        >
+          <a-select-option
+            v-for="item in serverFlows"
+            :key="item.slug"
+            :value="item.slug"
+          >
+            {{ item.name }} ({{ item.slug }})
+          </a-select-option>
+        </a-select>
+
+        <a-select
           v-model:value="selectedExampleKey"
           placeholder="加载预设示例"
-          style="width: 170px"
+          style="width: 160px"
           size="small"
           @change="handleSelectExample"
         >
@@ -38,6 +56,15 @@
             {{ example.label }}
           </a-select-option>
         </a-select>
+
+        <a-button
+          size="small"
+          :loading="savingServerFlow"
+          @click="handleSaveServerFlow"
+        >
+          <template #icon><SaveOutlined /></template>
+          保存到服务端
+        </a-button>
 
         <a-button size="small" @click="autoLayout">
           <template #icon><ApartmentOutlined /></template>
@@ -150,6 +177,7 @@ import {
   BarChartOutlined,
   BugOutlined,
   CaretRightOutlined,
+  SaveOutlined,
 } from '@ant-design/icons-vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
@@ -159,6 +187,7 @@ import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 import * as yaml from 'js-yaml'
 
+import { getFlow, listFlows, saveFlow, type FlowRecord } from '../api/client'
 import { useRunsStore } from '../stores/runs'
 import { DEFAULT_FLOW_YAML, FLOW_EXAMPLES } from '../constants/flow-examples'
 import type { FlowNodeData, FlowSpec, StepSpec } from '../types/flow'
@@ -181,6 +210,10 @@ const webhookTokenValue = ref('')
 const flowHooks = ref<FlowSpec['hooks']>(undefined)
 const flowTrigger = ref<FlowSpec['trigger']>(undefined)
 const selectedExampleKey = ref<string>()
+const serverFlows = ref<FlowRecord[]>([])
+const selectedServerFlow = ref<string>()
+const loadingServerFlows = ref(false)
+const savingServerFlow = ref(false)
 const showTimeline = ref(true)
 
 const selectedNodeId = ref<string | null>(null)
@@ -554,9 +587,54 @@ const onWebhookChanged = (token: string) => {
 const handleSelectExample = (key: string) => {
   const ex = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!ex) return
+  selectedServerFlow.value = undefined
   yamlCode.value = ex.yaml
   parseYamlToCanvas(ex.yaml)
   setTimeout(() => fitView({ padding: 0.2 }), 100)
+}
+
+const loadServerFlows = async () => {
+  loadingServerFlows.value = true
+  try {
+    serverFlows.value = await listFlows()
+  } catch {
+    // 忽略加载异常，保持本地示例可用
+  } finally {
+    loadingServerFlows.value = false
+  }
+}
+
+const handleSelectServerFlow = async (slug?: string) => {
+  if (!slug) return
+  try {
+    const record = await getFlow(slug)
+    selectedExampleKey.value = undefined
+    yamlCode.value = record.flow_yaml
+    parseYamlToCanvas(record.flow_yaml)
+    setTimeout(() => fitView({ padding: 0.2 }), 100)
+    message.success(`已加载服务端流程: ${record.name}`)
+  } catch (err: any) {
+    message.error(`读取服务端流程失败: ${err?.message || err}`)
+  }
+}
+
+const handleSaveServerFlow = async () => {
+  syncCanvasToYaml()
+  const rawSlug =
+    selectedServerFlow.value ||
+    flowName.value.trim().replace(/[^a-zA-Z0-9_-]/g, '_') ||
+    'my_workflow'
+  savingServerFlow.value = true
+  try {
+    const saved = await saveFlow(rawSlug, yamlCode.value)
+    selectedServerFlow.value = saved.slug
+    await loadServerFlows()
+    message.success(`已保存到服务端: flows/${saved.filename}`)
+  } catch (err: any) {
+    message.error(`保存服务端流程失败: ${err?.message || err}`)
+  } finally {
+    savingServerFlow.value = false
+  }
 }
 
 // ---------------- 执行与状态光效反馈 ----------------
@@ -636,6 +714,7 @@ onMounted(() => {
     yamlCode.value = pendingYaml
   }
   parseYamlToCanvas(yamlCode.value)
+  loadServerFlows()
   setTimeout(() => fitView({ padding: 0.2 }), 150)
 })
 </script>

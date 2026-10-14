@@ -20,11 +20,14 @@ from app.mcp.tools import (
     get_flow,
     get_run,
     get_run_diff,
+    get_saved_flow,
     list_capabilities,
     list_flows,
     list_runs,
+    list_saved_flows,
     replay_run_sync,
     run_flow_sync,
+    save_flow,
     search_flow_hub,
     start_replay_async,
     start_run_async,
@@ -207,6 +210,32 @@ def create_mcp_binding(
         query: str | None = None,
     ) -> list[dict[str, Any]]:
         return await anyio.to_thread.run_sync(search_flow_hub, category, query)
+
+    @server.tool(
+        name="list_saved_flows",
+        description="列出服务端 flows/ 目录下所有已保存的 FlowRecord",
+    )
+    async def list_saved_flows_tool() -> list[dict[str, Any]]:
+        return await anyio.to_thread.run_sync(list_saved_flows, deps)
+
+    @server.tool(
+        name="get_saved_flow",
+        description="按 slug 获取服务端 flows/ 目录下的单个 FlowRecord 详情与 YAML",
+    )
+    async def get_saved_flow_tool(slug: str) -> dict[str, Any]:
+        return await anyio.to_thread.run_sync(get_saved_flow, deps, slug)
+
+    @server.tool(
+        name="save_flow",
+        description="校验并将 Flow YAML 保存到服务端 flows/{slug}.yaml",
+    )
+    async def save_flow_tool(
+        flow_yaml: str,
+        slug: str | None = None,
+    ) -> dict[str, Any]:
+        return await anyio.to_thread.run_sync(
+            lambda: save_flow(deps, slug=slug, flow_yaml=flow_yaml)
+        )
 
     transport = TransportSecuritySettings(enable_dns_rebinding_protection=False)
     mcp_app = server.streamable_http_app(

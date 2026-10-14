@@ -61,3 +61,15 @@ export interface FlowNodeData {
   error?: string | null
   output?: unknown
 }
+
+export interface FlowRecord {
+  slug: string
+  filename: string
+  name: string
+  version: string
+  description?: string | null
+  steps_count: number
+  webhook_enabled: boolean
+  updated_at: string
+  flow_yaml: string
+}
