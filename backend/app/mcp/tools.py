@@ -327,3 +327,75 @@ def search_flow_hub(
             or q in f["description"].lower()
         ]
     return flows
+
+
+def _extract_flows_dir(deps: McpDeps | Path | None) -> Path:
+    if isinstance(deps, McpDeps):
+        return deps.flows_dir
+    if isinstance(deps, Path):
+        return deps
+    from app.core.setting_manager import setting_manager
+
+    return Path(setting_manager.FLOWS_DIR)
+
+
+def list_saved_flows(deps: McpDeps | Path | None = None) -> list[dict[str, Any]]:
+    """列出服务端 flows/ 目录下所有已保存的 FlowRecord"""
+    from app.api.v1.flows import list_flow_records
+
+    flows_dir = _extract_flows_dir(deps)
+    return [r.model_dump(mode="json") for r in list_flow_records(flows_dir)]
+
+
+def get_saved_flow(
+    deps_or_slug: McpDeps | Path | str,
+    slug: str | None = None,
+) -> dict[str, Any]:
+    """按 slug 读取服务端 flows/ 目录下的单个 FlowRecord"""
+    from app.api.v1.flows import get_flow_record
+
+    if isinstance(deps_or_slug, str):
+        flows_dir = _extract_flows_dir(None)
+        target_slug = deps_or_slug
+    else:
+        flows_dir = _extract_flows_dir(deps_or_slug)
+        if not slug:
+            raise ValueError("slug is required")
+        target_slug = slug
+
+    try:
+        return get_flow_record(flows_dir, target_slug).model_dump(mode="json")
+    except FileNotFoundError as e:
+        raise ValueError(str(e)) from e
+
+
+def save_flow(
+    deps_or_slug: McpDeps | Path | str | None = None,
+    slug: str | None = None,
+    flow_yaml: str | None = None,
+) -> dict[str, Any]:
+    """校验并保存 Flow YAML 到服务端 flows/{slug}.yaml"""
+    from app.api.v1.flows import save_flow_record
+
+    if isinstance(deps_or_slug, (McpDeps, Path)):
+        flows_dir = _extract_flows_dir(deps_or_slug)
+        target_slug = slug
+        target_yaml = flow_yaml
+    elif isinstance(deps_or_slug, str):
+        flows_dir = _extract_flows_dir(None)
+        if flow_yaml is None and slug is not None:
+            target_slug = deps_or_slug
+            target_yaml = slug
+        else:
+            target_slug = deps_or_slug
+            target_yaml = flow_yaml
+    else:
+        flows_dir = _extract_flows_dir(None)
+        target_slug = slug
+        target_yaml = flow_yaml
+
+    if not target_yaml:
+        raise ValueError("flow_yaml is required")
+
+    record = save_flow_record(flows_dir, slug=target_slug, flow_yaml=target_yaml)
+    return record.model_dump(mode="json")

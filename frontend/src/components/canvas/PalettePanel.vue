@@ -60,8 +60,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { SearchOutlined } from '@ant-design/icons-vue'
+import { getPluginCatalog, type PluginCatalogItem } from '../../api/client'
 
 export interface ComponentItem {
   type: string
@@ -69,8 +70,15 @@ export interface ComponentItem {
   desc: string
   icon: string
   category: string
+  kind?: 'action' | 'check'
   defaultParams?: Record<string, unknown>
   defaultCheck?: { type: string; params: Record<string, unknown> }
+}
+
+interface ComponentGroup {
+  name: string
+  icon: string
+  items: ComponentItem[]
 }
 
 const emit = defineEmits<{
@@ -79,7 +87,7 @@ const emit = defineEmits<{
 
 const searchQuery = ref('')
 
-const COMPONENT_GROUPS = [
+const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
   {
     name: '基础与调试',
     icon: '⚡',
@@ -221,19 +229,114 @@ const COMPONENT_GROUPS = [
   },
 ]
 
+const componentGroups = ref<ComponentGroup[]>(
+  DEFAULT_COMPONENT_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.map((item) => ({ ...item })),
+  })),
+)
+
+function resolveGroupName(item: PluginCatalogItem): string {
+  if (item.kind === 'check' || item.category === 'check') {
+    return '强断言校验 (Check)'
+  }
+  if (item.category === 'desktop' || item.type.startsWith('desktop.')) {
+    return '桌面自动化 (RPA)'
+  }
+  if (
+    item.category === 'ai' ||
+    item.category === 'scraper' ||
+    item.type.startsWith('ai.') ||
+    item.type.startsWith('zhihu.')
+  ) {
+    return 'AI 与智能抓取'
+  }
+  return '基础与调试'
+}
+
+const loadPluginCatalog = async () => {
+  try {
+    const res = await getPluginCatalog()
+    const groups = componentGroups.value.map((g) => ({
+      ...g,
+      items: [...g.items],
+    }))
+    const existingTypes = new Set<string>()
+    groups.forEach((g) => g.items.forEach((i) => existingTypes.add(i.type)))
+
+    const catalogItems: PluginCatalogItem[] = [...(res.catalog || [])]
+    for (const actionType of res.actions || []) {
+      if (!catalogItems.some((c) => c.type === actionType)) {
+        catalogItems.push({
+          type: actionType,
+          label: actionType.split('.').pop() || actionType,
+          desc: `动态注册动作插件: ${actionType}`,
+          icon: '🔌',
+          category: actionType.split('.')[0] || 'core',
+          kind: 'action',
+          defaultParams: {},
+        })
+      }
+    }
+    for (const checkType of res.checks || []) {
+      if (!catalogItems.some((c) => c.type === checkType)) {
+        catalogItems.push({
+          type: checkType,
+          label: checkType.split('.').pop() || checkType,
+          desc: `动态注册校验断言: ${checkType}`,
+          icon: '🛡️',
+          category: 'check',
+          kind: 'check',
+          defaultParams: {},
+        })
+      }
+    }
+
+    for (const catItem of catalogItems) {
+      if (existingTypes.has(catItem.type)) continue
+      const targetGroupName = resolveGroupName(catItem)
+      let group = groups.find((g) => g.name === targetGroupName)
+      if (!group) {
+        group = { name: targetGroupName, icon: '🔌', items: [] }
+        groups.push(group)
+      }
+      group.items.push({
+        type: catItem.type,
+        label: catItem.label,
+        desc: catItem.desc,
+        icon: catItem.icon || '🔌',
+        category: catItem.kind === 'check' ? 'check' : catItem.category,
+        kind: catItem.kind,
+        defaultParams: catItem.defaultParams || {},
+      })
+      existingTypes.add(catItem.type)
+    }
+
+    componentGroups.value = groups
+  } catch {
+    // 离线或接口不可用时回退至默认组件列表
+  }
+}
+
+onMounted(() => {
+  loadPluginCatalog()
+})
+
 const filteredGroups = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return COMPONENT_GROUPS
+  if (!query) return componentGroups.value
 
-  return COMPONENT_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter(
-      (item) =>
-        item.type.toLowerCase().includes(query) ||
-        item.label.toLowerCase().includes(query) ||
-        item.desc.toLowerCase().includes(query),
-    ),
-  })).filter((group) => group.items.length > 0)
+  return componentGroups.value
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          item.type.toLowerCase().includes(query) ||
+          item.label.toLowerCase().includes(query) ||
+          item.desc.toLowerCase().includes(query),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
 })
 
 const onDragStart = (event: DragEvent, item: ComponentItem) => {
