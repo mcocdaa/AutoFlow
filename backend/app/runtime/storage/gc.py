@@ -79,30 +79,35 @@ class RunStoreGC:
             return runs
 
         for entry in self.artifacts_dir.iterdir():
-            if not entry.is_dir() or entry.name in ("outputs", "temp", "tmp"):
+            if (
+                not entry.is_dir()
+                or entry.name in ("outputs", "temp", "tmp", "vault", "_sessions")
+                or entry.name.startswith(("_", "."))
+            ):
                 continue
 
             run_id = entry.name
             run_json = entry / "run.json"
-            started_at: datetime | None = None
+            if not run_json.is_file():
+                continue
 
-            if run_json.is_file():
-                try:
-                    data = json.loads(run_json.read_text(encoding="utf-8"))
-                    raw_time = data.get("started_at")
-                    if raw_time:
-                        started_at = datetime.fromisoformat(raw_time)
-                        if started_at.tzinfo is None:
-                            started_at = started_at.replace(tzinfo=UTC)
-                except Exception:
-                    pass
+            try:
+                data = json.loads(run_json.read_text(encoding="utf-8"))
+            except Exception:
+                continue
 
-            if started_at is None:
-                try:
-                    mtime = entry.stat().st_mtime
-                    started_at = datetime.fromtimestamp(mtime, tz=UTC)
-                except OSError:
-                    started_at = datetime.now(UTC)
+            if not isinstance(data, dict) or data.get("status") == "running":
+                continue
+
+            raw_time = data.get("started_at")
+            if not raw_time:
+                continue
+            try:
+                started_at = datetime.fromisoformat(str(raw_time))
+                if started_at.tzinfo is None:
+                    started_at = started_at.replace(tzinfo=UTC)
+            except Exception:
+                continue
 
             size = _dir_size(entry)
             runs.append(

@@ -131,3 +131,45 @@ def test_delete_run_removes_request(tmp_path: Path) -> None:
     store.delete_run("run-a")
 
     assert not (tmp_path / "run-a").exists()
+
+
+def test_save_run_redacts_secrets_via_vault_mask_data(tmp_path: Path) -> None:
+    from app.core.secrets_vault import get_secrets_vault
+    from app.runtime.utils.output_externalizer import externalize_if_large
+
+    vault = get_secrets_vault()
+    secret_val = "super-sensitive-vault-token-987654321"
+    vault.set_secret("MY_SECRET_TOKEN", secret_val)
+
+    try:
+        store = RunStore(artifacts_dir=tmp_path)
+        run = _make_run("run-secret")
+        run.steps[0].action_output = {
+            "Authorization": f"token={secret_val}",
+            "raw": secret_val,
+        }
+        run.error = f"Failed with secret {secret_val}"
+        store.save_run(run)
+
+        raw_json = (tmp_path / "run-secret" / "run.json").read_text(encoding="utf-8")
+        assert secret_val not in raw_json
+        assert "***REDACTED***" in raw_json
+
+        loaded = store.get_run("run-secret")
+        assert secret_val not in str(loaded.steps[0].action_output)
+        assert secret_val not in (loaded.error or "")
+
+        # Also verify externalize_if_large redacts secrets before writing outputs/*.json
+        large_payload = {"leak": secret_val, "pad": "x" * (70 * 1024)}
+        ref = externalize_if_large(
+            large_payload,
+            artifacts_dir=tmp_path / "run-secret",
+            file_stem="s1.action_output",
+            max_bytes=64 * 1024,
+        )
+        ext_path = (tmp_path / "run-secret") / ref["__artifact__"]["path"]
+        ext_text = ext_path.read_text(encoding="utf-8")
+        assert secret_val not in ext_text
+        assert "***REDACTED***" in ext_text
+    finally:
+        vault.delete_secret("MY_SECRET_TOKEN")

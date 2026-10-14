@@ -28,11 +28,16 @@ services:
     volumes:
       # 以宿主机插件目录为准,便于改插件不重建镜像
       - ./plugins:/app/plugins:ro
-      # 宿主机 Flow 目录,MCP list_flows/run_flow 可发现
-      - ./flows:/app/flows:ro
+      # 宿主机 Flow 目录,MCP list_flows/run_flow 可发现,且支持 Flow Hub 安装写入
+      - ./flows:/app/flows
+      # 持久化运行产物、保密柜与调试会话
+      - autoflow_artifacts:/app/backend/app/artifacts
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  autoflow_artifacts:

@@ -78,3 +78,61 @@ def test_run_store_gc_quota_lru_cleanup(tmp_path: Path):
     assert not (artifacts_dir / "run_1").exists()
     assert (artifacts_dir / "run_2").exists()
     assert (artifacts_dir / "run_3").exists()
+
+
+def test_run_store_gc_never_deletes_vault_or_sessions_or_running_runs(tmp_path: Path):
+    import os
+
+    artifacts_dir = tmp_path / "artifacts"
+    store = RunStore(artifacts_dir)
+    gc = RunStoreGC(store, max_age_days=30, max_total_bytes=1024)
+
+    now = datetime.now(UTC)
+    old_ts = (now - timedelta(days=90)).timestamp()
+
+    # Create vault/, _sessions/, .hidden/, and an arbitrary dir without run.json
+    vault_dir = artifacts_dir / "vault"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+    vault_file = vault_dir / "vault.enc"
+    vault_file.write_bytes(b"encrypted_vault_data" * 100)
+    os.utime(vault_dir, (old_ts, old_ts))
+
+    sessions_dir = artifacts_dir / "_sessions"
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    session_file = sessions_dir / "sess-1.json"
+    session_file.write_text('{"id": "sess-1"}', encoding="utf-8")
+    os.utime(sessions_dir, (old_ts, old_ts))
+
+    hidden_dir = artifacts_dir / ".cache"
+    hidden_dir.mkdir(parents=True, exist_ok=True)
+    (hidden_dir / "item").write_text("x", encoding="utf-8")
+    os.utime(hidden_dir, (old_ts, old_ts))
+
+    no_run_json_dir = artifacts_dir / "custom_dir_without_run_json"
+    no_run_json_dir.mkdir(parents=True, exist_ok=True)
+    (no_run_json_dir / "note.txt").write_text("keep me", encoding="utf-8")
+    os.utime(no_run_json_dir, (old_ts, old_ts))
+
+    # Create a run that is still "running" even if started long ago
+    running_dir = artifacts_dir / "run_active"
+    running_dir.mkdir(parents=True, exist_ok=True)
+    (running_dir / "run.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run_active",
+                "flow_name": "active",
+                "status": "running",
+                "started_at": (now - timedelta(days=60)).isoformat(),
+                "steps": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    stats = gc.run_gc()
+    assert stats["runs_scanned"] == 0
+    assert vault_file.exists()
+    assert session_file.exists()
+    assert hidden_dir.exists()
+    assert no_run_json_dir.exists()
+    assert (running_dir / "run.json").exists()

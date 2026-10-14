@@ -110,10 +110,43 @@ def test_cron_api(client: TestClient):
 # ---------------- 3. Webhook 外部网关 ----------------
 
 
-def test_webhook_trigger_with_hmac(client: TestClient):
-    # example flow 位于 flows/example.flow.yaml
-    flow_name = "example"
+def test_webhook_trigger_with_hmac(client: TestClient, tmp_path: Path, monkeypatch):
+    from app.core.setting_manager import setting_manager
+
+    flows_dir = tmp_path / "flows"
+    flows_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setitem(setting_manager.config, "FLOWS_DIR", str(flows_dir))
+
     secret_token = "test-webhook-secret"
+    # 1. 配置了 webhook_enabled=true 与 webhook_token 的流程
+    (flows_dir / "webhook_enabled_flow.flow.yaml").write_text(
+        f"""version: "1"
+name: example
+trigger:
+  webhook_enabled: true
+  webhook_token: "{secret_token}"
+steps:
+  - id: echo
+    action:
+      type: dummy.echo
+      params:
+        message: "hello from webhook"
+""",
+        encoding="utf-8",
+    )
+    # 2. 未开启 webhook 的流程
+    (flows_dir / "webhook_disabled_flow.flow.yaml").write_text(
+        """version: "1"
+name: disabled_flow
+steps:
+  - id: log
+    action:
+      type: core.log
+      params:
+        message: "disabled"
+""",
+        encoding="utf-8",
+    )
 
     payload = json.dumps({"test_param": "hello_from_webhook"}).encode("utf-8")
     signature = hmac.new(
@@ -122,7 +155,7 @@ def test_webhook_trigger_with_hmac(client: TestClient):
 
     # 1. 签名正确，同步执行 (wait=true)
     res = client.post(
-        f"/api/v1/webhooks/{flow_name}/{secret_token}?wait=true",
+        f"/api/v1/webhooks/example/{secret_token}?wait=true",
         content=payload,
         headers={
             "Content-Type": "application/json",
@@ -134,9 +167,9 @@ def test_webhook_trigger_with_hmac(client: TestClient):
     assert data["flow_name"] == "example"
     assert data["status"] == "success"
 
-    # 2. 签名错误
+    # 2. 签名错误 -> 401
     res = client.post(
-        f"/api/v1/webhooks/{flow_name}/{secret_token}",
+        f"/api/v1/webhooks/example/{secret_token}",
         content=payload,
         headers={
             "Content-Type": "application/json",
@@ -144,6 +177,75 @@ def test_webhook_trigger_with_hmac(client: TestClient):
         },
     )
     assert res.status_code == 401
+
+    # 3. 未开启 webhook 的流程 -> 403
+    res = client.post(
+        f"/api/v1/webhooks/disabled_flow/{secret_token}",
+        content=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 403
+
+
+def test_check_params_template_resolution_and_builtin_checks(client: TestClient):
+    flow_yaml = """version: "1"
+name: test_builtin_checks_and_templates
+steps:
+  - id: step1
+    action:
+      type: dummy.echo
+      params:
+        message: "status_ok"
+    check:
+      type: core.assert_truthy
+      params:
+        value: "{{input.should_pass}}"
+  - id: step2
+    action:
+      type: dummy.echo
+      params:
+        message: "check_equals"
+    check:
+      type: core.assert_equals
+      params:
+        actual: "{{steps.step1.output.message}}"
+        expected: "{{vars.expected_msg}}"
+  - id: step3
+    action:
+      type: core.log
+      params:
+        message: "check_status"
+    check:
+      type: core.assert_status
+      params:
+        actual: "{{vars.http_status}}"
+        expected_status: 200
+"""
+    res = client.post(
+        "/api/v1/runs/execute",
+        json={
+            "flow_yaml": flow_yaml,
+            "input": {"should_pass": True},
+            "vars": {"expected_msg": "status_ok", "http_status": 200},
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert all(s["check_passed"] is True for s in data["steps"])
+
+    # Verify failure when template resolves to falsy
+    res_fail = client.post(
+        "/api/v1/runs/execute",
+        json={
+            "flow_yaml": flow_yaml,
+            "input": {"should_pass": False},
+            "vars": {"expected_msg": "status_ok", "http_status": 200},
+        },
+    )
+    assert res_fail.status_code == 200
+    assert res_fail.json()["status"] == "failed"
+    assert res_fail.json()["steps"][0]["check_passed"] is False
 
 
 # ---------------- 4. Flow Hub 市场 ----------------
@@ -156,11 +258,24 @@ def test_flow_hub_api(client: TestClient):
     flows = res.json()
     assert len(flows) >= 3
 
-    # 详情查询
-    first_id = flows[0]["id"]
-    res = client.get(f"/api/v1/hub/flows/{first_id}")
-    assert res.status_code == 200
-    assert "yaml" in res.json()
+    # 详情查询与全部精选模板可执行验证
+    for f in flows:
+        detail_res = client.get(f"/api/v1/hub/flows/{f['id']}")
+        assert detail_res.status_code == 200
+        yaml_text = detail_res.json()["yaml"]
+        exec_res = client.post(
+            "/api/v1/runs/execute",
+            json={
+                "flow_yaml": yaml_text,
+                "input": {
+                    "alert_id": "A1",
+                    "service_name": "api",
+                    "task": "demo",
+                },
+            },
+        )
+        assert exec_res.status_code == 200
+        assert exec_res.json()["status"] == "success"
 
 
 # ---------------- 5. MCP 新增工具测试 ----------------

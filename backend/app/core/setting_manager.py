@@ -53,7 +53,7 @@ class SettingManager:
             self.config[key] = value
 
         self.config.setdefault("PROJECT_NAME", "AutoFlow")
-        self.config.setdefault("APP_VERSION", "1.1.0")
+        self.config.setdefault("APP_VERSION", "1.2.0")
         self.config.setdefault("API_VERSION", "v1")
         self.config.setdefault("LOG_LEVEL", "INFO")
         self.config.setdefault("SERVE_STATIC_FILES", False)

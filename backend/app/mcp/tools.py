@@ -272,8 +272,13 @@ def time_travel_run(
         result = session.run_to_completion()
         return _run_json(result)
     else:
+        from app.runtime.storage.session_store import SessionStore
+
         session.step()
         deps.store.save_run(session.run)
+        SessionStore(deps.store.artifacts_dir).save(
+            session.run.run_id, session.to_state()
+        )
         return {
             "session_id": session.run.run_id,
             "run": _run_json(session.run),

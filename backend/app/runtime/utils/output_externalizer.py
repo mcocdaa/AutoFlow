@@ -17,16 +17,23 @@ def externalize_if_large(
     file_stem: str,
     max_bytes: int = 64 * 1024,
 ) -> Any:
+    from app.core.secrets_vault import get_secrets_vault
+
+    masked_value = get_secrets_vault().mask_data(value)
     try:
         dumped = json.dumps(
-            value, ensure_ascii=False, separators=(",", ":"), default=str
+            masked_value, ensure_ascii=False, separators=(",", ":"), default=str
         )
     except Exception:
-        dumped = json.dumps(str(value), ensure_ascii=False, separators=(",", ":"))
+        dumped = json.dumps(
+            get_secrets_vault().mask_text(str(value)),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
     raw = dumped.encode("utf-8")
     if len(raw) <= max_bytes:
-        return value
+        return masked_value
 
     out_dir = artifacts_dir / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)

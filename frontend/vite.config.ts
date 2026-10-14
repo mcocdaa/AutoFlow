@@ -3,9 +3,14 @@ import vue from '@vitejs/plugin-vue'
 import electron from 'vite-plugin-electron'
 import renderer from 'vite-plugin-electron-renderer'
 
+const apiProxyTarget = process.env.VITE_API_PROXY_URL || 'http://localhost:3001'
 const apiProxyConfig = {
   '/api': {
-    target: process.env.VITE_API_PROXY_URL || 'http://localhost:3001',
+    target: apiProxyTarget,
+    changeOrigin: true,
+  },
+  '/mcp': {
+    target: apiProxyTarget,
     changeOrigin: true,
   },
 }

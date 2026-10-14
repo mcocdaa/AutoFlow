@@ -12,7 +12,7 @@ from typing import Any
 
 from app.core.registry import ActionContext
 
-from plugins.common.helpers import read_text, utc_now_iso, write_text
+from plugins.common.helpers import is_truthy, read_text, utc_now_iso, write_text
 from plugins.common.plugin import Plugin
 
 
@@ -59,6 +59,7 @@ class ZhihuDigestPlugin(Plugin):
         mode = str(params.get("mode", "auto")).lower()
         timeout_seconds = float(params.get("timeout_seconds", 30))
         cookie = self.setting(params, "cookie", env_var="ZHIHU_COOKIE")
+        headless = is_truthy(params.get("headless", True))
 
         if mode in {"auto", "playwright"}:
             return self._fetch_answer_playwright(
@@ -68,6 +69,7 @@ class ZhihuDigestPlugin(Plugin):
                 answer_id=answer_id,
                 timeout_seconds=timeout_seconds,
                 cookie=cookie,
+                headless=headless,
             )
         raise ValueError(f"unsupported mode: {mode}")
 
@@ -80,6 +82,7 @@ class ZhihuDigestPlugin(Plugin):
         answer_id: str,
         timeout_seconds: float,
         cookie: str | None,
+        headless: bool = True,
     ) -> Any:
         # 优先用 answer_id 定位目标回答的选择器,失败时回退到通用选择器
         try:
@@ -88,11 +91,12 @@ class ZhihuDigestPlugin(Plugin):
             raise RuntimeError(f"playwright unavailable: {e}") from e
 
         t0 = time.time()
+        p = None
         browser = None
         context = None
         try:
             p = sync_playwright().__enter__()
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=headless)
             context = browser.new_context()
             if cookie:
                 context.set_extra_http_headers({"Cookie": cookie})
@@ -128,9 +132,20 @@ class ZhihuDigestPlugin(Plugin):
                 title = None
         finally:
             if context is not None:
-                context.close()
+                try:
+                    context.close()
+                except Exception:
+                    pass
             if browser is not None:
-                browser.close()
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+            if p is not None:
+                try:
+                    p.stop()
+                except Exception:
+                    pass
 
         if not text:
             raise RuntimeError("failed to extract answer text")
@@ -195,13 +210,15 @@ class ZhihuDigestPlugin(Plugin):
             }
 
         timeout_seconds = float(params.get("timeout_seconds", 60.0))
+        headless = is_truthy(params.get("headless", True))
         attempted = False
         error: str | None = None
+        p = None
         browser = None
         context = None
         try:
             p = sync_playwright().__enter__()
-            browser = p.chromium.launch(headless=False)
+            browser = p.chromium.launch(headless=headless)
             context = browser.new_context()
             context.set_extra_http_headers({"Cookie": cookie})
             page = context.new_page()
@@ -219,9 +236,20 @@ class ZhihuDigestPlugin(Plugin):
             error = str(e)
         finally:
             if context is not None:
-                context.close()
+                try:
+                    context.close()
+                except Exception:
+                    pass
             if browser is not None:
-                browser.close()
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+            if p is not None:
+                try:
+                    p.stop()
+                except Exception:
+                    pass
 
         return {
             "attempted": attempted,

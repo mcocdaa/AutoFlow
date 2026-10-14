@@ -36,9 +36,23 @@ class RunStore:
         return self._artifacts_dir
 
     def save_run(self, run: RunResult) -> None:
+        from app.core.secrets_vault import SecretsVault, get_secrets_vault
+
         run_dir = self._artifacts_dir / run.run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         data = safe_deep_copy(run.model_dump(mode="python"))
+        vault = get_secrets_vault()
+        data = vault.mask_data(data)
+        local_vault_dir = self._artifacts_dir / "vault"
+        if (
+            local_vault_dir != vault._data_dir
+            and (local_vault_dir / "vault.enc").is_file()
+        ):
+            data = SecretsVault(local_vault_dir).mask_data(data)
+        if isinstance(data, dict):
+            data["run_id"] = run.run_id
+            data["flow_name"] = run.flow_name
+            data["status"] = run.status
         payload = json.dumps(data, ensure_ascii=False, indent=2, default=str)
         tmp_path = run_dir / "run.json.tmp"
         tmp_path.write_text(payload, encoding="utf-8")

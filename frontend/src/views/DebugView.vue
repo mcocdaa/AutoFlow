@@ -398,6 +398,11 @@ const toggleBreakpoint = (stepId: string) => {
 }
 
 onMounted(async () => {
+  const pendingDebugYaml = sessionStorage.getItem('autoflow_debug_yaml')
+  if (pendingDebugYaml) {
+    sessionStorage.removeItem('autoflow_debug_yaml')
+    yamlContent.value = pendingDebugYaml
+  }
   const sessionId = route.query.session
   if (typeof sessionId !== 'string' || !sessionId) return
   loading.value = true
