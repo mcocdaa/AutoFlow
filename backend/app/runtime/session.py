@@ -227,7 +227,9 @@ class RunSession:
         layer_index = 0
         if is_dag:
             layers = resolve_execution_layers(flow.steps)
-            completed_step_ids = {r.step_id for r in prefix if r.status == "success"}
+            completed_step_ids = {
+                r.step_id for r in prefix if r.status in ("success", "skipped")
+            }
             for idx, layer in enumerate(layers):
                 if all(s.id in completed_step_ids for s in layer):
                     layer_index = idx + 1
@@ -340,31 +342,45 @@ class RunSession:
             return self._step_outputs.get(step.depends_on[0])
         return {dep: self._step_outputs.get(dep) for dep in step.depends_on}
 
-    def _execute_single_dag_step(self, step: StepSpec) -> tuple[StepSpec, StepResult]:
-        """执行 DAG 单个步骤并返回结果"""
+    def _execute_single_dag_step(
+        self,
+        step: StepSpec,
+        vars_override: dict[str, Any] | None = None,
+    ) -> tuple[StepSpec, StepResult, dict[str, Any]]:
+        """执行 DAG 单个步骤并返回结果与线程本地 vars 副本"""
         step_started = _utc_now()
-        step_input = self._compute_step_input(step)
+        with self._lock:
+            step_input = self._compute_step_input(step)
+            local_vars = dict(
+                self._runtime_vars if vars_override is None else vars_override
+            )
 
         if step.condition is not None:
             resolved_condition = resolve_templates(
                 step.condition,
-                self._template_context(step_input),
+                self._template_context(step_input, local_vars),
             )
             if not evaluate_condition(str(resolved_condition)):
                 step_finished = _utc_now()
-                return step, self._make_step_result(
-                    step_id=step.id,
-                    status="skipped",
-                    started_at=step_started,
-                    finished_at=step_finished,
-                    action_output=None,
-                    check_passed=None,
-                    error=None,
+                return (
+                    step,
+                    self._make_step_result(
+                        step_id=step.id,
+                        status="skipped",
+                        started_at=step_started,
+                        finished_at=step_finished,
+                        action_output=None,
+                        check_passed=None,
+                        error=None,
+                    ),
+                    local_vars,
                 )
 
         try:
             iterations, action_output, check_passed, success, step_error = (
-                self._execute_step(step, step_input=step_input)
+                self._execute_step(
+                    step, step_input=step_input, vars_override=local_vars
+                )
             )
         except Exception as exc:
             iterations, action_output, check_passed, success, step_error = (
@@ -384,29 +400,39 @@ class RunSession:
                     file_stem=f"{step.id}.action_output",
                 )
 
-        return step, self._make_step_result(
-            step_id=step.id,
-            status="success" if success else "failed",
-            started_at=step_started,
-            finished_at=step_finished,
-            action_output=action_output,
-            check_passed=check_passed,
-            error=step_error,
-            iterations=iterations,
+        return (
+            step,
+            self._make_step_result(
+                step_id=step.id,
+                status="success" if success else "failed",
+                started_at=step_started,
+                finished_at=step_finished,
+                action_output=action_output,
+                check_passed=check_passed,
+                error=step_error,
+                iterations=iterations,
+            ),
+            local_vars,
         )
 
     def _execute_layer(
         self, layer: list[StepSpec]
-    ) -> list[tuple[StepSpec, StepResult]]:
+    ) -> list[tuple[StepSpec, StepResult, dict[str, Any]]]:
         """并发执行同一拓扑层的所有步骤(无相互依赖)"""
+        with self._lock:
+            base_vars = dict(self._runtime_vars)
+
         if len(layer) == 1:
-            return [self._execute_single_dag_step(layer[0])]
+            return [
+                self._execute_single_dag_step(layer[0], vars_override=dict(base_vars))
+            ]
 
         max_workers = self._max_workers or min(len(layer), 16)
-        results_map: dict[str, tuple[StepSpec, StepResult]] = {}
+        results_map: dict[str, tuple[StepSpec, StepResult, dict[str, Any]]] = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_step = {
-                executor.submit(self._execute_single_dag_step, s): s for s in layer
+                executor.submit(self._execute_single_dag_step, s, dict(base_vars)): s
+                for s in layer
             }
             for future in concurrent.futures.as_completed(future_to_step):
                 s = future_to_step[future]
@@ -424,7 +450,7 @@ class RunSession:
                         check_passed=False,
                         error=str(exc),
                     )
-                    results_map[s.id] = (s, failed_result)
+                    results_map[s.id] = (s, failed_result, dict(base_vars))
 
         return [results_map[s.id] for s in layer]
 
@@ -441,15 +467,35 @@ class RunSession:
                 self._finalize(status="success")
             return
 
-        layer_results = self._execute_layer(current_layer)
+        with self._lock:
+            completed_ids = {
+                r.step_id for r in self._run.steps if r.status in ("success", "skipped")
+            }
+        pending_layer = [s for s in current_layer if s.id not in completed_ids]
+        if not pending_layer:
+            self._layer_index += 1
+            if self._layer_index >= len(self._layers):
+                self._finalize(status="success")
+            return
+
+        layer_results = self._execute_layer(pending_layer)
 
         with self._lock:
             layer_has_error = False
             first_error: str | None = None
             last_output: Any = None
+            existing_indices = {r.step_id: idx for idx, r in enumerate(self._run.steps)}
+            newly_added = 0
 
-            for step, res in layer_results:
-                self._run.steps.append(res)
+            for step, res, thread_vars in layer_results:
+                for k, v in thread_vars.items():
+                    if k not in self._runtime_vars or self._runtime_vars[k] != v:
+                        self._runtime_vars[k] = v
+                if step.id in existing_indices:
+                    self._run.steps[existing_indices[step.id]] = res
+                else:
+                    self._run.steps.append(res)
+                    newly_added += 1
                 if res.status == "failed":
                     layer_has_error = True
                     if first_error is None:
@@ -467,11 +513,11 @@ class RunSession:
             else:
                 self._current_input = {
                     s.id: r.action_output
-                    for s, r in layer_results
+                    for s, r, _ in layer_results
                     if r.status == "success"
                 }
 
-            self._index += len(current_layer)
+            self._index += newly_added
             self._layer_index += 1
             self._store.save_run(self._run)
 
@@ -577,12 +623,14 @@ class RunSession:
     ) -> Any:
         """统一 action 调用:模板解析 + 查表 + 构造上下文 + 执行"""
         actual_input = self._current_input if step_input is _DEFAULT else step_input
-        actual_vars = self._runtime_vars if vars_override is None else vars_override
+        actual_vars = dict(
+            self._runtime_vars if vars_override is None else vars_override
+        )
         resolved_params = resolve_templates(
             params, self._template_context(actual_input, actual_vars)
         )
         handler = self._registry.get_action(action_type)
-        return handler(
+        result = handler(
             ActionContext(
                 run_id=self._run.run_id,
                 step_id=step_id,
@@ -592,6 +640,9 @@ class RunSession:
             ),
             resolved_params,
         )
+        if vars_override is not None:
+            vars_override.update(actual_vars)
+        return result
 
     def _run_hooks(self, hooks: HookSpec, status: str) -> list[HookResult]:
         """执行 flow hooks 并记录每次结果(失败不影响主流程状态)"""
@@ -671,8 +722,16 @@ class RunSession:
                 )
                 if step.check is not None:
                     check = self._registry.get_check(step.check.type)
-                    actual_vars = (
+                    actual_input = (
+                        self._current_input if step_input is _DEFAULT else step_input
+                    )
+                    actual_vars = dict(
                         self._runtime_vars if vars_override is None else vars_override
+                    )
+                    tmpl_ctx = self._template_context(actual_input, actual_vars)
+                    tmpl_ctx["steps"] = {**self._step_outputs, step.id: output}
+                    resolved_check_params = resolve_templates(
+                        step.check.params, tmpl_ctx
                     )
                     check_passed = check(
                         CheckContext(
@@ -681,7 +740,7 @@ class RunSession:
                             action_output=output,
                             vars=actual_vars,
                         ),
-                        step.check.params,
+                        resolved_check_params,
                     )
                     if not check_passed:
                         raise RuntimeError(f"check failed: {step.check.type}")
@@ -699,6 +758,7 @@ class RunSession:
         self,
         step: StepSpec,
         step_input: Any = _DEFAULT,
+        vars_override: dict[str, Any] | None = None,
     ) -> tuple[list[dict] | None, Any, bool | None, bool, str | None]:
         """执行单个 step(for_each 时对每个 item 执行并收集 iterations)
 
@@ -713,12 +773,15 @@ class RunSession:
         if step.for_each is not None:
             iterations = []
             loop_list = resolve_templates(
-                step.for_each, self._template_context(step_input)
+                step.for_each,
+                self._template_context(step_input, vars_override),
             )
             if not isinstance(loop_list, list):
                 loop_list = [loop_list]
 
-            local_vars = dict(self._runtime_vars)
+            local_vars = dict(
+                self._runtime_vars if vars_override is None else vars_override
+            )
             for item in loop_list:
                 local_vars[step.for_item_var] = item
 
@@ -757,6 +820,7 @@ class RunSession:
             action_output, check_passed, step_error = self._execute_once(
                 step=step,
                 step_input=step_input,
+                vars_override=vars_override,
             )
 
         success = step_error is None

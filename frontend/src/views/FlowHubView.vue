@@ -264,7 +264,7 @@
           <div class="banner-badge">Streamable HTTP MCP</div>
           <p>
             AutoFlow 后端内置 Model Context Protocol (MCP) 服务，端点位于
-            <code>http://127.0.0.1:8000/mcp</code>。外部 Agent 可自动发现并调用
+            <code>{{ mcpEndpointUrl }}</code>。外部 Agent 可自动发现并调用
             <code>search_flow_hub</code>, <code>get_flow</code>, <code>validate_flow</code>, <code>time_travel_run</code> 等增强工具。
           </p>
         </div>
@@ -616,34 +616,53 @@ const handleOpenInCanvas = async (flow: HubFlowSummary) => {
   }
 }
 
-// Agent 配置文件代码常量
-const CLAUDE_CLI_COMMAND = `claude mcp add autoflow http://127.0.0.1:8000/mcp`
+// Agent 配置文件代码常量 (使用动态 origin 或默认 3001 端口)
+const mcpEndpointUrl = computed(() => {
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.origin &&
+    !window.location.origin.startsWith('file:')
+  ) {
+    return `${window.location.origin}/mcp`
+  }
+  return 'http://127.0.0.1:3001/mcp'
+})
 
-const CLAUDE_CONFIG_JSON = `{
+const CLAUDE_CLI_COMMAND = computed(
+  () => `claude mcp add autoflow ${mcpEndpointUrl.value}`,
+)
+
+const CLAUDE_CONFIG_JSON = computed(
+  () => `{
   "mcpServers": {
     "autoflow": {
-      "url": "http://127.0.0.1:8000/mcp"
+      "url": "${mcpEndpointUrl.value}"
     }
   }
-}`
+}`,
+)
 
-const CURSOR_CONFIG_JSON = `{
+const CURSOR_CONFIG_JSON = computed(
+  () => `{
   "mcpServers": {
     "autoflow": {
-      "url": "http://127.0.0.1:8000/mcp"
+      "url": "${mcpEndpointUrl.value}"
     }
   }
-}`
+}`,
+)
 
-const OPENCLAW_CONFIG_JSON = `{
+const OPENCLAW_CONFIG_JSON = computed(
+  () => `{
   "plugins": {
     "autoflow_mcp": {
       "type": "mcp-client",
-      "server_url": "http://127.0.0.1:8000/mcp",
+      "server_url": "${mcpEndpointUrl.value}",
       "auto_discover_tools": true
     }
   }
-}`
+}`,
+)
 
 onMounted(() => {
   loadFlows()

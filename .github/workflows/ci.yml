@@ -40,6 +40,8 @@ jobs:
           uv run pytest tests
           ../plugins/zhihu_digest/tests
           ../plugins/desktop_checkin/tests
+          ../plugins/openclaw/tests
+          ../plugins/ai_deepseek/tests
           -q
       - name: API regression (flows + endpoints)
         run: |

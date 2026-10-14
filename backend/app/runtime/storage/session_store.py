@@ -34,8 +34,20 @@ class SessionStore:
     def exists(self, session_id: str) -> bool:
         return self._path(session_id).is_file()
 
-    def save(self, session_id: str, state: dict[str, Any]) -> None:
-        payload = json.dumps(state, ensure_ascii=False, indent=2, default=str)
+    def save(
+        self,
+        session_id_or_state: str | dict[str, Any],
+        state: dict[str, Any] | None = None,
+    ) -> None:
+        if isinstance(session_id_or_state, dict):
+            actual_state = session_id_or_state
+            session_id = str(actual_state.get("run", {}).get("run_id", ""))
+        else:
+            session_id = session_id_or_state
+            if state is None:
+                raise ValueError("state is required when session_id is a string")
+            actual_state = state
+        payload = json.dumps(actual_state, ensure_ascii=False, indent=2, default=str)
         tmp_path = self._dir / f"{session_id}.json.tmp"
         tmp_path.write_text(payload, encoding="utf-8")
         tmp_path.replace(self._path(session_id))

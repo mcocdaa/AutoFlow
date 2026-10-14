@@ -177,7 +177,9 @@ const { fitView } = useVueFlow()
 const flowName = ref('my_workflow')
 const flowDesc = ref('AutoFlow 自动化流程')
 const cronValue = ref('')
-const webhookTokenValue = ref('token-123')
+const webhookTokenValue = ref('')
+const flowHooks = ref<FlowSpec['hooks']>(undefined)
+const flowTrigger = ref<FlowSpec['trigger']>(undefined)
 const selectedExampleKey = ref<string>()
 const showTimeline = ref(true)
 
@@ -211,8 +213,10 @@ const parseYamlToCanvas = (rawYaml: string) => {
 
     flowName.value = doc.name || 'unnamed_flow'
     flowDesc.value = doc.description || ''
-    cronValue.value = doc.cron || (doc.trigger as any)?.cron || ''
-    webhookTokenValue.value = (doc.trigger as any)?.webhook_token || 'token-123'
+    cronValue.value = doc.cron || doc.trigger?.cron || ''
+    webhookTokenValue.value = doc.trigger?.webhook_token || ''
+    flowHooks.value = doc.hooks
+    flowTrigger.value = doc.trigger ? { ...doc.trigger } : undefined
 
     const newNodes: any[] = []
     const newEdges: any[] = []
@@ -269,7 +273,32 @@ const parseYamlToCanvas = (rawYaml: string) => {
 
 /** 将画布节点序列化回 YAML 代码 */
 const syncCanvasToYaml = () => {
-  const steps: StepSpec[] = nodes.value.map((n) => n.data.step)
+  const validIds = new Set(nodes.value.map((n) => n.id))
+  const steps: StepSpec[] = nodes.value.map((n) => {
+    const incomingDeps = Array.from(
+      new Set(
+        edges.value
+          .filter(
+            (e) =>
+              e.target === n.id &&
+              e.source &&
+              e.source !== n.id &&
+              validIds.has(e.source),
+          )
+          .map((e) => String(e.source)),
+      ),
+    )
+    const stepCopy: StepSpec = { ...n.data.step }
+    if (incomingDeps.length > 0) {
+      stepCopy.depends_on = incomingDeps
+      n.data.step.depends_on = incomingDeps
+    } else {
+      delete stepCopy.depends_on
+      delete n.data.step.depends_on
+    }
+    return stepCopy
+  })
+
   const doc: FlowSpec = {
     version: '1',
     name: flowName.value,
@@ -282,9 +311,15 @@ const syncCanvasToYaml = () => {
   }
   if (webhookTokenValue.value) {
     doc.trigger = {
+      ...(flowTrigger.value || {}),
       webhook_enabled: true,
       webhook_token: webhookTokenValue.value,
     }
+  } else if (flowTrigger.value) {
+    doc.trigger = { ...flowTrigger.value }
+  }
+  if (flowHooks.value) {
+    doc.hooks = flowHooks.value
   }
 
   yamlCode.value = yaml.dump(doc, { indent: 2, noRefs: true })
@@ -317,33 +352,76 @@ const onPaneClick = () => {
 }
 
 const onConnect = (connection: any) => {
-  edges.value.push({
-    ...connection,
-    animated: true,
-    style: { stroke: '#3b82f6', strokeWidth: 2 },
-  })
+  if (
+    !connection.source ||
+    !connection.target ||
+    connection.source === connection.target
+  ) {
+    return
+  }
+  const exists = edges.value.some(
+    (e) => e.source === connection.source && e.target === connection.target,
+  )
+  if (!exists) {
+    edges.value.push({
+      id: `edge-${connection.source}-${connection.target}`,
+      ...connection,
+      animated: true,
+      style: { stroke: '#3b82f6', strokeWidth: 2 },
+    })
+  }
+  const targetNode = nodes.value.find((n) => n.id === connection.target)
+  if (targetNode) {
+    const deps = new Set(targetNode.data.step.depends_on || [])
+    deps.add(String(connection.source))
+    targetNode.data.step.depends_on = Array.from(deps)
+  }
+  syncCanvasToYaml()
 }
 
 const addNodeFromPalette = (item: ComponentItem) => {
+  if (item.category === 'check') {
+    const targetNode =
+      nodes.value.find((n) => n.id === selectedNodeId.value) ||
+      nodes.value[nodes.value.length - 1]
+    if (targetNode) {
+      targetNode.data.step.check = {
+        type: item.type,
+        params: item.defaultParams ? { ...item.defaultParams } : { value: true },
+      }
+      selectedNodeId.value = targetNode.id
+      syncCanvasToYaml()
+      message.success(`已为步骤「${targetNode.id}」挂载断言: ${item.label}`)
+      return
+    }
+  }
+
   const count = nodes.value.length
   const stepId = `step_${count + 1}_${item.type.split('.').pop()}`
   const lastNode = nodes.value[nodes.value.length - 1]
 
-  const newStep: StepSpec = {
-    id: stepId,
-    name: item.label,
-    action: {
-      type: item.type,
-      params: item.defaultParams || {},
-    },
-  }
-
-  if (item.category === 'check') {
-    newStep.check = {
-      type: item.type,
-      params: item.defaultParams || { value: true },
-    }
-  }
+  const newStep: StepSpec =
+    item.category === 'check'
+      ? {
+          id: stepId,
+          name: item.label,
+          action: {
+            type: 'core.log',
+            params: { message: `Check step: ${item.label}` },
+          },
+          check: {
+            type: item.type,
+            params: item.defaultParams ? { ...item.defaultParams } : { value: true },
+          },
+        }
+      : {
+          id: stepId,
+          name: item.label,
+          action: {
+            type: item.type,
+            params: item.defaultParams ? { ...item.defaultParams } : {},
+          },
+        }
 
   const newNode = {
     id: stepId,
@@ -400,27 +478,45 @@ const onStepUpdated = (updatedStep: StepSpec) => {
 }
 
 const onStepIdChanged = (oldId: string, newId: string) => {
+  const trimmed = newId.trim()
+  if (!trimmed || trimmed === oldId) return
   const node = nodes.value.find((n) => n.id === oldId)
   if (!node) return
-  node.id = newId
-  node.data.step.id = newId
+  node.id = trimmed
+  node.data.step.id = trimmed
 
-  // 更新连线关联
+  // 更新连线关联与下游 depends_on
   edges.value.forEach((edge) => {
-    if (edge.source === oldId) edge.source = newId
-    if (edge.target === oldId) edge.target = newId
+    if (edge.source === oldId) edge.source = trimmed
+    if (edge.target === oldId) edge.target = trimmed
+    edge.id = `edge-${edge.source}-${edge.target}`
+  })
+  nodes.value.forEach((n) => {
+    if (Array.isArray(n.data.step.depends_on)) {
+      n.data.step.depends_on = n.data.step.depends_on.map((dep: string) =>
+        dep === oldId ? trimmed : dep,
+      )
+    }
   })
 
-  selectedNodeId.value = newId
+  selectedNodeId.value = trimmed
   syncCanvasToYaml()
 }
 
 const deleteStep = (stepId: string) => {
   nodes.value = nodes.value.filter((n) => n.id !== stepId)
   edges.value = edges.value.filter((e) => e.source !== stepId && e.target !== stepId)
-  // 重新编号
+  // 重新编号并清理下游 depends_on
   nodes.value.forEach((n, idx) => {
     n.data.index = idx
+    if (Array.isArray(n.data.step.depends_on)) {
+      const filtered = n.data.step.depends_on.filter((dep: string) => dep !== stepId)
+      if (filtered.length > 0) {
+        n.data.step.depends_on = filtered
+      } else {
+        delete n.data.step.depends_on
+      }
+    }
   })
   selectedNodeId.value = nodes.value[0]?.id || null
   syncCanvasToYaml()
@@ -444,7 +540,14 @@ const onCronChanged = (expr: string) => {
 }
 
 const onWebhookChanged = (token: string) => {
-  webhookTokenValue.value = token
+  webhookTokenValue.value = token.trim()
+  if (!webhookTokenValue.value && flowTrigger.value) {
+    delete flowTrigger.value.webhook_token
+    flowTrigger.value.webhook_enabled = false
+    if (!flowTrigger.value.cron) {
+      flowTrigger.value = undefined
+    }
+  }
   syncCanvasToYaml()
 }
 
@@ -501,6 +604,7 @@ const handleRunFlow = async () => {
 
 const handleStepDebug = () => {
   syncCanvasToYaml()
+  sessionStorage.setItem('autoflow_debug_yaml', yamlCode.value)
   router.push('/debug')
 }
 

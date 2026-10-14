@@ -90,6 +90,8 @@
                   <a-select-option value="core.assert_truthy">core.assert_truthy (真值断言)</a-select-option>
                   <a-select-option value="core.assert_status">core.assert_status (状态码断言)</a-select-option>
                   <a-select-option value="core.assert_equals">core.assert_equals (相等断言)</a-select-option>
+                  <a-select-option value="text.contains">text.contains (文本包含断言)</a-select-option>
+                  <a-select-option value="core.always_true">core.always_true (恒真断言)</a-select-option>
                 </a-select>
               </a-form-item>
 
@@ -288,13 +290,18 @@ const emit = defineEmits<{
 const activeTab = ref<'node' | 'yaml' | 'triggers'>('node')
 const actionOptions = [
   { value: 'core.log' },
+  { value: 'core.sleep' },
   { value: 'dummy.echo' },
-  { value: 'http.request' },
-  { value: 'shell.exec' },
-  { value: 'ai.deepseek' },
-  { value: 'zhihu.fetch_hot' },
-  { value: 'openclaw.crawl' },
+  { value: 'openclaw.http_request' },
+  { value: 'openclaw.exec' },
+  { value: 'openclaw.knowflow_record' },
+  { value: 'ai.deepseek_summarize' },
+  { value: 'zhihu.fetch_answer' },
+  { value: 'zhihu.post_answer_draft' },
+  { value: 'desktop.activate_window' },
   { value: 'desktop.click' },
+  { value: 'desktop.type_text' },
+  { value: 'desktop.wait' },
   { value: 'desktop.screenshot' },
 ]
 
@@ -387,10 +394,14 @@ const emitUpdate = () => {
 const cronExpr = ref(props.cronValue || '')
 const selectedCronPreset = ref<string>()
 const predictedTimes = ref<string[]>([])
-const webhookToken = ref(props.webhookTokenValue || 'default-token')
+const webhookToken = ref(props.webhookTokenValue || '')
 
 watch(() => props.cronValue, (v) => {
-  if (v) cronExpr.value = v
+  cronExpr.value = v || ''
+})
+
+watch(() => props.webhookTokenValue, (v) => {
+  webhookToken.value = v || ''
 })
 
 const applyCronPreset = (val: string) => {

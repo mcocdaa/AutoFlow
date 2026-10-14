@@ -76,12 +76,20 @@ async def trigger_webhook(
             status_code=404, detail=f"flow not found: {flow_name}"
         ) from e
 
-    # 提取 flow 自身可能声明的 token
-    flow_token: str | None = None
-    if hasattr(flow, "trigger") and flow.trigger:
-        flow_token = getattr(flow.trigger, "webhook_token", None)
+    if not (flow.trigger and flow.trigger.webhook_enabled):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Webhook trigger is disabled for flow '{flow_name}'",
+        )
 
+    # 提取 flow 自身可能声明的 token
+    flow_token: str | None = getattr(flow.trigger, "webhook_token", None)
     expected_secret = _resolve_webhook_secret(flow_name, flow_token)
+    if not expected_secret:
+        raise HTTPException(
+            status_code=403,
+            detail=f"No webhook secret configured for flow '{flow_name}'",
+        )
 
     # 读取原始 body
     raw_body = await request.body()
@@ -93,14 +101,13 @@ async def trigger_webhook(
         or request.headers.get("x-signature-256")
     )
     if signature:
-        secret_for_sig = expected_secret or token
-        if not _verify_hmac_sha256(raw_body, secret_for_sig, signature):
+        if not _verify_hmac_sha256(raw_body, expected_secret, signature):
             logger.warning(
                 "Webhook HMAC signature verification failed for '%s'", flow_name
             )
             raise HTTPException(status_code=401, detail="Invalid HMAC-SHA256 signature")
-    elif expected_secret:
-        # 如果配置了密钥但未传签名，URL 中的 token 必须与之匹配
+    else:
+        # 未传签名时，URL 中的 token 必须与配置的 expected_secret 匹配
         if not hmac.compare_digest(token, expected_secret):
             logger.warning("Webhook token mismatch for '%s'", flow_name)
             raise HTTPException(status_code=401, detail="Invalid webhook token")
