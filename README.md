@@ -9,6 +9,10 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](docker-compose.yml)
 
+<p align="center">
+  <img src="docs/assets/demo_autoflow.gif" alt="AutoFlow DAG Canvas & Time-Travel Debugger Demo" width="820">
+</p>
+
 **AutoFlow** 是面向 Agent 团队的自动化（RPA）执行引擎——**Agent 的确定性执行层**：AI 负责提议，引擎负责可验证、可回放、可审计地执行。用统一的流程描述（Flow）把触发（Trigger）→ 执行（Action）→ 校验（Check）串起来，并通过插件化机制接入具体业务。
 
 - **可观测执行**：步骤 / 检查 / 迭代 / 产物 / Hooks 全量记录，大输出自动外置为产物
