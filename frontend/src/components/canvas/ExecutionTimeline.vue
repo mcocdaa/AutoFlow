@@ -60,7 +60,7 @@ import { computed } from 'vue'
 import { useI18n } from '../../i18n'
 import type { RunResult } from '../../types/runs'
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 const props = defineProps<{
   run: RunResult | null
@@ -75,12 +75,9 @@ const statusColor = computed(() => {
 
 const statusText = computed(() => {
   if (!props.run) return ''
-  if (locale.value === 'zh') {
-    if (props.run.status === 'success') return t('status.success')
-    if (props.run.status === 'failed') return t('status.failed')
-    return t('status.running')
-  }
-  return props.run.status.toUpperCase()
+  if (props.run.status === 'success') return t('status.success')
+  if (props.run.status === 'failed') return t('status.failed')
+  return t('status.running')
 })
 
 const processedSteps = computed(() => {
@@ -93,8 +90,9 @@ const processedSteps = computed(() => {
   let maxDuration = -1
   let bottleneckStepId = ''
   steps.forEach((s) => {
-    if (s.duration_ms > maxDuration) {
-      maxDuration = s.duration_ms
+    const dur = s.duration_ms ?? 0
+    if (dur > maxDuration) {
+      maxDuration = dur
       bottleneckStepId = s.step_id
     }
   })
@@ -105,16 +103,20 @@ const processedSteps = computed(() => {
   return steps.map((s) => {
     const sStart = new Date(s.started_at).getTime()
     const offsetMs = Math.max(0, sStart - firstStartTime)
+    const dur = s.duration_ms ?? 0
     const leftPercent = Math.min(100, Math.max(0, (offsetMs / totalDuration) * 100))
-    const widthPercent = Math.min(100 - leftPercent, Math.max(1, (s.duration_ms / totalDuration) * 100))
-    const percentOfTotal = Math.round((s.duration_ms / totalDuration) * 100)
+    const widthPercent = Math.min(100 - leftPercent, Math.max(1, (dur / totalDuration) * 100))
+    const percentOfTotal =
+      (props.run?.duration_ms ?? 0) <= 0 && dur === 0
+        ? Math.round(100 / steps.length)
+        : Math.round((dur / totalDuration) * 100)
 
     return {
       ...s,
       leftPercent,
       widthPercent,
       percentOfTotal,
-      isBottleneck: s.step_id === bottleneckStepId && s.duration_ms > 0,
+      isBottleneck: s.step_id === bottleneckStepId && dur >= 0,
     }
   })
 })

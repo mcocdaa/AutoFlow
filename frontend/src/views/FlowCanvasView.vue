@@ -548,6 +548,7 @@ const onStepUpdated = (updatedStep: StepSpec) => {
 const onStepIdChanged = (oldId: string, newId: string) => {
   const trimmed = newId.trim()
   if (!trimmed || trimmed === oldId) return
+  if (nodes.value.some((n) => n.id === trimmed && n.id !== oldId)) return
   const node = nodes.value.find((n) => n.id === oldId)
   if (!node) return
   node.id = trimmed

@@ -241,7 +241,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 import { message } from 'ant-design-vue'
 import {
@@ -264,7 +264,7 @@ import {
   type SecretItem,
 } from '../api/secrets'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const { copyToClipboard } = useClipboard()
 
 // 数据与状态
@@ -277,6 +277,7 @@ const searchKey = ref('')
 // 模态框与表单
 const modalVisible = ref(false)
 const isEditing = ref(false)
+const validationTriggered = ref(false)
 const formRef = ref<FormInstance>()
 const formState = reactive({
   key: '',
@@ -302,6 +303,21 @@ const formRules = computed<Record<string, Rule[]>>(() => ({
   key: [{ required: true, validator: validateKey, trigger: ['change', 'blur'] }],
   value: [{ required: true, message: t('secrets.validation.valRequired'), trigger: ['change', 'blur'] }],
 }))
+
+watch(locale, async () => {
+  if (!modalVisible.value) return
+  const hasDomError = Boolean(
+    typeof document !== 'undefined' &&
+      document.querySelector('.secret-form .ant-form-item-explain-error'),
+  )
+  if (!validationTriggered.value && !hasDomError) return
+  await nextTick()
+  try {
+    await formRef.value?.validateFields()
+  } catch {
+    // 保持并刷新当前激活语言下的校验错误提示
+  }
+})
 
 // 表格列定义
 const columns = computed(() => [
@@ -359,6 +375,7 @@ const copyReference = (key: string) => {
 // 打开新增弹窗
 const openAddModal = () => {
   isEditing.value = false
+  validationTriggered.value = false
   formState.key = ''
   formState.value = ''
   modalVisible.value = true
@@ -368,6 +385,7 @@ const openAddModal = () => {
 // 打开编辑弹窗
 const openEditModal = (item: SecretItem) => {
   isEditing.value = true
+  validationTriggered.value = false
   formState.key = item.key
   formState.value = ''
   modalVisible.value = true
@@ -376,6 +394,7 @@ const openEditModal = (item: SecretItem) => {
 
 // 提交表单保存
 const handleSubmit = async () => {
+  validationTriggered.value = true
   try {
     await formRef.value?.validate()
   } catch {

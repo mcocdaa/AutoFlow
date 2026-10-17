@@ -35,9 +35,10 @@
           <a-form layout="vertical" size="small">
             <a-form-item :label="t('prop.stepIdLabel')">
               <a-input
-                :value="selectedStep.id"
+                :value="draftStepId"
                 :placeholder="t('prop.stepIdPlaceholder')"
                 @change="onIdChange($event.target.value)"
+                @blur="onIdBlur"
               />
             </a-form-item>
 
@@ -346,11 +347,29 @@ const onParamsChange = (val: string) => {
   }
 }
 
+const draftStepId = ref(props.selectedStep?.id ?? '')
+
+watch(
+  () => props.selectedStep?.id,
+  (newVal) => {
+    draftStepId.value = newVal ?? ''
+  },
+  { immediate: true },
+)
+
 const onIdChange = (newId: string) => {
   if (!props.selectedStep) return
+  draftStepId.value = newId
+  const trimmed = newId.trim()
+  if (!trimmed) return
   const oldId = props.selectedStep.id
-  props.selectedStep.id = newId
-  emit('update-id', oldId, newId)
+  if (trimmed === oldId) return
+  emit('update-id', oldId, trimmed)
+}
+
+const onIdBlur = () => {
+  if (!props.selectedStep) return
+  draftStepId.value = props.selectedStep.id
 }
 
 const toggleCheck = (checked: boolean | string | number) => {
