@@ -19,9 +19,18 @@ function fallbackCopy(text: string): boolean {
 export function useClipboard() {
   const copyToClipboard = async (text: string) => {
     try {
+      let copied = false
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text)
-      } else if (!fallbackCopy(text)) {
+        try {
+          await navigator.clipboard.writeText(text)
+          copied = true
+        } catch {
+          copied = fallbackCopy(text)
+        }
+      } else {
+        copied = fallbackCopy(text)
+      }
+      if (!copied) {
         throw new Error('clipboard unavailable')
       }
       message.success('已复制到剪贴板')

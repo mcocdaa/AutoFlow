@@ -6,11 +6,11 @@
       :icon="PlayCircleOutlined"
     />
 
-    <a-row :gutter="[24, 24]">
-      <a-col :xs="24" :lg="12">
+    <a-row :gutter="[20, 20]">
+      <a-col :xs="24" :md="12">
         <YamlEditor :loading="store.loading" @execute="handleExecute" />
       </a-col>
-      <a-col :xs="24" :lg="12">
+      <a-col :xs="24" :md="12">
         <ResultsPanel :run="currentRun" :error="store.error" />
       </a-col>
     </a-row>

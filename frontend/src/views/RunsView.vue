@@ -2,7 +2,7 @@
   <div class="af-page">
     <PageHeader
       title="运行历史"
-      description="查看与删除历史运行，记录随 run.json 落盘保存"
+      description="查看、回放与对比历史运行记录，追踪每一步执行状态与产物"
       :icon="HistoryOutlined"
     >
       <template #actions>

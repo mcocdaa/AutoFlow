@@ -2,7 +2,7 @@
   <div class="af-page secrets-vault-page">
     <PageHeader
       title="凭据保密柜"
-      description="基于 AES-256-GCM 硬件级认证加密的本地安全保险箱，提供全链路日志脱敏与 {{secrets.KEY}} 动态运行时注入"
+      description="基于 AES-256-GCM 认证加密的本地凭据保险箱，支持全链路日志脱敏与动态运行时注入"
       :icon="KeyOutlined"
     >
       <template #actions>
@@ -28,10 +28,10 @@
         <div class="security-col">
           <div class="col-header">
             <LockOutlined class="col-icon primary" />
-            <h4 class="col-title">本地密文落盘</h4>
+            <h4 class="col-title">本地加密存储</h4>
           </div>
           <p class="col-desc">
-            所有凭据均采用 AES-256-GCM 认证加密后持久化至本地 <code>vault.enc</code>。主密钥仅本系统受控持留，绝不上传任何云端。
+            所有凭据均采用 AES-256-GCM 认证加密后安全存储于本地保险箱，主密钥仅本机受控持留，绝不上传云端。
           </p>
         </div>
 
@@ -41,12 +41,12 @@
             <h4 class="col-title">插值引用语法</h4>
           </div>
           <p class="col-desc">
-            在 Flow YAML 任意 Action 中使用
+            在流程配置中使用
             <a-tag class="code-tag" @click="copyToClipboard(SECRET_SYNTAX_EXAMPLE)">
               <span>{{ SECRET_SYNTAX_EXAMPLE }}</span>
               <CopyOutlined class="copy-tag-icon" />
             </a-tag>
-            ，引擎在执行沙箱内安全解析，不留落盘明文。
+            引用凭据，执行引擎在沙箱内安全解析，不留明文记录。
           </p>
         </div>
 
@@ -56,7 +56,7 @@
             <h4 class="col-title">全链路正则脱敏</h4>
           </div>
           <p class="col-desc">
-            自动对输出日志、控制台标准流与 Run 产物进行深度扫描，已录入凭据及常见 API Key（sk-*, Bearer 等）全自动掩码脱敏。
+            自动对运行日志、控制台输出与执行产物进行深度扫描，已登记凭据及常见密钥格式全自动掩码脱敏。
           </p>
         </div>
       </div>
@@ -113,7 +113,7 @@
           <template v-else-if="column.key === 'masked_value'">
             <div class="masked-cell">
               <span class="masked-tag">{{ record.masked_value }}</span>
-              <span class="masked-tip">已应用正则防泄漏掩码</span>
+              <span class="masked-tip">已启用防泄漏掩码</span>
             </div>
           </template>
 
@@ -179,7 +179,7 @@
         <div>
           <h3 class="modal-title">{{ isEditing ? '更新保密柜凭据' : '添加新敏感凭据' }}</h3>
           <span class="modal-desc">
-            {{ isEditing ? `为凭据 [${formState.key}] 覆盖写入新的加密密文` : '录入敏感 Key 并使用 AES-256-GCM 加密落盘' }}
+            {{ isEditing ? `为凭据 [${formState.key}] 覆盖写入新的加密密文` : '录入敏感凭据并使用 AES-256-GCM 加密存储' }}
           </span>
         </div>
       </div>
@@ -303,26 +303,26 @@ const formRules: Record<string, Rule[]> = {
 // 表格列定义
 const columns = [
   {
-    title: '凭据标识 (Key)',
+    title: '凭据标识',
     dataIndex: 'key',
     key: 'key',
     width: '30%',
   },
   {
-    title: '脱敏密文预览 (Masked Value)',
+    title: '脱敏预览',
     dataIndex: 'masked_value',
     key: 'masked_value',
-    width: '30%',
+    width: '26%',
   },
   {
     title: '防护等级',
     key: 'status',
-    width: '20%',
+    width: '22%',
   },
   {
     title: '操作',
     key: 'actions',
-    width: '20%',
+    width: '22%',
     align: 'right' as const,
   },
 ]
@@ -418,8 +418,8 @@ onMounted(() => {
 
 /* 顶部安全机制横幅 */
 .security-hero-card {
-  padding: 24px 28px;
-  margin-bottom: 24px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
   background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
   border-radius: var(--flow-border-radius-lg);
   color: #FFFFFF;
@@ -431,7 +431,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 4px 12px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   background: rgba(16, 185, 129, 0.2);
   border: 1px solid rgba(52, 211, 153, 0.35);
   border-radius: 9999px;
@@ -447,12 +447,12 @@ onMounted(() => {
 
 .security-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .security-col {
-  padding: 16px 18px;
+  padding: 14px 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
@@ -609,6 +609,7 @@ onMounted(() => {
 .masked-tip {
   font-size: 11px;
   color: var(--flow-text-disabled);
+  white-space: nowrap;
 }
 
 .status-cell {
@@ -618,10 +619,12 @@ onMounted(() => {
   font-size: 12.5px;
   color: var(--flow-color-success);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .status-text {
   color: #059669;
+  white-space: nowrap;
 }
 
 .actions-cell {
@@ -629,6 +632,7 @@ onMounted(() => {
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
+  white-space: nowrap;
 }
 
 /* 模态框自定义头部与底部 */

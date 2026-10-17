@@ -3,7 +3,7 @@
     <div class="timeline-header">
       <div class="header-left">
         <span class="title-icon">📊</span>
-        <span class="title-text">执行瀑布流甘特图 (Execution Timeline)</span>
+        <span class="title-text">执行耗时甘特图</span>
         <a-tag :color="statusColor" class="status-tag">{{ run.status.toUpperCase() }}</a-tag>
       </div>
       <div class="header-right">

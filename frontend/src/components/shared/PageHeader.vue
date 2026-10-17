@@ -31,8 +31,8 @@ defineProps<{
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  margin-bottom: 20px;
+  flex-wrap: nowrap;
 }
 
 .page-header-main {
@@ -40,6 +40,7 @@ defineProps<{
   align-items: center;
   gap: 14px;
   min-width: 0;
+  flex: 1;
 }
 
 .page-header-icon {
@@ -57,6 +58,7 @@ defineProps<{
 
 .page-header-text {
   min-width: 0;
+  flex: 1;
 }
 
 .page-header-title {
@@ -65,17 +67,23 @@ defineProps<{
   font-weight: 600;
   line-height: 1.3;
   color: var(--flow-text-title);
+  white-space: nowrap;
 }
 
 .page-header-description {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--flow-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .page-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 </style>

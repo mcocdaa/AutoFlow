@@ -184,9 +184,9 @@
       <div v-show="activeTab === 'triggers'" class="tab-content triggers-tab">
         <div class="trigger-section">
           <div class="section-title">
-            <span>⏰ 内置 Cron 定时引擎</span>
+            <span>⏰ 内置定时触发</span>
           </div>
-          <p class="section-desc">基于 croniter 协程调度，无需外部 crontab</p>
+          <p class="section-desc">支持标准 5 段式 Cron 表达式定时自动执行</p>
 
           <a-form layout="vertical" size="small">
             <a-form-item label="常用快捷预设">
@@ -228,32 +228,30 @@
 
         <div class="trigger-section">
           <div class="section-title">
-            <span>🌐 Webhook 外部事件网关</span>
+            <span>🌐 外部事件触发 (Webhook)</span>
           </div>
-          <p class="section-desc">支持外部监控告警、GitHub 等事件触发，支持 HMAC-SHA256 签名校验</p>
+          <p class="section-desc">支持外部监控告警、代码仓库等事件自动触发当前工作流</p>
 
           <a-form layout="vertical" size="small">
-            <a-form-item label="Webhook 路径">
+            <a-form-item label="关联流程标识">
               <a-input
-                :value="webhookUrl"
+                :value="flowName || 'my_flow'"
                 readonly
                 class="af-mono"
               />
             </a-form-item>
 
-            <a-form-item label="访问 Token / HMAC 密钥">
+            <a-form-item label="访问凭据 / HMAC 签名密钥">
               <a-input-password
                 v-model:value="webhookToken"
-                placeholder="设置该流程专用 Webhook Token"
+                placeholder="设置该流程专用触发密钥"
                 @change="emitWebhookChange"
               />
             </a-form-item>
 
             <div class="curl-example">
-              <span class="curl-title">测试 cURL 命令:</span>
-              <pre class="curl-code af-mono">curl -X POST {{ webhookUrl }} \
-  -H "Content-Type: application/json" \
-  -d '{"alert_id": "ALT-1001", "event": "service_down"}'</pre>
+              <span class="curl-title">安全校验说明</span>
+              <p class="curl-code">配置密钥后将自动启用外部事件网关，支持 HMAC-SHA256 签名校验并将事件载荷注入流程输入参数。</p>
             </div>
           </a-form>
         </div>
@@ -264,7 +262,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import axios from 'axios'
+import apiClient from '../../api'
 import CodeEditor from '../shared/CodeEditor.vue'
 import type { StepSpec } from '../../types/flow'
 
@@ -418,15 +416,10 @@ const emitWebhookChange = () => {
   emit('webhook-change', webhookToken.value)
 }
 
-const webhookUrl = computed(() => {
-  const host = window.location.origin
-  return `${host}/api/v1/webhooks/${props.flowName || 'my_flow'}/${webhookToken.value || 'token'}`
-})
-
 const predictCron = async () => {
   if (!cronExpr.value) return
   try {
-    const res = await axios.post('/api/v1/cron/validate', {
+    const res = await apiClient.post('/cron/validate', {
       expression: cronExpr.value,
       count: 5,
     })
@@ -456,7 +449,7 @@ const formatTime = (iso: string) => {
 }
 
 .panel-header {
-  padding: 12px 16px;
+  padding: 12px 12px;
   border-bottom: 1px solid #f1f5f9;
   background: #f8fafc;
 }
@@ -470,6 +463,8 @@ const formatTime = (iso: string) => {
   flex: 1;
   text-align: center;
   font-size: 12px;
+  padding: 0 4px;
+  white-space: nowrap;
 }
 
 .panel-body {
@@ -617,10 +612,9 @@ const formatTime = (iso: string) => {
 
 .curl-code {
   margin: 6px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: #0f172a;
+  font-size: 11.5px;
+  line-height: 1.5;
+  word-break: break-word;
+  color: #334155;
 }
 </style>

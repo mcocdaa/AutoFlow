@@ -25,8 +25,8 @@
       <div class="toolbar-actions">
         <a-select
           v-model:value="selectedServerFlow"
-          placeholder="服务端流程 (flows/)"
-          style="width: 185px"
+          placeholder="已保存流程"
+          style="width: 118px"
           size="small"
           allow-clear
           :loading="loadingServerFlows"
@@ -37,14 +37,14 @@
             :key="item.slug"
             :value="item.slug"
           >
-            {{ item.name }} ({{ item.slug }})
+            {{ item.name }}
           </a-select-option>
         </a-select>
 
         <a-select
           v-model:value="selectedExampleKey"
-          placeholder="加载预设示例"
-          style="width: 160px"
+          placeholder="预设示例"
+          style="width: 112px"
           size="small"
           @change="handleSelectExample"
         >
@@ -63,7 +63,7 @@
           @click="handleSaveServerFlow"
         >
           <template #icon><SaveOutlined /></template>
-          保存到服务端
+          保存流程
         </a-button>
 
         <a-button size="small" @click="autoLayout">
@@ -612,9 +612,9 @@ const handleSelectServerFlow = async (slug?: string) => {
     yamlCode.value = record.flow_yaml
     parseYamlToCanvas(record.flow_yaml)
     setTimeout(() => fitView({ padding: 0.2 }), 100)
-    message.success(`已加载服务端流程: ${record.name}`)
+    message.success(`已加载流程：${record.name}`)
   } catch (err: any) {
-    message.error(`读取服务端流程失败: ${err?.message || err}`)
+    message.error(`读取流程失败：${err?.message || err}`)
   }
 }
 
@@ -629,9 +629,9 @@ const handleSaveServerFlow = async () => {
     const saved = await saveFlow(rawSlug, yamlCode.value)
     selectedServerFlow.value = saved.slug
     await loadServerFlows()
-    message.success(`已保存到服务端: flows/${saved.filename}`)
+    message.success(`流程已保存：${saved.name || saved.slug}`)
   } catch (err: any) {
-    message.error(`保存服务端流程失败: ${err?.message || err}`)
+    message.error(`保存流程失败：${err?.message || err}`)
   } finally {
     savingServerFlow.value = false
   }
@@ -737,20 +737,25 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  gap: 10px;
+  padding: 0 14px;
   flex: none;
   z-index: 10;
+  overflow: hidden;
 }
 
 .toolbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .flow-meta {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .flow-name-row {
@@ -761,17 +766,19 @@ onMounted(() => {
 
 .flow-icon {
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .flow-name-input {
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #0f172a;
   background: transparent;
   padding: 0;
-  width: 180px;
+  width: 155px;
+  text-overflow: ellipsis;
 }
 
 .flow-name-input:focus {
@@ -785,13 +792,23 @@ onMounted(() => {
   color: #64748b;
   background: transparent;
   padding: 0;
-  width: 260px;
+  width: 175px;
+  text-overflow: ellipsis;
 }
 
 .toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.toolbar-actions :deep(.ant-btn) {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0 9px;
+  font-size: 12px;
 }
 
 .run-btn {
@@ -807,7 +824,7 @@ onMounted(() => {
 }
 
 .sider-left {
-  width: 250px;
+  width: 236px;
   flex: none;
   height: 100%;
 }
@@ -835,8 +852,18 @@ onMounted(() => {
 }
 
 .sider-right {
-  width: 360px;
+  width: 340px;
   flex: none;
   height: 100%;
+}
+
+@media (max-width: 1100px) {
+  .sider-left {
+    width: 205px;
+  }
+
+  .sider-right {
+    width: 290px;
+  }
 }
 </style>

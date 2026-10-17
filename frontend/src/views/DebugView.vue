@@ -6,8 +6,8 @@
       :icon="BugOutlined"
     />
 
-    <a-row :gutter="[24, 24]">
-      <a-col :xs="24" :lg="12">
+    <a-row :gutter="[20, 20]">
+      <a-col :xs="24" :md="12">
         <a-card class="source-card">
           <template #title>
             <div class="card-header">
@@ -32,7 +32,7 @@
             </div>
           </template>
 
-          <CodeEditor v-model="yamlContent" :min-height="360" />
+          <CodeEditor v-model="yamlContent" :min-height="320" />
 
           <FlowParamsEditor
             v-model:input-text="inputText"
@@ -49,7 +49,7 @@
         </a-card>
       </a-col>
 
-      <a-col :xs="24" :lg="12">
+      <a-col :xs="24" :md="12">
         <a-card class="session-card">
           <template #title>
             <div class="card-header">
@@ -73,7 +73,7 @@
                 @click="continueToBreakpoint"
               >
                 <template #icon><FastForwardOutlined /></template>
-                继续（到断点）
+                继续到断点
               </a-button>
               <a-button size="small" :disabled="finished || loading" @click="runToEnd">
                 <template #icon><ThunderboltOutlined /></template>
@@ -457,8 +457,14 @@ onMounted(async () => {
 .session-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.session-toolbar :deep(.ant-btn) {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0 8px;
 }
 
 .session-progress {
