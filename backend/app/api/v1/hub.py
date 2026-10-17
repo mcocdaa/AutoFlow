@@ -23,7 +23,7 @@ CURATED_HUB_FLOWS = [
         "version": "1.0.0",
         "installs": 1280,
         "rating": 4.9,
-        "description": "监控告警触发 ➔ 自动采集故障上下文日志 ➔ 执行修复 Action ➔ Check 确认自愈",
+        "description": "监控告警触发 ➔ 采集故障日志 ➔ 执行修复动作 ➔ 校验确认自愈",
         "tags": ["sre", "devops", "self-healing", "monitoring"],
         "yaml": """version: "1"
 name: sre_auto_remediation

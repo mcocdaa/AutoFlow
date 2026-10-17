@@ -97,7 +97,7 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     # Actions - AI 与智能抓取
     "ai.deepseek_summarize": {
         "label": "DeepSeek 推理",
-        "desc": "调用 DeepSeek/LLM 进行摘要、分析或提取",
+        "desc": "调用大模型进行智能摘要与信息提取",
         "icon": "🧠",
         "category": "ai",
         "defaultParams": {"input": "请精炼以下要点: {{input}}", "dry_run": True},
@@ -114,7 +114,7 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     },
     "zhihu.post_answer_draft": {
         "label": "知乎草稿投递",
-        "desc": "将整理好的 Markdown 内容自动投递至知乎回答草稿",
+        "desc": "将 Markdown 内容自动投递至知乎草稿",
         "icon": "✍️",
         "category": "scraper",
         "defaultParams": {

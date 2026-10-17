@@ -2,7 +2,7 @@
   <div class="af-page flow-hub-page">
     <PageHeader
       title="Flow Hub 流程市场"
-      description="精选生产级自动化流程模板，支持一键安装、画布可视化加载与外部 Agent (Claude Code / Cursor / OpenClaw) MCP 协同"
+      description="精选生产级自动化工作流模板，支持一键安装、可视化编排与外部 Agent 协同调用"
       :icon="ShopOutlined"
     >
       <template #actions>
@@ -197,7 +197,7 @@
           <span class="modal-header-icon"><FileTextOutlined /></span>
           <div>
             <h3 class="modal-title">{{ activeFlow?.title }}</h3>
-            <span class="modal-subtitle">源码预览: {{ activeFlow?.name }}.flow.yaml</span>
+            <span class="modal-subtitle">流程模板源码预览 · {{ activeFlow?.name }}</span>
           </div>
         </div>
         <div class="modal-header-actions">
@@ -555,9 +555,9 @@ const copyActiveYaml = () => {
 const handleInstall = async (flow: HubFlowSummary, overwrite = false) => {
   installingFlowId.value = flow.id
   try {
-    const res = await installHubFlow(flow.id, overwrite)
+    await installHubFlow(flow.id, overwrite)
     message.success({
-      content: `流程 [${flow.title}] 安装成功！已存至 ${res.path}`,
+      content: `流程「${flow.title}」安装成功！`,
       duration: 3,
     })
     if (yamlModalVisible.value) {
@@ -568,8 +568,8 @@ const handleInstall = async (flow: HubFlowSummary, overwrite = false) => {
     // 冲突处理：文件已存在
     if (errorMsg.includes('already exists') || err?.response?.status === 409) {
       Modal.confirm({
-        title: '流程文件已存在',
-        content: `本地 flows/ 目录中已存在同名流程文件 "${flow.name}.flow.yaml"，是否确认覆盖安装？`,
+        title: '流程已存在',
+        content: `已存在同名流程「${flow.title}」，是否确认覆盖安装？`,
         okText: '确认覆盖',
         okType: 'danger',
         cancelText: '取消',
@@ -759,13 +759,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: nowrap;
+}
+
+.category-tabs {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.category-tabs :deep(.ant-radio-button-wrapper) {
+  white-space: nowrap;
 }
 
 .search-box {
-  width: 340px;
+  width: 260px;
+  flex: 0 1 280px;
 }
 
 /* 卡片网格 */
@@ -926,7 +936,9 @@ onMounted(() => {
 .action-btn {
   font-size: 12px;
   border-radius: 6px;
-  padding: 0 4px;
+  padding: 0 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .primary-action {
