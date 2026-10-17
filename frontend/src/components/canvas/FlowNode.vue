@@ -50,7 +50,7 @@
       <div v-if="data.duration_ms !== undefined" class="node-metrics">
         <span class="metric-duration">{{ data.duration_ms }} ms</span>
         <span v-if="data.check_passed !== undefined && data.check_passed !== null" class="metric-check" :class="data.check_passed ? 'check-pass' : 'check-fail'">
-          Check: {{ data.check_passed ? 'PASS' : 'FAIL' }}
+          {{ t('debug.checkLabel') }}: {{ data.check_passed ? t('debug.checkPassed') : t('debug.checkFailed') }}
         </span>
       </div>
     </div>

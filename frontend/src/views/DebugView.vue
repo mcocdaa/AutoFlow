@@ -87,7 +87,7 @@
 
             <div class="session-progress">
               <span>{{ t('debug.progress', { index: session.index, total: session.total_steps }) }}</span>
-              <span class="session-run af-mono">run: {{ session.run_id.slice(0, 8) }}</span>
+              <span class="session-run af-mono">{{ t('debug.runIdPrefix') }}: {{ session.run_id.slice(0, 8) }}</span>
               <span v-if="session.parent_run_id" class="session-fork af-mono">
                 {{ t('debug.forkedFrom', { runId: session.parent_run_id.slice(0, 8), stepIdx: session.fork_step_index ?? 0 }) }}
               </span>
@@ -198,7 +198,7 @@
             <div v-if="session.hook_results.length" class="hooks">
               <h4 class="hooks-title">
                 <ApiOutlined />
-                Hooks
+                {{ t('debug.hooksTitle') }}
               </h4>
               <div
                 v-for="(hook, index) in session.hook_results"
@@ -269,7 +269,7 @@ import {
   getFlowExampleHint,
   getFlowExampleLabel,
 } from '../constants/flow-examples'
-import { STEP_NAME_EN_MAP, useI18n } from '../i18n'
+import { localizeFlowYaml, STEP_NAME_EN_MAP, useI18n } from '../i18n'
 import { artifactsOfValue } from '../utils/artifacts'
 import { formatInline, formatOutput, formatSize } from '../utils/format'
 import { parseJsonInput, parseJsonObject } from '../utils/json'
@@ -284,14 +284,16 @@ const router = useRouter()
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 
 const yamlContent = ref(getDefaultFlowYaml())
-watch(locale, () => {
+watch(locale, (newLocale) => {
   const trimmed = yamlContent.value.trim()
   if (
     trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
     trimmed === DEFAULT_FLOW_YAML_EN.trim()
   ) {
     yamlContent.value = getDefaultFlowYaml()
+    return
   }
+  yamlContent.value = localizeFlowYaml(yamlContent.value, newLocale)
 })
 const selectedExample = ref<string>()
 const inputText = ref('{}')
@@ -362,7 +364,7 @@ const withLoading = async (fn: () => Promise<void>) => {
 const handleLoadExample = (key: string) => {
   const example = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!example) return
-  yamlContent.value = example.yaml
+  yamlContent.value = localizeFlowYaml(example.yaml, locale.value)
 }
 
 const startSession = () =>
@@ -431,7 +433,7 @@ onMounted(async () => {
   const pendingDebugYaml = sessionStorage.getItem('autoflow_debug_yaml')
   if (pendingDebugYaml) {
     sessionStorage.removeItem('autoflow_debug_yaml')
-    yamlContent.value = pendingDebugYaml
+    yamlContent.value = localizeFlowYaml(pendingDebugYaml, locale.value)
   }
   const sessionId = route.query.session
   if (typeof sessionId !== 'string' || !sessionId) return

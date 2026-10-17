@@ -21,7 +21,7 @@
           <span class="meta-value">{{ run.flow_name }}</span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">Run ID</span>
+          <span class="meta-label">{{ t('run.metaRunId') }}</span>
           <span class="meta-value af-mono">{{ run.run_id }}</span>
         </div>
         <div class="meta-item">
@@ -151,7 +151,7 @@
       <div v-if="run.hook_results?.length" class="hooks-section">
         <h4 class="steps-title">
           <ApiOutlined />
-          Hooks
+          {{ t('run.hooksTitle') }}
         </h4>
         <div v-for="(hook, index) in run.hook_results" :key="index" class="hook-item">
           <div class="hook-head">

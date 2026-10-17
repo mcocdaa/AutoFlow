@@ -146,6 +146,7 @@ const messages: Record<Locale, Record<string, string>> = {
     // Flow Hub View
     'hub.title': 'Flow Hub 流程市场',
     'hub.desc': '精选生产级自动化工作流模板，支持一键安装、可视化编排与外部 Agent 协同调用',
+    'hub.heroPill': 'AutoFlow v1.1 精选自动化工作流市场',
     'hub.agentGuideBtn': 'Agent 接入指南',
     'hub.heroTitle': '高可靠确定性工作流集市',
     'hub.heroDesc': '所有模板均内置 Check 断言校验与自动重试策略。支持本地直接执行，或作为复合 MCP Tool 供 LLM Agent 单次调度。',
@@ -184,13 +185,18 @@ const messages: Record<Locale, Record<string, string>> = {
     'hub.modal.openclawStep1Desc': '在 OpenClaw 智能体编排网络中将 AutoFlow 作为专用确定性执行器接入：',
     'hub.modal.openclawStep2Title': '多步流程确定性保障',
     'hub.modal.openclawStep2Desc': 'OpenClaw 负责规划与意图分解，复杂运维与数据流交由 AutoFlow 本地执行引擎与 Check 机制兜底，保障执行确定性。',
+    'hub.msg.fetchListFailed': '获取流程市场列表失败',
     'hub.msg.fetchingYaml': '正在拉取 YAML 源码...',
     'hub.msg.fetchYamlFailed': '获取流程 YAML 失败',
+    'hub.msg.yamlErrorPrefix': '# 错误: {msg}',
+    'hub.msg.networkError': '网络错误',
     'hub.msg.installSuccess': '流程「{title}」安装成功！',
+    'hub.msg.installFailed': '安装流程失败',
     'hub.msg.existsTitle': '流程已存在',
     'hub.msg.existsContent': '已存在同名流程「{title}」，是否确认覆盖安装？',
     'hub.msg.confirmOverwrite': '确认覆盖',
     'hub.msg.loadedToCanvas': '已将 [{title}] 加载至编排画布',
+    'hub.msg.loadCanvasFailed': '加载流程至画布失败',
 
     // Debug View
     'debug.title': '单步调试',
@@ -206,6 +212,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'debug.runToEnd': '运行到底',
     'debug.stop': '停止',
     'debug.progress': '进度 {index} / {total}',
+    'debug.runIdPrefix': '运行',
     'debug.forkedFrom': '分叉自 {runId} · 第 {stepIdx} 步',
     'debug.removeBp': '取消断点',
     'debug.setBp': '设为断点',
@@ -219,6 +226,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'debug.artifactsLabel': '产物',
     'debug.outputLabel': '输出',
     'debug.selectStepEmpty': '选择已执行的步骤查看输出',
+    'debug.hooksTitle': '执行钩子',
     'debug.hookOnSuccess': '成功钩子',
     'debug.hookOnFailure': '失败钩子',
     'debug.hookExecSuccess': '执行成功',
@@ -240,10 +248,12 @@ const messages: Record<Locale, Record<string, string>> = {
     'run.advancedParams': '高级参数（input / vars）',
     'run.resultTitle': '执行结果',
     'run.metaFlow': '流程',
+    'run.metaRunId': '运行 ID',
     'run.metaDuration': '耗时',
     'run.metaStarted': '开始',
     'run.metaForkedFrom': '分叉自',
     'run.stepsTitle': '步骤',
+    'run.hooksTitle': '执行钩子',
     'run.forkBtn': '分叉',
     'run.forkRetry': '重试该步',
     'run.forkNext': '从下一步继续',
@@ -352,6 +362,12 @@ const messages: Record<Locale, Record<string, string>> = {
     'secrets.form.securityAlert': '保密柜将实时将此 Key 的明文加入全链路日志与产物掩码字典，杜绝泄漏。',
     'secrets.form.confirmUpdate': '确认更新',
     'secrets.form.encryptSave': '加密保存',
+    'secrets.validation.keyRequired': '请输入凭据名称',
+    'secrets.validation.keyPattern': '仅允许字母、数字与下划线（1-128 字符）',
+    'secrets.validation.valRequired': '请输入凭据密文值',
+    'secrets.msg.loadFailed': '加载凭据列表失败',
+    'secrets.msg.saveFailed': '保存凭据失败',
+    'secrets.msg.deleteFailed': '删除凭据失败',
     'secrets.msg.saved': '凭据 [{key}] 已安全加密存储',
     'secrets.msg.deleted': '凭据 [{key}] 已从保密柜中移除',
   },
@@ -482,6 +498,7 @@ const messages: Record<Locale, Record<string, string>> = {
     // Flow Hub View
     'hub.title': 'Flow Hub Marketplace',
     'hub.desc': 'Curated production workflow templates with one-click install, visual editing, and MCP Agent invocation',
+    'hub.heroPill': 'AutoFlow Ecosystem v1.1 Curated Marketplace',
     'hub.agentGuideBtn': 'Agent MCP Guide',
     'hub.heroTitle': 'Deterministic Workflow Marketplace',
     'hub.heroDesc': 'Every template includes built-in Check assertions and retry policies. Run locally or expose as composite MCP Tools for LLM Agents.',
@@ -520,13 +537,18 @@ const messages: Record<Locale, Record<string, string>> = {
     'hub.modal.openclawStep1Desc': 'Connect AutoFlow as a deterministic execution engine in OpenClaw:',
     'hub.modal.openclawStep2Title': 'Multi-Step Deterministic Guarantees',
     'hub.modal.openclawStep2Desc': 'OpenClaw handles high-level planning while AutoFlow enforces step-level Check assertions and retries.',
+    'hub.msg.fetchListFailed': 'Failed to fetch Flow Hub list',
     'hub.msg.fetchingYaml': 'Fetching YAML source...',
     'hub.msg.fetchYamlFailed': 'Failed to fetch flow YAML',
+    'hub.msg.yamlErrorPrefix': '# Error: {msg}',
+    'hub.msg.networkError': 'Network error',
     'hub.msg.installSuccess': 'Flow "{title}" installed!',
+    'hub.msg.installFailed': 'Failed to install flow',
     'hub.msg.existsTitle': 'Flow Already Exists',
     'hub.msg.existsContent': 'Flow "{title}" already exists. Overwrite?',
     'hub.msg.confirmOverwrite': 'Overwrite',
     'hub.msg.loadedToCanvas': 'Loaded [{title}] into Canvas',
+    'hub.msg.loadCanvasFailed': 'Failed to load flow into canvas',
 
     // Debug View
     'debug.title': 'Step Debugger',
@@ -542,6 +564,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'debug.runToEnd': 'Run All',
     'debug.stop': 'Stop',
     'debug.progress': 'Step {index} / {total}',
+    'debug.runIdPrefix': 'Run',
     'debug.forkedFrom': 'Forked from {runId} · Step {stepIdx}',
     'debug.removeBp': 'Remove breakpoint',
     'debug.setBp': 'Set breakpoint',
@@ -555,6 +578,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'debug.artifactsLabel': 'Artifacts',
     'debug.outputLabel': 'Output',
     'debug.selectStepEmpty': 'Select an executed step to inspect its output',
+    'debug.hooksTitle': 'Hooks',
     'debug.hookOnSuccess': 'on_success',
     'debug.hookOnFailure': 'on_failure',
     'debug.hookExecSuccess': 'Success',
@@ -576,10 +600,12 @@ const messages: Record<Locale, Record<string, string>> = {
     'run.advancedParams': 'Advanced Parameters (input / vars)',
     'run.resultTitle': 'Execution Result',
     'run.metaFlow': 'Flow',
+    'run.metaRunId': 'Run ID',
     'run.metaDuration': 'Duration',
     'run.metaStarted': 'Started',
     'run.metaForkedFrom': 'Forked From',
     'run.stepsTitle': 'Steps',
+    'run.hooksTitle': 'Hooks',
     'run.forkBtn': 'Fork',
     'run.forkRetry': 'Retry this step',
     'run.forkNext': 'Continue from next step',
@@ -688,6 +714,12 @@ const messages: Record<Locale, Record<string, string>> = {
     'secrets.form.securityAlert': 'Plaintext values are immediately registered in the full-pipeline redaction dictionary.',
     'secrets.form.confirmUpdate': 'Update Secret',
     'secrets.form.encryptSave': 'Encrypt & Save',
+    'secrets.validation.keyRequired': 'Key is required',
+    'secrets.validation.keyPattern': 'Key must contain only letters, digits, and underscores (1-128 chars)',
+    'secrets.validation.valRequired': 'Secret value is required',
+    'secrets.msg.loadFailed': 'Failed to load secrets',
+    'secrets.msg.saveFailed': 'Failed to save secret',
+    'secrets.msg.deleteFailed': 'Failed to delete secret',
     'secrets.msg.saved': 'Secret [{key}] encrypted and saved',
     'secrets.msg.deleted': 'Secret [{key}] removed from vault',
   },
@@ -855,11 +887,102 @@ export const STEP_NAME_EN_MAP: Record<string, string> = {
   确定性操作执行: 'Deterministic Action Execution',
   检查客户端运行状态: 'Verify Client Process Status',
   数据捕获与校验对齐: 'Capture & Verify Data Alignment',
+  '输出 70KB 文本': 'Emit 70KB Output',
+  执行工作: 'Execute Task',
+  激活窗口: 'Activate Window',
+  点击按钮: 'Click Button',
+  '输入（脱敏）': 'Type Input (Masked)',
+  截图留存: 'Capture Screenshot',
+  抓取知乎回答: 'Fetch Answer Content',
+  '调用 DeepSeek 总结': 'Summarize with DeepSeek',
+  '请用中文总结要点，输出 3-6 条要点。': 'Summarize the key points into 3-6 bullet items.',
+  'input 全量替换': 'Replace Input Value',
+  'vars 属性链 + 内联替换': 'Vars Property Chain & Inline Replace',
+  'steps 属性链引用': 'Steps Property Chain Reference',
+  '遍历 items': 'Iterate Items',
+  '不稳定命令（首次失败后重试成功）': 'Flaky Command (Fails Once Then Succeeds on Retry)',
+  记录开始: 'Log Start',
+  回显输入: 'Echo Input',
 }
 
 export const STEP_NAME_ZH_MAP: Record<string, string> = Object.fromEntries(
   Object.entries(STEP_NAME_EN_MAP).map(([zh, en]) => [en, zh]),
 )
+
+export const YAML_COMMENT_EN_MAP: Record<string, string> = {
+  '# @brief 内置 Action 串联：core.log / core.sleep / dummy.echo + output_var':
+    '# @brief Built-in Action Chain: core.log / core.sleep / dummy.echo + output_var',
+  '# @brief 模板解析：input / vars / steps 属性链引用':
+    '# @brief Template Resolution: input / vars / steps property chain references',
+  '# @brief 条件执行：常量条件与变量比较条件，未命中步骤记为 skipped':
+    '# @brief Conditional Execution: constant and variable conditions, unmatched steps marked skipped',
+  '# @brief 循环执行：for_each 遍历列表，iterations 记录每次迭代':
+    '# @brief Loop Execution: for_each iterates over list, iterations records each pass',
+  '# @brief 失败重试：第一次失败，第二次成功（依赖标记文件模拟不稳定命令）':
+    '# @brief Retry on Failure: fails first attempt, succeeds on second (marker file simulation)',
+  '# @update 2026-09-11 标记目录改为 vars.marker_dir,支持容器等不同运行环境':
+    '# @update 2026-09-11 Use vars.marker_dir for container and cross-environment compatibility',
+  '# @brief 大输出外置：action_output 超过 64KB 时落盘为 artifact 索引':
+    '# @brief Large Output Offloading: action_output > 64KB saved as downloadable artifact',
+  '# @brief Flow hooks 示例：成功时自动归档到 KnowFlow，失败时记录日志':
+    '# @brief Flow Hooks Example: archive to KnowFlow on_success, log error on_failure',
+  '# 流程成功时：自动归档执行摘要到 KnowFlow':
+    '# On flow success: archive execution summary to KnowFlow',
+  '# 流程失败时：记录错误日志':
+    '# On flow failure: log error details',
+  '# @brief 桌面自动打卡（dry_run）示例 Flow':
+    '# @brief Desktop Check-in (dry_run) Example Flow',
+  '# @brief 知乎回答总结示例 Flow（dry_run）':
+    '# @brief Q&A Answer Summary Example Flow (dry_run)',
+}
+
+export const YAML_COMMENT_ZH_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(YAML_COMMENT_EN_MAP).map(([zh, en]) => [en, zh]),
+)
+
+export const FLOW_DESC_EN_MAP: Record<string, string> = {
+  'SRE 告警自愈: 诊断采集 -> 执行恢复 -> 验证 Check':
+    HUB_FLOW_I18N['hub-sre-remediate'].en.description,
+  '定时采集知乎内容并生成 LLM 研报':
+    HUB_FLOW_I18N['hub-zhihu-digest'].en.description,
+  '将易出错的多步骤外部调用封装为确定性带 Check 的复合 MCP 工具':
+    HUB_FLOW_I18N['hub-agent-mcp-toolchain'].en.description,
+  '跨系统桌面客户端数据捕获与自动对齐同步':
+    HUB_FLOW_I18N['hub-desktop-rpa'].en.description,
+  'MCP 示例流程：记录日志并回显输入':
+    'MCP Example Workflow: Log start message and echo input',
+  'AutoFlow 自动化流程': 'AutoFlow Automated Workflow',
+}
+
+export const FLOW_DESC_ZH_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(FLOW_DESC_EN_MAP).map(([zh, en]) => [en, zh]),
+)
+
+export function localizeFlowYaml(rawYaml: string, loc: Locale = locale.value): string {
+  let out = rawYaml
+  if (loc === 'en') {
+    for (const [zhComment, enComment] of Object.entries(YAML_COMMENT_EN_MAP)) {
+      out = out.split(zhComment).join(enComment)
+    }
+    for (const [zhDesc, enDesc] of Object.entries(FLOW_DESC_EN_MAP)) {
+      out = out.split(zhDesc).join(enDesc)
+    }
+    for (const [zhName, enName] of Object.entries(STEP_NAME_EN_MAP)) {
+      out = out.split(zhName).join(enName)
+    }
+    return out
+  }
+  for (const [enComment, zhComment] of Object.entries(YAML_COMMENT_ZH_MAP)) {
+    out = out.split(enComment).join(zhComment)
+  }
+  for (const [enDesc, zhDesc] of Object.entries(FLOW_DESC_ZH_MAP)) {
+    out = out.split(enDesc).join(zhDesc)
+  }
+  for (const [enName, zhName] of Object.entries(STEP_NAME_ZH_MAP)) {
+    out = out.split(enName).join(zhName)
+  }
+  return out
+}
 
 export function setLocale(lang: Locale): void {
   locale.value = lang
