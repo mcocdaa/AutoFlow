@@ -2,7 +2,7 @@
   <div v-if="diff" class="diff-panel">
     <div class="diff-summary">
       <div class="summary-card">
-        <span class="summary-label">基准</span>
+        <span class="summary-label">{{ t('diff.base') }}</span>
         <span class="summary-value">{{ diff.base.flow_name }}</span>
         <a-tag :color="RUN_STATUS_META[diff.base.status].color">
           {{ RUN_STATUS_META[diff.base.status].text }}
@@ -13,7 +13,7 @@
         </span>
       </div>
       <div class="summary-card">
-        <span class="summary-label">对比</span>
+        <span class="summary-label">{{ t('diff.target') }}</span>
         <span class="summary-value">{{ diff.target.flow_name }}</span>
         <a-tag :color="RUN_STATUS_META[diff.target.status].color">
           {{ RUN_STATUS_META[diff.target.status].text }}
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <a-empty v-if="diff.steps.length === 0" description="没有可对比的步骤" />
+    <a-empty v-if="diff.steps.length === 0" :description="t('diff.noSteps')" />
 
     <a-collapse v-else class="diff-steps">
       <a-collapse-panel
@@ -35,17 +35,17 @@
         <template #header>
           <div class="diff-step-header">
             <span class="diff-step-id af-mono">{{ step.step_id }}</span>
-            <a-tag v-if="step.status_changed" color="warning">状态变更</a-tag>
-            <a-tag v-if="step.check_changed" color="warning">检查变更</a-tag>
-            <a-tag v-if="step.output_changed" color="processing">输出变更</a-tag>
-            <span v-if="step.base_index === null" class="diff-meta">仅对比侧存在</span>
-            <span v-if="step.target_index === null" class="diff-meta">仅基准侧存在</span>
+            <a-tag v-if="step.status_changed" color="warning">{{ t('diff.statusChanged') }}</a-tag>
+            <a-tag v-if="step.check_changed" color="warning">{{ t('diff.checkChanged') }}</a-tag>
+            <a-tag v-if="step.output_changed" color="processing">{{ t('diff.outputChanged') }}</a-tag>
+            <span v-if="step.base_index === null" class="diff-meta">{{ t('diff.onlyInTarget') }}</span>
+            <span v-if="step.target_index === null" class="diff-meta">{{ t('diff.onlyInBase') }}</span>
           </div>
         </template>
 
         <div class="diff-status-row">
           <div class="diff-side">
-            <span class="diff-side-label">基准</span>
+            <span class="diff-side-label">{{ t('diff.base') }}</span>
             <a-tag
               v-if="step.base_status"
               :color="STEP_STATUS_META[step.base_status].color"
@@ -54,11 +54,11 @@
             </a-tag>
             <span v-else class="diff-meta">—</span>
             <a-tag v-if="step.base_check_passed !== null" :color="step.base_check_passed ? 'success' : 'error'">
-              {{ step.base_check_passed ? '检查通过' : '检查未通过' }}
+              {{ step.base_check_passed ? t('diff.checkPass') : t('diff.checkFail') }}
             </a-tag>
           </div>
           <div class="diff-side">
-            <span class="diff-side-label">对比</span>
+            <span class="diff-side-label">{{ t('diff.target') }}</span>
             <a-tag
               v-if="step.target_status"
               :color="STEP_STATUS_META[step.target_status].color"
@@ -67,7 +67,7 @@
             </a-tag>
             <span v-else class="diff-meta">—</span>
             <a-tag v-if="step.target_check_passed !== null" :color="step.target_check_passed ? 'success' : 'error'">
-              {{ step.target_check_passed ? '检查通过' : '检查未通过' }}
+              {{ step.target_check_passed ? t('diff.checkPass') : t('diff.checkFail') }}
             </a-tag>
           </div>
         </div>
@@ -78,11 +78,11 @@
           :closable="false"
           show-icon
           class="diff-error"
-          :message="`基准: ${step.base_error || '—'} / 对比: ${step.target_error || '—'}`"
+          :message="`${t('diff.base')}: ${step.base_error || '—'} / ${t('diff.target')}: ${step.target_error || '—'}`"
         />
 
         <div v-if="step.output_diff.length > 0" class="diff-output">
-          <span class="output-label">输出差异（{{ step.output_diff.length }} 处）</span>
+          <span class="output-label">{{ t('diff.outputDiffCount', { count: step.output_diff.length }) }}</span>
           <div v-for="entry in step.output_diff" :key="entry.path" class="diff-entry">
             <span class="diff-path af-mono">{{ entry.path }}</span>
             <div class="diff-values">
@@ -93,17 +93,20 @@
           </div>
         </div>
         <div v-else class="diff-output">
-          <span class="output-label">输出无差异</span>
+          <span class="output-label">{{ t('diff.noOutputDiff') }}</span>
         </div>
       </a-collapse-panel>
     </a-collapse>
   </div>
-  <a-empty v-else description="请选择两个运行进行对比" />
+  <a-empty v-else :description="t('diff.selectTwoEmpty')" />
 </template>
 
 <script setup lang="ts">
 import { RUN_STATUS_META, STEP_STATUS_META } from '../../constants/run-status'
+import { useI18n } from '../../i18n'
 import type { RunDiff } from '../../types/runs'
+
+const { t } = useI18n()
 
 defineProps<{
   diff: RunDiff | null

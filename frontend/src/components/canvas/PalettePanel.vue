@@ -3,11 +3,11 @@
     <div class="palette-header">
       <div class="palette-title">
         <span class="icon">🧩</span>
-        <span>组件库</span>
+        <span>{{ t('palette.title') }}</span>
       </div>
       <a-input
         v-model:value="searchQuery"
-        placeholder="搜索动作或插件..."
+        :placeholder="t('palette.searchPlaceholder')"
         allow-clear
         size="small"
         class="search-input"
@@ -19,12 +19,12 @@
     <div class="palette-content">
       <div
         v-for="group in filteredGroups"
-        :key="group.name"
+        :key="group.id"
         class="component-group"
       >
         <div class="group-title">
           <span>{{ group.icon }}</span>
-          <span>{{ group.name }}</span>
+          <span>{{ group.title }}</span>
           <span class="group-count">{{ group.items.length }}</span>
         </div>
 
@@ -44,7 +44,7 @@
                 type="text"
                 size="small"
                 class="add-btn"
-                title="添加到画布"
+                :title="t('palette.addToCanvas')"
                 @click.stop="emit('add-node', item)"
               >
                 +
@@ -63,6 +63,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { SearchOutlined } from '@ant-design/icons-vue'
 import { getPluginCatalog, type PluginCatalogItem } from '../../api/client'
+import { COMPONENT_I18N, useI18n } from '../../i18n'
+
+const { locale, t } = useI18n()
 
 export interface ComponentItem {
   type: string
@@ -75,8 +78,10 @@ export interface ComponentItem {
   defaultCheck?: { type: string; params: Record<string, unknown> }
 }
 
+type GroupId = 'core' | 'ai' | 'desktop' | 'check'
+
 interface ComponentGroup {
-  name: string
+  id: GroupId
   icon: string
   items: ComponentItem[]
 }
@@ -89,7 +94,7 @@ const searchQuery = ref('')
 
 const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
   {
-    name: '基础与调试',
+    id: 'core',
     icon: '⚡',
     items: [
       {
@@ -127,7 +132,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
     ],
   },
   {
-    name: 'AI 与智能抓取',
+    id: 'ai',
     icon: '🤖',
     items: [
       {
@@ -160,7 +165,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
     ],
   },
   {
-    name: '桌面自动化 (RPA)',
+    id: 'desktop',
     icon: '🖥️',
     items: [
       {
@@ -182,7 +187,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
     ],
   },
   {
-    name: '强断言校验 (Check)',
+    id: 'check',
     icon: '🛡️',
     items: [
       {
@@ -236,12 +241,12 @@ const componentGroups = ref<ComponentGroup[]>(
   })),
 )
 
-function resolveGroupName(item: PluginCatalogItem): string {
+function resolveGroupId(item: PluginCatalogItem): GroupId {
   if (item.kind === 'check' || item.category === 'check') {
-    return '强断言校验 (Check)'
+    return 'check'
   }
   if (item.category === 'desktop' || item.type.startsWith('desktop.')) {
-    return '桌面自动化 (RPA)'
+    return 'desktop'
   }
   if (
     item.category === 'ai' ||
@@ -249,9 +254,30 @@ function resolveGroupName(item: PluginCatalogItem): string {
     item.type.startsWith('ai.') ||
     item.type.startsWith('zhihu.')
   ) {
-    return 'AI 与智能抓取'
+    return 'ai'
   }
-  return '基础与调试'
+  return 'core'
+}
+
+function localizeItem(item: ComponentItem): ComponentItem {
+  const i18nMeta = COMPONENT_I18N[item.type]?.[locale.value]
+  if (i18nMeta) {
+    return {
+      ...item,
+      label: i18nMeta.label,
+      desc: i18nMeta.desc,
+    }
+  }
+  if (locale.value === 'en') {
+    return {
+      ...item,
+      desc:
+        item.kind === 'check' || item.category === 'check'
+          ? t('palette.dynamicCheckDesc', { type: item.type })
+          : t('palette.dynamicActionDesc', { type: item.type }),
+    }
+  }
+  return item
 }
 
 const loadPluginCatalog = async () => {
@@ -294,10 +320,10 @@ const loadPluginCatalog = async () => {
 
     for (const catItem of catalogItems) {
       if (existingTypes.has(catItem.type)) continue
-      const targetGroupName = resolveGroupName(catItem)
-      let group = groups.find((g) => g.name === targetGroupName)
+      const targetGroupId = resolveGroupId(catItem)
+      let group = groups.find((g) => g.id === targetGroupId)
       if (!group) {
-        group = { name: targetGroupName, icon: '🔌', items: [] }
+        group = { id: targetGroupId, icon: '🔌', items: [] }
         groups.push(group)
       }
       group.items.push({
@@ -324,9 +350,15 @@ onMounted(() => {
 
 const filteredGroups = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return componentGroups.value
+  const localized = componentGroups.value.map((group) => ({
+    ...group,
+    title: t(`palette.group.${group.id}`),
+    items: group.items.map(localizeItem),
+  }))
 
-  return componentGroups.value
+  if (!query) return localized
+
+  return localized
     .map((group) => ({
       ...group,
       items: group.items.filter(

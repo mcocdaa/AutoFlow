@@ -49,6 +49,20 @@ const routes = [
   },
 ]
 
+if (
+  typeof window !== 'undefined' &&
+  (!window.location.hash || window.location.hash === '#/') &&
+  window.location.pathname &&
+  window.location.pathname !== '/' &&
+  !window.location.pathname.endsWith('.html')
+) {
+  window.history.replaceState(
+    null,
+    '',
+    `/#${window.location.pathname}${window.location.search}`,
+  )
+}
+
 const router = createRouter({
   history: createWebHashHistory(),
   routes,

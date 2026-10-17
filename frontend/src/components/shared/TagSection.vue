@@ -30,7 +30,7 @@
               :key="item"
               :color="tagColor"
               class="item-tag"
-              title="点击复制"
+              :title="t('common.clickToCopy')"
               @click="emit('copy', item)"
             >
               {{ item }}
@@ -38,7 +38,7 @@
           </div>
         </div>
       </div>
-      <a-empty v-else description="没有匹配项" :image="emptyImage" />
+      <a-empty v-else :description="t('common.noMatch')" :image="emptyImage" />
     </a-card>
   </div>
 </template>
@@ -47,6 +47,9 @@
 import { computed, ref, type Component } from 'vue'
 import { Empty } from 'ant-design-vue'
 import { SearchOutlined } from '@ant-design/icons-vue'
+import { useI18n } from '../../i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   title: string

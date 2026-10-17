@@ -12,7 +12,7 @@
       <div class="step-badge">{{ (data.index ?? 0) + 1 }}</div>
       <div class="node-title-group">
         <div class="node-id af-mono">{{ data.step.id }}</div>
-        <div v-if="data.step.name" class="node-name">{{ data.step.name }}</div>
+        <div v-if="displayStepName" class="node-name">{{ displayStepName }}</div>
       </div>
       <div class="node-status-indicator" :class="`indicator-${data.status || 'idle'}`">
         <span v-if="data.status === 'running'" class="pulse-dot"></span>
@@ -33,16 +33,16 @@
       </div>
 
       <div class="extra-badges">
-        <span v-if="data.step.condition" class="badge-tag badge-condition" title="执行条件">
+        <span v-if="data.step.condition" class="badge-tag badge-condition" :title="t('node.conditionTitle')">
           ⚡ if
         </span>
-        <span v-if="data.step.for_each" class="badge-tag badge-loop" title="循环遍历">
+        <span v-if="data.step.for_each" class="badge-tag badge-loop" :title="t('node.loopTitle')">
           🔁 loop
         </span>
-        <span v-if="data.step.retry && data.step.retry.attempts > 0" class="badge-tag badge-retry" title="重试策略">
+        <span v-if="data.step.retry && data.step.retry.attempts > 0" class="badge-tag badge-retry" :title="t('node.retryTitle')">
           🔄 x{{ data.step.retry.attempts }}
         </span>
-        <span v-if="data.step.output_var" class="badge-tag badge-var" title="导出变量">
+        <span v-if="data.step.output_var" class="badge-tag badge-var" :title="t('node.outputVarTitle')">
           📦 ${{ data.step.output_var }}
         </span>
       </div>
@@ -62,13 +62,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
+import { STEP_NAME_EN_MAP, useI18n } from '../../i18n'
 import type { FlowNodeData } from '../../types/flow'
+
+const { locale, t } = useI18n()
 
 const props = defineProps<{
   id: string
   data: FlowNodeData
   selected?: boolean
 }>()
+
+const displayStepName = computed(() => {
+  const raw = props.data.step.name
+  if (!raw) return ''
+  if (locale.value === 'en' && STEP_NAME_EN_MAP[raw]) {
+    return STEP_NAME_EN_MAP[raw]
+  }
+  return raw
+})
 
 const actionCategoryClass = computed(() => {
   const type = props.data.step.action.type || ''

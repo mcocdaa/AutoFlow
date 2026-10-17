@@ -1,8 +1,8 @@
 <template>
   <div class="af-page">
     <PageHeader
-      title="单步调试"
-      description="逐步执行 Flow 并检查每一步输出；断点为本地语义（执行前暂停）"
+      :title="t('debug.title')"
+      :description="t('debug.desc')"
       :icon="BugOutlined"
     />
 
@@ -17,7 +17,7 @@
               </div>
               <a-select
                 v-model:value="selectedExample"
-                placeholder="加载示例"
+                :placeholder="t('debug.loadExample')"
                 class="example-select"
                 @change="handleLoadExample"
               >
@@ -26,7 +26,7 @@
                   :key="key"
                   :value="key"
                 >
-                  {{ example.label }}
+                  {{ getFlowExampleLabel(example) }}
                 </a-select-option>
               </a-select>
             </div>
@@ -43,7 +43,7 @@
           <div class="source-footer">
             <a-button type="primary" :loading="loading" @click="startSession">
               <template #icon><PlayCircleOutlined /></template>
-              开始调试
+              {{ t('debug.startDebug') }}
             </a-button>
           </div>
         </a-card>
@@ -55,7 +55,7 @@
             <div class="card-header">
               <div class="card-title">
                 <BugOutlined class="card-icon" />
-                调试会话
+                {{ t('debug.sessionTitle') }}
               </div>
               <a-tag v-if="session" :color="statusColor">{{ statusText }}</a-tag>
             </div>
@@ -65,7 +65,7 @@
             <div class="session-toolbar">
               <a-button size="small" :disabled="finished || loading" @click="stepOnce">
                 <template #icon><StepForwardOutlined /></template>
-                单步执行
+                {{ t('debug.stepOnce') }}
               </a-button>
               <a-button
                 size="small"
@@ -73,23 +73,23 @@
                 @click="continueToBreakpoint"
               >
                 <template #icon><FastForwardOutlined /></template>
-                继续到断点
+                {{ t('debug.continueBp') }}
               </a-button>
               <a-button size="small" :disabled="finished || loading" @click="runToEnd">
                 <template #icon><ThunderboltOutlined /></template>
-                运行到底
+                {{ t('debug.runToEnd') }}
               </a-button>
               <a-button size="small" type="text" danger :disabled="loading" @click="stopSession">
                 <template #icon><StopOutlined /></template>
-                停止
+                {{ t('debug.stop') }}
               </a-button>
             </div>
 
             <div class="session-progress">
-              <span>进度 {{ session.index }} / {{ session.total_steps }}</span>
+              <span>{{ t('debug.progress', { index: session.index, total: session.total_steps }) }}</span>
               <span class="session-run af-mono">run: {{ session.run_id.slice(0, 8) }}</span>
               <span v-if="session.parent_run_id" class="session-fork af-mono">
-                分叉自 {{ session.parent_run_id.slice(0, 8) }} · 第 {{ session.fork_step_index }} 步
+                {{ t('debug.forkedFrom', { runId: session.parent_run_id.slice(0, 8), stepIdx: session.fork_step_index ?? 0 }) }}
               </span>
             </div>
 
@@ -113,7 +113,7 @@
                 }"
                 @click="selectedStepId = info.id"
               >
-                <a-tooltip :title="breakpoints.has(info.id) ? '取消断点' : '设为断点'">
+                <a-tooltip :title="breakpoints.has(info.id) ? t('debug.removeBp') : t('debug.setBp')">
                   <span
                     class="breakpoint"
                     :class="{ 'is-active': breakpoints.has(info.id) }"
@@ -124,11 +124,11 @@
                 </a-tooltip>
                 <span class="step-status" :class="'is-' + stepStatus(info.id)"></span>
                 <span class="step-id af-mono">{{ info.id }}</span>
-                <span v-if="info.name" class="step-name">{{ info.name }}</span>
-                <a-tag v-if="info.for_each" class="step-flag">迭代</a-tag>
-                <a-tag v-if="info.has_condition" class="step-flag">条件</a-tag>
+                <span v-if="info.name" class="step-name">{{ displayStepName(info.name) }}</span>
+                <a-tag v-if="info.for_each" class="step-flag">{{ t('debug.flagLoop') }}</a-tag>
+                <a-tag v-if="info.has_condition" class="step-flag">{{ t('debug.flagCond') }}</a-tag>
                 <a-tag v-if="info.retry_attempts > 0" class="step-flag">
-                  重试 {{ info.retry_attempts }}
+                  {{ t('debug.flagRetry', { count: info.retry_attempts }) }}
                 </a-tag>
                 <span v-if="resultOf(info.id)" class="step-duration">
                   {{ resultOf(info.id)?.duration_ms }} ms
@@ -147,14 +147,14 @@
                   class="detail-error"
                 />
                 <div v-if="selectedResult.check_passed !== null" class="detail-line">
-                  <span class="detail-label">检查</span>
+                  <span class="detail-label">{{ t('debug.checkLabel') }}</span>
                   <a-tag :color="selectedResult.check_passed ? 'success' : 'error'">
-                    {{ selectedResult.check_passed ? '通过' : '未通过' }}
+                    {{ selectedResult.check_passed ? t('debug.checkPassed') : t('debug.checkFailed') }}
                   </a-tag>
                 </div>
                 <div v-if="selectedResult.iterations?.length" class="detail-block">
                   <span class="detail-label">
-                    迭代（{{ selectedResult.iterations.length }} 次）
+                    {{ t('debug.iterationsLabel', { count: selectedResult.iterations.length }) }}
                   </span>
                   <div
                     v-for="(iteration, i) in selectedResult.iterations"
@@ -168,7 +168,7 @@
                   </div>
                 </div>
                 <div v-if="selectedArtifacts.length" class="detail-block">
-                  <span class="detail-label">产物</span>
+                  <span class="detail-label">{{ t('debug.artifactsLabel') }}</span>
                   <div class="artifact-list">
                     <a
                       v-for="artifact in selectedArtifacts"
@@ -184,14 +184,14 @@
                   </div>
                 </div>
                 <div class="detail-block">
-                  <span class="detail-label">输出</span>
+                  <span class="detail-label">{{ t('debug.outputLabel') }}</span>
                   <pre class="output-pre af-mono">{{ formatOutput(selectedResult.action_output) }}</pre>
                 </div>
               </template>
               <a-empty
                 v-else
                 :image="emptyImage"
-                description="选择已执行的步骤查看输出"
+                :description="t('debug.selectStepEmpty')"
               />
             </div>
 
@@ -206,11 +206,11 @@
                 class="hook-item"
               >
                 <a-tag :color="hook.hook === 'on_success' ? 'green' : 'red'">
-                  {{ hook.hook === 'on_success' ? '成功钩子' : '失败钩子' }}
+                  {{ hook.hook === 'on_success' ? t('debug.hookOnSuccess') : t('debug.hookOnFailure') }}
                 </a-tag>
                 <span class="af-mono">{{ hook.action_type }}</span>
                 <a-tag :color="hook.status === 'success' ? 'success' : 'error'">
-                  {{ hook.status === 'success' ? '执行成功' : '执行失败' }}
+                  {{ hook.status === 'success' ? t('debug.hookExecSuccess') : t('debug.hookExecFailed') }}
                 </a-tag>
                 <span class="hook-duration">{{ hook.duration_ms }} ms</span>
                 <a-alert
@@ -224,14 +224,14 @@
             </div>
 
             <div v-if="finished" class="session-done">
-              <span>调试结束，运行已保存到</span>
+              <span>{{ t('debug.sessionDone') }}</span>
               <a-button type="link" size="small" @click="router.push('/runs')">
-                运行历史
+                {{ t('nav.runs') }}
               </a-button>
             </div>
           </template>
 
-          <a-empty v-else :image="emptyImage" description="点击左侧「开始调试」创建会话" />
+          <a-empty v-else :image="emptyImage" :description="t('debug.emptySession')" />
         </a-card>
       </a-col>
     </a-row>
@@ -239,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Empty, message } from 'ant-design-vue'
 import {
@@ -261,7 +261,15 @@ import {
   runDebugSession,
   stepDebugSession,
 } from '../api/debug'
-import { DEFAULT_FLOW_YAML, FLOW_EXAMPLES } from '../constants/flow-examples'
+import {
+  DEFAULT_FLOW_YAML_EN,
+  DEFAULT_FLOW_YAML_ZH,
+  FLOW_EXAMPLES,
+  getDefaultFlowYaml,
+  getFlowExampleHint,
+  getFlowExampleLabel,
+} from '../constants/flow-examples'
+import { STEP_NAME_EN_MAP, useI18n } from '../i18n'
 import { artifactsOfValue } from '../utils/artifacts'
 import { formatInline, formatOutput, formatSize } from '../utils/format'
 import { parseJsonInput, parseJsonObject } from '../utils/json'
@@ -270,13 +278,22 @@ import CodeEditor from '../components/shared/CodeEditor.vue'
 import FlowParamsEditor from '../components/run/FlowParamsEditor.vue'
 import type { DebugSessionSnapshot } from '../types/debug'
 
+const { locale, t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 
-const yamlContent = ref(DEFAULT_FLOW_YAML)
+const yamlContent = ref(getDefaultFlowYaml())
+watch(locale, () => {
+  const trimmed = yamlContent.value.trim()
+  if (
+    trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
+    trimmed === DEFAULT_FLOW_YAML_EN.trim()
+  ) {
+    yamlContent.value = getDefaultFlowYaml()
+  }
+})
 const selectedExample = ref<string>()
-const exampleHint = ref('')
 const inputText = ref('{}')
 const varsText = ref('{}')
 const session = ref<DebugSessionSnapshot | null>(null)
@@ -284,12 +301,26 @@ const breakpoints = ref(new Set<string>())
 const selectedStepId = ref<string | null>(null)
 const loading = ref(false)
 
+const exampleHint = computed(() => {
+  if (!selectedExample.value) return ''
+  const example = FLOW_EXAMPLES[selectedExample.value as keyof typeof FLOW_EXAMPLES]
+  return example ? getFlowExampleHint(example) : ''
+})
+
+const displayStepName = (name?: string | null) => {
+  if (!name) return ''
+  if (locale.value === 'en' && STEP_NAME_EN_MAP[name]) {
+    return STEP_NAME_EN_MAP[name]
+  }
+  return name
+}
+
 const finished = computed(() => session.value?.status !== 'paused')
 const statusText = computed(() => {
   if (!session.value) return ''
-  if (session.value.status === 'success') return '成功'
-  if (session.value.status === 'failed') return '失败'
-  return '调试中'
+  if (session.value.status === 'success') return t('debug.status.success')
+  if (session.value.status === 'failed') return t('debug.status.failed')
+  return t('debug.status.paused')
 })
 const statusColor = computed(() => {
   if (session.value?.status === 'success') return 'green'
@@ -332,7 +363,6 @@ const handleLoadExample = (key: string) => {
   const example = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!example) return
   yamlContent.value = example.yaml
-  exampleHint.value = example.hint ?? ''
 }
 
 const startSession = () =>
@@ -350,7 +380,7 @@ const startSession = () =>
     apply(snapshot)
     await router.replace({ query: { session: snapshot.session_id } })
     if (snapshot.total_steps === 0) {
-      message.info('该 Flow 没有步骤')
+      message.info(t('debug.noStepsMsg'))
     }
   })
 
@@ -372,7 +402,7 @@ const continueToBreakpoint = () =>
       const next = session.value.steps[session.value.index]
       if (!next) break
       if (breakpoints.value.has(next.id)) {
-        message.info(`已在断点「${next.id}」前暂停`)
+        message.info(t('debug.pausedAtBp', { id: next.id }))
         break
       }
       apply(await stepDebugSession(session.value.session_id))
@@ -409,7 +439,7 @@ onMounted(async () => {
   try {
     apply(await fetchDebugSession(sessionId))
   } catch (err) {
-    message.warning(`无法恢复调试会话：${getErrorMessage(err)}`)
+    message.warning(t('debug.restoreFailed', { msg: getErrorMessage(err) }))
     await router.replace({ query: {} })
   } finally {
     loading.value = false

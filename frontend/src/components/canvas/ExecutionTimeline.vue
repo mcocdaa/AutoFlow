@@ -3,13 +3,13 @@
     <div class="timeline-header">
       <div class="header-left">
         <span class="title-icon">📊</span>
-        <span class="title-text">执行耗时甘特图</span>
+        <span class="title-text">{{ t('timeline.title') }}</span>
         <a-tag :color="statusColor" class="status-tag">{{ run.status.toUpperCase() }}</a-tag>
       </div>
       <div class="header-right">
-        <span class="meta-label">总耗时:</span>
+        <span class="meta-label">{{ t('timeline.totalDuration') }}</span>
         <span class="meta-value af-mono">{{ run.duration_ms ?? 0 }} ms</span>
-        <span class="meta-label" style="margin-left: 12px">步骤数:</span>
+        <span class="meta-label" style="margin-left: 12px">{{ t('timeline.stepCount') }}</span>
         <span class="meta-value af-mono">{{ run.steps.length }}</span>
       </div>
     </div>
@@ -24,8 +24,8 @@
         <div class="row-label">
           <span class="step-idx">{{ idx + 1 }}.</span>
           <span class="step-id af-mono">{{ step.step_id }}</span>
-          <span v-if="step.isBottleneck" class="bottleneck-tag" title="当前执行链路中最耗时步骤">
-            ⚡ 耗时瓶颈 ({{ step.percentOfTotal }}%)
+          <span v-if="step.isBottleneck" class="bottleneck-tag" :title="t('timeline.bottleneckTitle')">
+            ⚡ {{ t('timeline.bottleneckTag', { pct: step.percentOfTotal }) }}
           </span>
         </div>
 
@@ -51,13 +51,16 @@
     </div>
   </div>
   <div v-else-if="run" class="timeline-empty">
-    <span>暂无步骤执行数据</span>
+    <span>{{ t('timeline.empty') }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from '../../i18n'
 import type { RunResult } from '../../types/runs'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   run: RunResult | null

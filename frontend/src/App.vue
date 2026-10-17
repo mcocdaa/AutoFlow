@@ -1,5 +1,5 @@
 <template>
-  <a-config-provider :theme="FDS_THEME">
+  <a-config-provider :theme="FDS_THEME" :locale="locale === 'zh' ? zhCN : enUS">
     <a-layout class="app-shell">
       <a-layout-header class="app-header">
         <div class="header-logo" @click="goHome">
@@ -19,13 +19,21 @@
           </svg>
           <div class="logo-text">
             <span class="logo-title">AutoFlow</span>
-            <span class="logo-subtitle">工作流自动化</span>
+            <span class="logo-subtitle">{{ t('app.subtitle') }}</span>
           </div>
         </div>
         <div class="header-actions">
-          <a-button type="primary" @click="navigateToRunFlow">
+          <button
+            type="button"
+            class="lang-toggle-btn"
+            data-testid="lang-toggle-btn"
+            @click="toggleLocale"
+          >
+            {{ locale === 'zh' ? '🌐 EN' : '🌐 中文' }}
+          </button>
+          <a-button type="primary" class="new-flow-btn" @click="navigateToRunFlow">
             <template #icon><PlusOutlined /></template>
-            创建流程
+            {{ t('app.newFlow') }}
           </a-button>
         </div>
       </a-layout-header>
@@ -44,31 +52,31 @@
           <a-menu v-model:selectedKeys="selectedKeys" mode="inline" class="app-menu">
             <a-menu-item key="/canvas" @click="router.push('/canvas')">
               <template #icon><ApartmentOutlined /></template>
-              <span>可视化编排</span>
+              <span>{{ t('nav.canvas') }}</span>
             </a-menu-item>
             <a-menu-item key="/hub" @click="router.push('/hub')">
               <template #icon><ShopOutlined /></template>
-              <span>流程市场</span>
+              <span>{{ t('nav.hub') }}</span>
             </a-menu-item>
             <a-menu-item key="/run" @click="router.push('/run')">
               <template #icon><PlayCircleOutlined /></template>
-              <span>运行流程</span>
+              <span>{{ t('nav.run') }}</span>
             </a-menu-item>
             <a-menu-item key="/debug" @click="router.push('/debug')">
               <template #icon><BugOutlined /></template>
-              <span>单步调试</span>
+              <span>{{ t('nav.debug') }}</span>
             </a-menu-item>
             <a-menu-item key="/runs" @click="router.push('/runs')">
               <template #icon><HistoryOutlined /></template>
-              <span>运行历史</span>
+              <span>{{ t('nav.runs') }}</span>
             </a-menu-item>
             <a-menu-item key="/plugins" @click="router.push('/plugins')">
               <template #icon><AppstoreOutlined /></template>
-              <span>插件管理</span>
+              <span>{{ t('nav.plugins') }}</span>
             </a-menu-item>
             <a-menu-item key="/secrets" @click="router.push('/secrets')">
               <template #icon><KeyOutlined /></template>
-              <span>凭据保密柜</span>
+              <span>{{ t('nav.secrets') }}</span>
             </a-menu-item>
           </a-menu>
           <div class="sider-footer">
@@ -92,6 +100,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import zhCN from 'ant-design-vue/es/locale/zh_CN'
+import enUS from 'ant-design-vue/es/locale/en_US'
 import {
   ApartmentOutlined,
   AppstoreOutlined,
@@ -105,7 +115,9 @@ import {
   ShopOutlined,
 } from '@ant-design/icons-vue'
 import { FDS_THEME } from './theme/flow-design-theme'
+import { useI18n } from './i18n'
 
+const { locale, toggleLocale, t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const collapsed = ref(false)
@@ -172,7 +184,38 @@ const navigateToRunFlow = () => {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.lang-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-toggle-btn:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.new-flow-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .app-body {

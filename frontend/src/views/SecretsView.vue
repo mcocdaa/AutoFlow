@@ -1,18 +1,18 @@
 <template>
   <div class="af-page secrets-vault-page">
     <PageHeader
-      title="凭据保密柜"
-      description="基于 AES-256-GCM 认证加密的本地凭据保险箱，支持全链路日志脱敏与动态运行时注入"
+      :title="t('secrets.title')"
+      :description="t('secrets.desc')"
       :icon="KeyOutlined"
     >
       <template #actions>
         <a-button type="primary" @click="openAddModal">
           <template #icon><PlusOutlined /></template>
-          添加凭据
+          {{ t('secrets.addBtn') }}
         </a-button>
         <a-button :loading="loading" @click="loadSecrets">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </a-button>
       </template>
     </PageHeader>
@@ -21,42 +21,42 @@
     <div class="security-hero-card">
       <div class="security-hero-badge">
         <SafetyCertificateOutlined class="hero-badge-icon" />
-        <span>AES-256-GCM 本地隔离加密机制</span>
+        <span>{{ t('secrets.heroBadge') }}</span>
       </div>
 
       <div class="security-grid">
         <div class="security-col">
           <div class="col-header">
             <LockOutlined class="col-icon primary" />
-            <h4 class="col-title">本地加密存储</h4>
+            <h4 class="col-title">{{ t('secrets.col1Title') }}</h4>
           </div>
           <p class="col-desc">
-            所有凭据均采用 AES-256-GCM 认证加密后安全存储于本地保险箱，主密钥仅本机受控持留，绝不上传云端。
+            {{ t('secrets.col1Desc') }}
           </p>
         </div>
 
         <div class="security-col">
           <div class="col-header">
             <CodeOutlined class="col-icon info" />
-            <h4 class="col-title">插值引用语法</h4>
+            <h4 class="col-title">{{ t('secrets.col2Title') }}</h4>
           </div>
           <p class="col-desc">
-            在流程配置中使用
+            {{ t('secrets.col2DescPrefix') }}
             <a-tag class="code-tag" @click="copyToClipboard(SECRET_SYNTAX_EXAMPLE)">
               <span>{{ SECRET_SYNTAX_EXAMPLE }}</span>
               <CopyOutlined class="copy-tag-icon" />
             </a-tag>
-            引用凭据，执行引擎在沙箱内安全解析，不留明文记录。
+            {{ t('secrets.col2DescSuffix') }}
           </p>
         </div>
 
         <div class="security-col">
           <div class="col-header">
             <EyeInvisibleOutlined class="col-icon warning" />
-            <h4 class="col-title">全链路正则脱敏</h4>
+            <h4 class="col-title">{{ t('secrets.col3Title') }}</h4>
           </div>
           <p class="col-desc">
-            自动对运行日志、控制台输出与执行产物进行深度扫描，已登记凭据及常见密钥格式全自动掩码脱敏。
+            {{ t('secrets.col3Desc') }}
           </p>
         </div>
       </div>
@@ -68,14 +68,14 @@
         <div class="toolbar-left">
           <h3 class="card-title">
             <SafetyCertificateOutlined class="title-icon" />
-            已保存凭据
+            {{ t('secrets.savedTitle') }}
             <a-tag color="blue" class="count-badge">{{ filteredSecrets.length }}</a-tag>
           </h3>
         </div>
         <div class="toolbar-right">
           <a-input-search
             v-model:value="searchKey"
-            placeholder="按 Key 搜索凭据..."
+            :placeholder="t('secrets.searchPlaceholder')"
             allow-clear
             style="width: 260px"
           />
@@ -87,7 +87,7 @@
         :data-source="filteredSecrets"
         :row-key="(record: SecretItem) => record.key"
         :loading="loading"
-        :pagination="{ pageSize: 8, showTotal: (total: number) => `共 ${total} 条凭据` }"
+        :pagination="{ pageSize: 8, showTotal: (total: number) => t('secrets.totalCount', { total }) }"
         class="secrets-table"
       >
         <!-- Key 列 -->
@@ -96,7 +96,7 @@
             <div class="key-cell">
               <KeyOutlined class="key-icon" />
               <span class="key-name">{{ record.key }}</span>
-              <a-tooltip title="复制模板引用宏 {{secrets.KEY}}">
+              <a-tooltip :title="t('secrets.copyMacroTip')">
                 <a-button
                   type="text"
                   size="small"
@@ -113,7 +113,7 @@
           <template v-else-if="column.key === 'masked_value'">
             <div class="masked-cell">
               <span class="masked-tag">{{ record.masked_value }}</span>
-              <span class="masked-tip">已启用防泄漏掩码</span>
+              <span class="masked-tip">{{ t('secrets.maskedTip') }}</span>
             </div>
           </template>
 
@@ -121,7 +121,7 @@
           <template v-else-if="column.key === 'status'">
             <div class="status-cell">
               <a-badge status="success" />
-              <span class="status-text">AES-256-GCM 保护中</span>
+              <span class="status-text">{{ t('secrets.statusProtected') }}</span>
             </div>
           </template>
 
@@ -133,20 +133,20 @@
                 size="small"
                 @click="copyReference(record.key)"
               >
-                复制引用
+                {{ t('secrets.copyRef') }}
               </a-button>
               <a-button
                 type="link"
                 size="small"
                 @click="openEditModal(record)"
               >
-                更新值
+                {{ t('secrets.updateVal') }}
               </a-button>
               <a-popconfirm
-                :title="`确认删除凭据 [${record.key}]？`"
-                description="删除后，引用该凭据的自动化工作流将无法获取密钥导致执行中断。"
-                ok-text="确认删除"
-                cancel-text="取消"
+                :title="t('secrets.deleteConfirmTitle', { key: record.key })"
+                :description="t('secrets.deleteConfirmDesc')"
+                :ok-text="t('secrets.confirmDelete')"
+                :cancel-text="t('common.cancel')"
                 ok-type="danger"
                 @confirm="handleDelete(record.key)"
               >
@@ -156,7 +156,7 @@
                   size="small"
                   :loading="deletingKey === record.key"
                 >
-                  删除
+                  {{ t('common.delete') }}
                 </a-button>
               </a-popconfirm>
             </div>
@@ -177,9 +177,9 @@
       <div class="modal-header">
         <span class="modal-icon"><KeyOutlined /></span>
         <div>
-          <h3 class="modal-title">{{ isEditing ? '更新保密柜凭据' : '添加新敏感凭据' }}</h3>
+          <h3 class="modal-title">{{ isEditing ? t('secrets.modal.editTitle') : t('secrets.modal.addTitle') }}</h3>
           <span class="modal-desc">
-            {{ isEditing ? `为凭据 [${formState.key}] 覆盖写入新的加密密文` : '录入敏感凭据并使用 AES-256-GCM 加密存储' }}
+            {{ isEditing ? t('secrets.modal.editDesc', { key: formState.key }) : t('secrets.modal.addDesc') }}
           </span>
         </div>
       </div>
@@ -191,48 +191,49 @@
         layout="vertical"
         class="secret-form"
       >
-        <a-form-item label="凭据标识 (Key)" name="key">
+        <a-form-item :label="t('secrets.form.keyLabel')" name="key">
           <a-input
             v-model:value="formState.key"
             :disabled="isEditing"
-            placeholder="例如: OPENAI_API_KEY, DINGTALK_WEBHOOK_SECRET"
+            :placeholder="t('secrets.form.keyPlaceholder')"
             :maxlength="128"
           >
             <template #prefix><KeyOutlined class="input-prefix-icon" /></template>
           </a-input>
           <div class="input-help">
-            建议使用全大写字母、数字和下划线组合（如 <code>DEEPSEEK_KEY</code>），在 Flow 中通过
-            <code>{{ currentSecretRef }}</code> 引用。
+            {{ t('secrets.form.keyHelpPrefix') }}
+            <code>{{ currentSecretRef }}</code>
+            {{ t('secrets.form.keyHelpSuffix') }}
           </div>
         </a-form-item>
 
-        <a-form-item label="凭据明文内容 (Secret Value)" name="value">
+        <a-form-item :label="t('secrets.form.valLabel')" name="value">
           <a-input-password
             v-model:value="formState.value"
-            placeholder="输入明文密钥、Token、密码或连接字符串..."
+            :placeholder="t('secrets.form.valPlaceholder')"
             allow-clear
           >
             <template #prefix><LockOutlined class="input-prefix-icon" /></template>
           </a-input-password>
           <div class="input-help">
-            明文仅在本地通过 AES-256-GCM 加密后写入密文文件，页面列表将始终脱敏展示。
+            {{ t('secrets.form.valHelp') }}
           </div>
         </a-form-item>
 
         <div class="form-security-alert">
           <SafetyCertificateOutlined class="alert-icon" />
-          <span>保密柜将实时将此 Key 的明文加入全链路日志与产物掩码字典，杜绝泄漏。</span>
+          <span>{{ t('secrets.form.securityAlert') }}</span>
         </div>
       </a-form>
 
       <div class="modal-footer">
-        <a-button @click="modalVisible = false">取消</a-button>
+        <a-button @click="modalVisible = false">{{ t('common.cancel') }}</a-button>
         <a-button
           type="primary"
           :loading="saving"
           @click="handleSubmit"
         >
-          {{ isEditing ? '确认更新' : '加密保存' }}
+          {{ isEditing ? t('secrets.form.confirmUpdate') : t('secrets.form.encryptSave') }}
         </a-button>
       </div>
     </a-modal>
@@ -255,6 +256,7 @@ import {
 } from '@ant-design/icons-vue'
 import PageHeader from '../components/shared/PageHeader.vue'
 import { useClipboard } from '../composables/useClipboard'
+import { useI18n } from '../i18n'
 import {
   deleteSecret,
   fetchSecrets,
@@ -262,6 +264,7 @@ import {
   type SecretItem,
 } from '../api/secrets'
 
+const { t } = useI18n()
 const { copyToClipboard } = useClipboard()
 
 // 数据与状态
@@ -286,46 +289,46 @@ const currentSecretRef = computed(() => `{{secrets.${formState.key || 'KEY'}}}`)
 // 表单校验规则
 const validateKey = async (_rule: Rule, value: string) => {
   if (!value) {
-    return Promise.reject(new Error('请输入凭据标识 (Key)'))
+    return Promise.reject(new Error('Key is required'))
   }
   const keyRegex = /^[A-Za-z0-9_]{1,128}$/
   if (!keyRegex.test(value)) {
-    return Promise.reject(new Error('Key 仅支持英文字母、数字和下划线，长度 1-128'))
+    return Promise.reject(new Error('Key must contain only letters, digits, and underscores (1-128 chars)'))
   }
   return Promise.resolve()
 }
 
 const formRules: Record<string, Rule[]> = {
   key: [{ required: true, validator: validateKey, trigger: ['change', 'blur'] }],
-  value: [{ required: true, message: '请输入凭据内容 (Value)', trigger: ['change', 'blur'] }],
+  value: [{ required: true, message: 'Secret value is required', trigger: ['change', 'blur'] }],
 }
 
 // 表格列定义
-const columns = [
+const columns = computed(() => [
   {
-    title: '凭据标识',
+    title: t('secrets.col.key'),
     dataIndex: 'key',
     key: 'key',
     width: '30%',
   },
   {
-    title: '脱敏预览',
+    title: t('secrets.col.masked'),
     dataIndex: 'masked_value',
     key: 'masked_value',
     width: '26%',
   },
   {
-    title: '防护等级',
+    title: t('secrets.col.security'),
     key: 'status',
     width: '22%',
   },
   {
-    title: '操作',
+    title: t('secrets.col.actions'),
     key: 'actions',
     width: '22%',
     align: 'right' as const,
   },
-]
+])
 
 // 过滤后的列表
 const filteredSecrets = computed(() => {
@@ -341,7 +344,7 @@ const loadSecrets = async () => {
     const list = await fetchSecrets()
     secrets.value = list
   } catch (err: any) {
-    message.error(err?.message || '获取凭据列表失败')
+    message.error(err?.message || 'Failed to load secrets')
   } finally {
     loading.value = false
   }
@@ -382,11 +385,11 @@ const handleSubmit = async () => {
   saving.value = true
   try {
     await setSecret(formState.key, formState.value)
-    message.success(`凭据 [${formState.key}] 已安全加密存储`)
+    message.success(t('secrets.msg.saved', { key: formState.key }))
     modalVisible.value = false
     await loadSecrets()
   } catch (err: any) {
-    message.error(err?.message || '保存凭据失败')
+    message.error(err?.message || 'Failed to save secret')
   } finally {
     saving.value = false
   }
@@ -397,10 +400,10 @@ const handleDelete = async (key: string) => {
   deletingKey.value = key
   try {
     await deleteSecret(key)
-    message.success(`凭据 [${key}] 已从保密柜中移除`)
+    message.success(t('secrets.msg.deleted', { key }))
     await loadSecrets()
   } catch (err: any) {
-    message.error(err?.message || '删除凭据失败')
+    message.error(err?.message || 'Failed to delete secret')
   } finally {
     deletingKey.value = null
   }

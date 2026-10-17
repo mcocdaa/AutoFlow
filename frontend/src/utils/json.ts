@@ -1,4 +1,5 @@
 import { message } from 'ant-design-vue'
+import { locale } from '../i18n'
 
 export type JsonParseResult = { ok: true; value: unknown } | { ok: false }
 
@@ -8,7 +9,11 @@ export function parseJsonInput(text: string, label: string): JsonParseResult {
   try {
     return { ok: true, value: JSON.parse(trimmed) }
   } catch (err) {
-    message.error(`${label} 不是合法 JSON：${(err as Error).message}`)
+    message.error(
+      locale.value === 'en'
+        ? `${label} is not valid JSON: ${(err as Error).message}`
+        : `${label} 不是合法 JSON：${(err as Error).message}`,
+    )
     return { ok: false }
   }
 }
@@ -24,7 +29,11 @@ export function parseJsonObject(
     result.value === null ||
     Array.isArray(result.value)
   ) {
-    message.error(`${label} 需要是 JSON 对象`)
+    message.error(
+      locale.value === 'en'
+        ? `${label} must be a JSON object`
+        : `${label} 需要是 JSON 对象`,
+    )
     return null
   }
   return result.value as Record<string, unknown>

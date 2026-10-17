@@ -1,18 +1,18 @@
 <template>
   <div class="af-page">
     <PageHeader
-      title="运行历史"
-      description="查看、回放与对比历史运行记录，追踪每一步执行状态与产物"
+      :title="t('runs.title')"
+      :description="t('runs.desc')"
       :icon="HistoryOutlined"
     >
       <template #actions>
         <a-button :disabled="selectedRunIds.length !== 2" @click="openDiff">
           <template #icon><DiffOutlined /></template>
-          对比{{ selectedRunIds.length === 2 ? '' : '（选 2 条）' }}
+          {{ t('runs.compare') }}{{ selectedRunIds.length === 2 ? '' : t('runs.compareHint') }}
         </a-button>
         <a-button :loading="store.loading" @click="refresh">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </a-button>
       </template>
     </PageHeader>
@@ -27,48 +27,48 @@
         :row-selection="rowSelection"
         :pagination="{ pageSize: 10, hideOnSinglePage: true }"
       >
-        <a-table-column title="流程" data-index="flow_name" />
-        <a-table-column title="状态" width="96">
+        <a-table-column :title="t('runs.col.flow')" data-index="flow_name" />
+        <a-table-column :title="t('runs.col.status')" width="96">
           <template #default="{ record }">
             <a-tag :color="runStatusMeta(record.status).color">
               {{ runStatusMeta(record.status).text }}
             </a-tag>
           </template>
         </a-table-column>
-        <a-table-column title="开始时间" width="200">
+        <a-table-column :title="t('runs.col.startedAt')" width="200">
           <template #default="{ record }">{{ formatTime(record.started_at) }}</template>
         </a-table-column>
-        <a-table-column title="耗时" width="110">
+        <a-table-column :title="t('runs.col.duration')" width="110">
           <template #default="{ record }">
             {{ record.duration_ms !== null ? record.duration_ms + ' ms' : '—' }}
           </template>
         </a-table-column>
-        <a-table-column title="步骤" width="80">
+        <a-table-column :title="t('runs.col.steps')" width="80">
           <template #default="{ record }">{{ record.steps.length }}</template>
         </a-table-column>
-        <a-table-column title="操作" width="150">
+        <a-table-column :title="t('runs.col.actions')" width="150">
           <template #default="{ record }">
             <a-space :size="4">
               <a-button type="link" size="small" @click="openDetail(record.run_id)">
-                查看
+                {{ t('common.view') }}
               </a-button>
               <a-popconfirm
-                title="删除该运行记录及其产物？"
-                ok-text="删除"
-                cancel-text="取消"
+                :title="t('runs.deleteConfirm')"
+                :ok-text="t('common.delete')"
+                :cancel-text="t('common.cancel')"
                 @confirm="remove(record.run_id)"
               >
-                <a-button type="link" size="small" danger>删除</a-button>
+                <a-button type="link" size="small" danger>{{ t('common.delete') }}</a-button>
               </a-popconfirm>
             </a-space>
           </template>
         </a-table-column>
       </a-table>
       <a-skeleton v-else-if="store.loading" active :paragraph="{ rows: 4 }" />
-      <a-empty v-else description="暂无运行记录" :image="emptyImage" />
+      <a-empty v-else :description="t('runs.empty')" :image="emptyImage" />
     </a-card>
 
-    <a-drawer v-model:open="detailOpen" title="执行详情" width="720">
+    <a-drawer v-model:open="detailOpen" :title="t('runs.detailTitle')" width="720">
       <template #extra>
         <a-button
           v-if="detailRun"
@@ -76,7 +76,7 @@
           @click="replay"
         >
           <template #icon><RedoOutlined /></template>
-          回放
+          {{ t('runs.replay') }}
         </a-button>
       </template>
       <a-spin :spinning="detailLoading">
@@ -91,7 +91,7 @@
 
     <a-modal
       v-model:open="diffOpen"
-      title="运行对比"
+      :title="t('runs.diffTitle')"
       width="860"
       :footer="null"
     >
@@ -116,12 +116,14 @@ import { getErrorMessage } from '../api'
 import { forkDebugSession } from '../api/debug'
 import { fetchRun as apiFetchRun, fetchRunDiff, replayRun } from '../api/runs'
 import { RUN_STATUS_META } from '../constants/run-status'
+import { useI18n } from '../i18n'
 import { useRunsStore } from '../stores/runs'
 import PageHeader from '../components/shared/PageHeader.vue'
 import ResultsPanel from '../components/run/ResultsPanel.vue'
 import RunDiffPanel from '../components/run/RunDiffPanel.vue'
 import type { RunDiff, RunResult, RunStatus } from '../types/runs'
 
+const { locale, t } = useI18n()
 const store = useRunsStore()
 const router = useRouter()
 
@@ -148,7 +150,7 @@ const runStatusMeta = (status: RunStatus) => RUN_STATUS_META[status]
 
 const formatTime = (value: string | null): string => {
   if (!value) return '—'
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return new Date(value).toLocaleString(locale.value === 'en' ? 'en-US' : 'zh-CN', { hour12: false })
 }
 
 const refresh = () => {
@@ -173,7 +175,7 @@ const remove = async (runId: string) => {
   try {
     await store.removeRun(runId)
     selectedRunIds.value = selectedRunIds.value.filter((id) => id !== runId)
-    message.success('已删除该运行记录')
+    message.success(t('runs.deletedMsg'))
   } catch (err) {
     message.error(getErrorMessage(err))
   }
@@ -185,7 +187,7 @@ const openDiff = async () => {
     .filter((run) => selectedRunIds.value.includes(run.run_id))
     .sort((a, b) => a.started_at.localeCompare(b.started_at))
   if (selected.length !== 2) {
-    message.warning('所选运行已不存在，请刷新后重试')
+    message.warning(t('runs.notExistMsg'))
     return
   }
   diffOpen.value = true
@@ -208,13 +210,13 @@ const forkFromStep = async (nextStepIndex: number) => {
   forkLoading.value = true
   try {
     const snapshot = await forkDebugSession(detailRun.value.run_id, nextStepIndex)
-    message.success('已创建分叉调试会话')
+    message.success(t('runs.forkCreatedMsg'))
     detailOpen.value = false
     router.push({ path: '/debug', query: { session: snapshot.session_id } })
   } catch (err) {
     const text = getErrorMessage(err)
     if (text.includes('no stored request')) {
-      message.warning('该运行没有保存请求（旧版本运行），无法分叉')
+      message.warning(t('runs.noStoredReqFork'))
     } else {
       message.error(text)
     }
@@ -232,12 +234,12 @@ const replay = async () => {
     const newRun = await replayRun(detailRun.value.run_id)
     detailRun.value = newRun
     detailError.value = null
-    message.success(`回放完成：${newRun.run_id.slice(0, 8)}`)
+    message.success(t('runs.replayDoneMsg', { id: newRun.run_id.slice(0, 8) }))
     store.fetchRuns().catch(() => {})
   } catch (err) {
     const text = getErrorMessage(err)
     if (text.includes('no stored request')) {
-      message.warning('该运行没有保存请求（旧版本运行），无法回放')
+      message.warning(t('runs.noStoredReqReplay'))
     } else {
       message.error(text)
     }

@@ -1,4 +1,5 @@
 import { message } from 'ant-design-vue'
+import { t } from '../i18n'
 
 function fallbackCopy(text: string): boolean {
   try {
@@ -33,9 +34,9 @@ export function useClipboard() {
       if (!copied) {
         throw new Error('clipboard unavailable')
       }
-      message.success('已复制到剪贴板')
+      message.success(t('common.copied'))
     } catch {
-      message.error('复制失败')
+      message.error(t('common.copyFailed'))
     }
   }
 

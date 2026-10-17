@@ -9,14 +9,14 @@
             <input
               v-model="flowName"
               class="flow-name-input"
-              placeholder="Flow 名称"
+              :placeholder="t('canvas.flowNamePlaceholder')"
               @change="syncCanvasToYaml"
             />
           </div>
           <input
             v-model="flowDesc"
             class="flow-desc-input"
-            placeholder="填写工作流简短说明..."
+            :placeholder="t('canvas.flowDescPlaceholder')"
             @change="syncCanvasToYaml"
           />
         </div>
@@ -25,7 +25,7 @@
       <div class="toolbar-actions">
         <a-select
           v-model:value="selectedServerFlow"
-          placeholder="已保存流程"
+          :placeholder="t('canvas.savedFlows')"
           style="width: 118px"
           size="small"
           allow-clear
@@ -43,7 +43,7 @@
 
         <a-select
           v-model:value="selectedExampleKey"
-          placeholder="预设示例"
+          :placeholder="t('canvas.presets')"
           style="width: 112px"
           size="small"
           @change="handleSelectExample"
@@ -53,7 +53,7 @@
             :key="key"
             :value="key"
           >
-            {{ example.label }}
+            {{ getFlowExampleLabel(example) }}
           </a-select-option>
         </a-select>
 
@@ -63,12 +63,12 @@
           @click="handleSaveServerFlow"
         >
           <template #icon><SaveOutlined /></template>
-          保存流程
+          {{ t('canvas.save') }}
         </a-button>
 
         <a-button size="small" @click="autoLayout">
           <template #icon><ApartmentOutlined /></template>
-          自动排版
+          {{ t('canvas.layout') }}
         </a-button>
 
         <a-button
@@ -78,7 +78,7 @@
           @click="showTimeline = !showTimeline"
         >
           <template #icon><BarChartOutlined /></template>
-          甘特图
+          {{ t('canvas.gantt') }}
         </a-button>
 
         <a-button
@@ -86,7 +86,7 @@
           @click="handleStepDebug"
         >
           <template #icon><BugOutlined /></template>
-          单步调试
+          {{ t('canvas.debug') }}
         </a-button>
 
         <a-button
@@ -97,7 +97,7 @@
           @click="handleRunFlow"
         >
           <template #icon><CaretRightOutlined /></template>
-          一键执行
+          {{ t('canvas.run') }}
         </a-button>
       </div>
     </div>
@@ -189,7 +189,14 @@ import * as yaml from 'js-yaml'
 
 import { getFlow, listFlows, saveFlow, type FlowRecord } from '../api/client'
 import { useRunsStore } from '../stores/runs'
-import { DEFAULT_FLOW_YAML, FLOW_EXAMPLES } from '../constants/flow-examples'
+import {
+  DEFAULT_FLOW_YAML_EN,
+  DEFAULT_FLOW_YAML_ZH,
+  FLOW_EXAMPLES,
+  getDefaultFlowYaml,
+  getFlowExampleLabel,
+} from '../constants/flow-examples'
+import { STEP_NAME_EN_MAP, STEP_NAME_ZH_MAP, useI18n } from '../i18n'
 import type { FlowNodeData, FlowSpec, StepSpec } from '../types/flow'
 import type { RunStepResult } from '../types/runs'
 import type { ComponentItem } from '../components/canvas/PalettePanel.vue'
@@ -199,12 +206,13 @@ import PalettePanel from '../components/canvas/PalettePanel.vue'
 import PropertyPanel from '../components/canvas/PropertyPanel.vue'
 import ExecutionTimeline from '../components/canvas/ExecutionTimeline.vue'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const store = useRunsStore()
 const { fitView } = useVueFlow()
 
 const flowName = ref('my_workflow')
-const flowDesc = ref('AutoFlow 自动化流程')
+const flowDesc = ref(t('canvas.defaultFlowDesc'))
 const cronValue = ref('')
 const webhookTokenValue = ref('')
 const flowHooks = ref<FlowSpec['hooks']>(undefined)
@@ -217,7 +225,7 @@ const savingServerFlow = ref(false)
 const showTimeline = ref(true)
 
 const selectedNodeId = ref<string | null>(null)
-const yamlCode = ref(DEFAULT_FLOW_YAML)
+const yamlCode = ref(getDefaultFlowYaml())
 
 const nodes = ref<any[]>([])
 const edges = ref<any[]>([])
@@ -363,9 +371,9 @@ const formatYaml = () => {
   try {
     const doc = yaml.load(yamlCode.value)
     yamlCode.value = yaml.dump(doc, { indent: 2, noRefs: true })
-    message.success('YAML 格式化完成')
+    message.success(t('canvas.yamlFormatted'))
   } catch {
-    message.error('YAML 语法错误，无法格式化')
+    message.error(t('canvas.yamlFormatError'))
   }
 }
 
@@ -424,7 +432,7 @@ const addNodeFromPalette = (item: ComponentItem) => {
       }
       selectedNodeId.value = targetNode.id
       syncCanvasToYaml()
-      message.success(`已为步骤「${targetNode.id}」挂载断言: ${item.label}`)
+      message.success(t('canvas.checkAttached', { id: targetNode.id, label: item.label }))
       return
     }
   }
@@ -484,7 +492,7 @@ const addNodeFromPalette = (item: ComponentItem) => {
 
   selectedNodeId.value = stepId
   syncCanvasToYaml()
-  message.success(`已添加步骤: ${item.label}`)
+  message.success(t('canvas.stepAdded', { label: item.label }))
 }
 
 const onDragOver = (e: DragEvent) => {
@@ -553,7 +561,7 @@ const deleteStep = (stepId: string) => {
   })
   selectedNodeId.value = nodes.value[0]?.id || null
   syncCanvasToYaml()
-  message.info('步骤已删除')
+  message.info(t('canvas.stepDeleted'))
 }
 
 const autoLayout = () => {
@@ -612,9 +620,9 @@ const handleSelectServerFlow = async (slug?: string) => {
     yamlCode.value = record.flow_yaml
     parseYamlToCanvas(record.flow_yaml)
     setTimeout(() => fitView({ padding: 0.2 }), 100)
-    message.success(`已加载流程：${record.name}`)
+    message.success(t('canvas.flowLoaded', { name: record.name }))
   } catch (err: any) {
-    message.error(`读取流程失败：${err?.message || err}`)
+    message.error(t('canvas.flowLoadError', { msg: err?.message || err }))
   }
 }
 
@@ -629,9 +637,9 @@ const handleSaveServerFlow = async () => {
     const saved = await saveFlow(rawSlug, yamlCode.value)
     selectedServerFlow.value = saved.slug
     await loadServerFlows()
-    message.success(`流程已保存：${saved.name || saved.slug}`)
+    message.success(t('canvas.flowSaved', { name: saved.name || saved.slug }))
   } catch (err: any) {
-    message.error(`保存流程失败：${err?.message || err}`)
+    message.error(t('canvas.flowSaveError', { msg: err?.message || err }))
   } finally {
     savingServerFlow.value = false
   }
@@ -671,12 +679,12 @@ const handleRunFlow = async () => {
         }
       })
     }
-    message.success('流程执行完成！')
+    message.success(t('canvas.runSuccess'))
   } catch (err: any) {
     nodes.value.forEach((n) => {
       n.data.status = 'failed'
     })
-    message.error(`流程执行失败: ${err.message || err}`)
+    message.error(t('canvas.runError', { msg: err.message || err }))
   }
 }
 
@@ -706,6 +714,30 @@ watch(
   },
   { deep: true },
 )
+
+watch(locale, (newLocale) => {
+  const trimmed = yamlCode.value.trim()
+  if (
+    trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
+    trimmed === DEFAULT_FLOW_YAML_EN.trim()
+  ) {
+    yamlCode.value = getDefaultFlowYaml()
+    parseYamlToCanvas(yamlCode.value)
+    return
+  }
+  const map = newLocale === 'en' ? STEP_NAME_EN_MAP : STEP_NAME_ZH_MAP
+  let changed = false
+  nodes.value.forEach((node) => {
+    const stepName = node.data?.step?.name
+    if (stepName && map[stepName]) {
+      node.data.step.name = map[stepName]
+      changed = true
+    }
+  })
+  if (changed) {
+    syncCanvasToYaml()
+  }
+})
 
 onMounted(() => {
   const pendingYaml = sessionStorage.getItem('autoflow_canvas_yaml')
