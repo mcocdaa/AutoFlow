@@ -10,8 +10,41 @@ permissions:
   packages: write
 
 jobs:
+  verify:
+    name: Verify Backend & Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: "0.11.19"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Run backend tests
+        working-directory: backend
+        run: |
+          uv python install 3.12
+          uv sync --frozen
+          uv run pytest tests ../plugins/zhihu_digest/tests ../plugins/desktop_checkin/tests ../plugins/openclaw/tests ../plugins/ai_deepseek/tests -q
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Lint & build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build:web
+
   publish:
     name: Publish to GHCR
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
