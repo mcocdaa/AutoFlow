@@ -258,6 +258,13 @@ def test_flow_hub_api(client: TestClient):
     flows = res.json()
     assert len(flows) >= 3
 
+    by_id = {f["id"]: f for f in flows}
+    qg = by_id["hub-agent-mcp-toolchain"]
+    assert qg["title"] == "发布前质量门禁与确定性校验流水线"
+    assert qg["category"] == "质量门禁"
+    assert "quality-gate" in qg["tags"]
+    assert "mcp" not in qg["tags"]
+
     # 详情查询与全部精选模板可执行验证
     for f in flows:
         detail_res = client.get(f"/api/v1/hub/flows/{f['id']}")

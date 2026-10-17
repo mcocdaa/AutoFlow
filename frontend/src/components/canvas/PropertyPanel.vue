@@ -273,7 +273,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import apiClient from '../../api'
-import { STEP_NAME_EN_MAP, useI18n } from '../../i18n'
+import { localizeStepName, useI18n } from '../../i18n'
 import CodeEditor from '../shared/CodeEditor.vue'
 import type { StepSpec } from '../../types/flow'
 
@@ -317,11 +317,7 @@ const actionOptions = [
 ]
 
 const displayStepName = computed(() => {
-  const raw = props.selectedStep?.name ?? ''
-  if (locale.value === 'en' && STEP_NAME_EN_MAP[raw]) {
-    return STEP_NAME_EN_MAP[raw]
-  }
-  return raw
+  return localizeStepName(props.selectedStep?.name, locale.value)
 })
 
 const onNameChange = (newName: string) => {

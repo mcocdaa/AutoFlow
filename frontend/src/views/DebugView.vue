@@ -262,14 +262,12 @@ import {
   stepDebugSession,
 } from '../api/debug'
 import {
-  DEFAULT_FLOW_YAML_EN,
-  DEFAULT_FLOW_YAML_ZH,
   FLOW_EXAMPLES,
   getDefaultFlowYaml,
   getFlowExampleHint,
   getFlowExampleLabel,
 } from '../constants/flow-examples'
-import { localizeFlowYaml, STEP_NAME_EN_MAP, useI18n } from '../i18n'
+import { localizeFlowYaml, localizeStepName, useI18n } from '../i18n'
 import { artifactsOfValue } from '../utils/artifacts'
 import { formatInline, formatOutput, formatSize } from '../utils/format'
 import { parseJsonInput, parseJsonObject } from '../utils/json'
@@ -285,14 +283,7 @@ const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 
 const yamlContent = ref(getDefaultFlowYaml())
 watch(locale, (newLocale) => {
-  const trimmed = yamlContent.value.trim()
-  if (
-    trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
-    trimmed === DEFAULT_FLOW_YAML_EN.trim()
-  ) {
-    yamlContent.value = getDefaultFlowYaml()
-    return
-  }
+  message.destroy()
   yamlContent.value = localizeFlowYaml(yamlContent.value, newLocale)
 })
 const selectedExample = ref<string>()
@@ -310,11 +301,7 @@ const exampleHint = computed(() => {
 })
 
 const displayStepName = (name?: string | null) => {
-  if (!name) return ''
-  if (locale.value === 'en' && STEP_NAME_EN_MAP[name]) {
-    return STEP_NAME_EN_MAP[name]
-  }
-  return name
+  return localizeStepName(name, locale.value)
 }
 
 const finished = computed(() => session.value?.status !== 'paused')

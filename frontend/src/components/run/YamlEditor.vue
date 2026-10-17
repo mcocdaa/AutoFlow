@@ -6,20 +6,35 @@
           <FileTextOutlined class="card-icon" />
           Flow YAML
         </div>
-        <a-select
-          v-model:value="selectedExample"
-          :placeholder="t('run.loadExample')"
-          class="example-select"
-          @change="handleLoadExample"
-        >
-          <a-select-option
-            v-for="(example, key) in FLOW_EXAMPLES"
-            :key="key"
-            :value="key"
+          <a-select
+            v-model:value="selectedExample"
+            :placeholder="t('run.loadExample')"
+            class="example-select"
+            :dropdown-match-select-width="false"
+            option-label-prop="label"
+            @change="handleLoadExample"
           >
-            {{ getFlowExampleLabel(example) }}
-          </a-select-option>
-        </a-select>
+            <a-select-opt-group v-if="serverFlows.length > 0" :label="t('canvas.savedFlows')">
+              <a-select-option
+                v-for="item in serverFlows"
+                :key="`server:${item.slug}`"
+                :value="`server:${item.slug}`"
+                :label="item.name"
+              >
+                {{ item.name }}{{ item.description ? ` — ${localizeFlowYaml(item.description, locale)}` : '' }}
+              </a-select-option>
+            </a-select-opt-group>
+            <a-select-opt-group :label="t('canvas.presets')">
+              <a-select-option
+                v-for="(example, key) in FLOW_EXAMPLES"
+                :key="key"
+                :value="key"
+                :label="getFlowExampleLabel(example)"
+              >
+                {{ getFlowExampleLabel(example) }}
+              </a-select-option>
+            </a-select-opt-group>
+          </a-select>
       </div>
     </template>
 
@@ -45,11 +60,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ArrowRightOutlined, FileTextOutlined } from '@ant-design/icons-vue'
+import { getFlow, listFlows, type FlowRecord } from '../../api/client'
 import {
-  DEFAULT_FLOW_YAML_EN,
-  DEFAULT_FLOW_YAML_ZH,
   FLOW_EXAMPLES,
   getDefaultFlowYaml,
   getFlowExampleHint,
@@ -76,33 +90,46 @@ const emit = defineEmits<{
 }>()
 
 const yamlContent = ref(getDefaultFlowYaml())
+const serverFlows = ref<FlowRecord[]>([])
+
 watch(locale, (newLocale) => {
-  const trimmed = yamlContent.value.trim()
-  if (
-    trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
-    trimmed === DEFAULT_FLOW_YAML_EN.trim()
-  ) {
-    yamlContent.value = getDefaultFlowYaml()
-    return
-  }
   yamlContent.value = localizeFlowYaml(yamlContent.value, newLocale)
 })
+
 const selectedExample = ref<string>()
 const isDryRun = ref(false)
 const inputText = ref('{}')
 const varsText = ref('{}')
 
 const exampleHint = computed(() => {
-  if (!selectedExample.value) return ''
+  if (!selectedExample.value || selectedExample.value.startsWith('server:')) return ''
   const example = FLOW_EXAMPLES[selectedExample.value as keyof typeof FLOW_EXAMPLES]
   return example ? getFlowExampleHint(example) : ''
 })
 
-const handleLoadExample = (key: string) => {
+const handleLoadExample = async (key: string) => {
+  if (key.startsWith('server:')) {
+    const slug = key.slice('server:'.length)
+    try {
+      const record = await getFlow(slug)
+      yamlContent.value = localizeFlowYaml(record.flow_yaml, locale.value)
+    } catch {
+      // ignore load error
+    }
+    return
+  }
   const example = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!example) return
   yamlContent.value = localizeFlowYaml(example.yaml, locale.value)
 }
+
+onMounted(async () => {
+  try {
+    serverFlows.value = await listFlows()
+  } catch {
+    // ignore
+  }
+})
 
 const handleExecute = () => {
   const input = parseJsonInput(inputText.value, 'input')

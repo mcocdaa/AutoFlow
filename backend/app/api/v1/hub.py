@@ -34,13 +34,13 @@ steps:
     action:
       type: core.log
       params:
-        message: "Diagnosing anomaly alert: {{input.alert_id}}"
+        message: "正在诊断异常告警: {{input.alert_id}}"
   - id: execute_recovery
     name: "执行自愈脚本或容器重启"
     action:
       type: dummy.echo
       params:
-        action_taken: "restarted service {{input.service_name}}"
+        action_taken: "已重启异常服务 {{input.service_name}}"
     check:
       type: core.assert_truthy
       params:
@@ -74,36 +74,36 @@ steps:
     action:
       type: dummy.echo
       params:
-        summary: "Daily digest generated successfully"
+        summary: "每日精选研报已生成"
 """,
     },
     {
         "id": "hub-agent-mcp-toolchain",
         "name": "agent_safe_pipeline",
-        "title": "Agent 确定性校验工具链 (MCP 暴露)",
-        "category": "Agent 工具链",
-        "author": "Claude Code Contributor",
+        "title": "发布前质量门禁与确定性校验流水线",
+        "category": "质量门禁",
+        "author": "AutoFlow Team",
         "version": "1.0.1",
         "installs": 2100,
         "rating": 4.95,
-        "description": "供 Claude Code / Cursor / Codex 等外部 Agent 通过单次 toolcall 调用的确定性多步流",
-        "tags": ["mcp", "claude-code", "cursor", "codex", "safe-actions"],
+        "description": "前置环境检查 ➔ 确定性变更执行 ➔ 强断言门禁校验，保障发布与变更零失误",
+        "tags": ["quality-gate", "validation", "ci-cd", "safe-actions"],
         "yaml": """version: "1"
 name: agent_safe_pipeline
-description: "将易出错的多步骤外部调用封装为确定性带 Check 的复合 MCP 工具"
+description: "发布前质量门禁：前置环境检查 -> 确定性变更执行 -> 强断言校验"
 steps:
   - id: step_precheck
     name: "前置环境检查"
     action:
       type: core.log
       params:
-        message: "Environment verified for task {{input.task}}"
+        message: "正在校验任务前置环境: {{input.task}}"
   - id: step_apply
     name: "确定性操作执行"
     action:
       type: dummy.echo
       params:
-        status: "applied"
+        status: "已通过质量门禁并完成变更"
     check:
       type: core.assert_truthy
       params:
@@ -130,13 +130,13 @@ steps:
     action:
       type: core.log
       params:
-        message: "Verifying desktop client process status"
+        message: "正在检查桌面客户端进程状态"
   - id: extract_and_align
     name: "数据捕获与校验对齐"
     action:
       type: dummy.echo
       params:
-        result: "Extracted 120 records and verified integrity"
+        result: "已采集 120 条记录并通过完整性校验"
     check:
       type: core.assert_truthy
       params:
