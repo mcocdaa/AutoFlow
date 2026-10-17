@@ -196,7 +196,7 @@ import {
   getDefaultFlowYaml,
   getFlowExampleLabel,
 } from '../constants/flow-examples'
-import { STEP_NAME_EN_MAP, STEP_NAME_ZH_MAP, useI18n } from '../i18n'
+import { localizeFlowYaml, STEP_NAME_EN_MAP, STEP_NAME_ZH_MAP, useI18n } from '../i18n'
 import type { FlowNodeData, FlowSpec, StepSpec } from '../types/flow'
 import type { RunStepResult } from '../types/runs'
 import type { ComponentItem } from '../components/canvas/PalettePanel.vue'
@@ -596,8 +596,9 @@ const handleSelectExample = (key: string) => {
   const ex = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!ex) return
   selectedServerFlow.value = undefined
-  yamlCode.value = ex.yaml
-  parseYamlToCanvas(ex.yaml)
+  const localizedYaml = localizeFlowYaml(ex.yaml, locale.value)
+  yamlCode.value = localizedYaml
+  parseYamlToCanvas(localizedYaml)
   setTimeout(() => fitView({ padding: 0.2 }), 100)
 }
 
@@ -617,8 +618,9 @@ const handleSelectServerFlow = async (slug?: string) => {
   try {
     const record = await getFlow(slug)
     selectedExampleKey.value = undefined
-    yamlCode.value = record.flow_yaml
-    parseYamlToCanvas(record.flow_yaml)
+    const localizedYaml = localizeFlowYaml(record.flow_yaml, locale.value)
+    yamlCode.value = localizedYaml
+    parseYamlToCanvas(localizedYaml)
     setTimeout(() => fitView({ padding: 0.2 }), 100)
     message.success(t('canvas.flowLoaded', { name: record.name }))
   } catch (err: any) {
@@ -725,6 +727,12 @@ watch(locale, (newLocale) => {
     parseYamlToCanvas(yamlCode.value)
     return
   }
+  const localizedYaml = localizeFlowYaml(yamlCode.value, newLocale)
+  if (localizedYaml !== yamlCode.value) {
+    yamlCode.value = localizedYaml
+    parseYamlToCanvas(localizedYaml)
+    return
+  }
   const map = newLocale === 'en' ? STEP_NAME_EN_MAP : STEP_NAME_ZH_MAP
   let changed = false
   nodes.value.forEach((node) => {
@@ -743,7 +751,7 @@ onMounted(() => {
   const pendingYaml = sessionStorage.getItem('autoflow_canvas_yaml')
   if (pendingYaml) {
     sessionStorage.removeItem('autoflow_canvas_yaml')
-    yamlCode.value = pendingYaml
+    yamlCode.value = localizeFlowYaml(pendingYaml, locale.value)
   }
   parseYamlToCanvas(yamlCode.value)
   loadServerFlows()

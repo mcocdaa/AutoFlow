@@ -289,19 +289,19 @@ const currentSecretRef = computed(() => `{{secrets.${formState.key || 'KEY'}}}`)
 // 表单校验规则
 const validateKey = async (_rule: Rule, value: string) => {
   if (!value) {
-    return Promise.reject(new Error('Key is required'))
+    return Promise.reject(new Error(t('secrets.validation.keyRequired')))
   }
   const keyRegex = /^[A-Za-z0-9_]{1,128}$/
   if (!keyRegex.test(value)) {
-    return Promise.reject(new Error('Key must contain only letters, digits, and underscores (1-128 chars)'))
+    return Promise.reject(new Error(t('secrets.validation.keyPattern')))
   }
   return Promise.resolve()
 }
 
-const formRules: Record<string, Rule[]> = {
+const formRules = computed<Record<string, Rule[]>>(() => ({
   key: [{ required: true, validator: validateKey, trigger: ['change', 'blur'] }],
-  value: [{ required: true, message: 'Secret value is required', trigger: ['change', 'blur'] }],
-}
+  value: [{ required: true, message: t('secrets.validation.valRequired'), trigger: ['change', 'blur'] }],
+}))
 
 // 表格列定义
 const columns = computed(() => [
@@ -344,7 +344,7 @@ const loadSecrets = async () => {
     const list = await fetchSecrets()
     secrets.value = list
   } catch (err: any) {
-    message.error(err?.message || 'Failed to load secrets')
+    message.error(err?.message || t('secrets.msg.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -389,7 +389,7 @@ const handleSubmit = async () => {
     modalVisible.value = false
     await loadSecrets()
   } catch (err: any) {
-    message.error(err?.message || 'Failed to save secret')
+    message.error(err?.message || t('secrets.msg.saveFailed'))
   } finally {
     saving.value = false
   }
@@ -403,7 +403,7 @@ const handleDelete = async (key: string) => {
     message.success(t('secrets.msg.deleted', { key }))
     await loadSecrets()
   } catch (err: any) {
-    message.error(err?.message || 'Failed to delete secret')
+    message.error(err?.message || t('secrets.msg.deleteFailed'))
   } finally {
     deletingKey.value = null
   }

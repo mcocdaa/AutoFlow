@@ -55,7 +55,7 @@ import {
   getFlowExampleHint,
   getFlowExampleLabel,
 } from '../../constants/flow-examples'
-import { useI18n } from '../../i18n'
+import { localizeFlowYaml, useI18n } from '../../i18n'
 import { parseJsonInput, parseJsonObject } from '../../utils/json'
 import CodeEditor from '../shared/CodeEditor.vue'
 import FlowParamsEditor from './FlowParamsEditor.vue'
@@ -76,14 +76,16 @@ const emit = defineEmits<{
 }>()
 
 const yamlContent = ref(getDefaultFlowYaml())
-watch(locale, () => {
+watch(locale, (newLocale) => {
   const trimmed = yamlContent.value.trim()
   if (
     trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
     trimmed === DEFAULT_FLOW_YAML_EN.trim()
   ) {
     yamlContent.value = getDefaultFlowYaml()
+    return
   }
+  yamlContent.value = localizeFlowYaml(yamlContent.value, newLocale)
 })
 const selectedExample = ref<string>()
 const isDryRun = ref(false)
@@ -99,7 +101,7 @@ const exampleHint = computed(() => {
 const handleLoadExample = (key: string) => {
   const example = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!example) return
-  yamlContent.value = example.yaml
+  yamlContent.value = localizeFlowYaml(example.yaml, locale.value)
 }
 
 const handleExecute = () => {

@@ -6,10 +6,6 @@
       :icon="ShopOutlined"
     >
       <template #actions>
-        <a-button type="primary" ghost @click="agentGuideVisible = true">
-          <template #icon><ApiOutlined /></template>
-          {{ t('hub.agentGuideBtn') }}
-        </a-button>
         <a-button :loading="loading" @click="loadFlows">
           <template #icon><ReloadOutlined /></template>
           {{ t('common.refresh') }}
@@ -22,7 +18,7 @@
       <div class="hero-content">
         <div class="hero-pill">
           <RocketOutlined class="hero-pill-icon" />
-          <span>AutoFlow Ecosystem v1.1 Curated Marketplace</span>
+          <span>{{ t('hub.heroPill') }}</span>
         </div>
         <h2 class="hero-title">{{ t('hub.heroTitle') }}</h2>
         <p class="hero-desc">
@@ -237,157 +233,6 @@
         </div>
       </div>
     </a-modal>
-
-    <!-- Agent 接入指南弹窗 -->
-    <a-modal
-      v-model:open="agentGuideVisible"
-      :title="null"
-      :footer="null"
-      width="860px"
-      wrap-class-name="agent-guide-modal"
-      centered
-    >
-      <div class="modal-custom-header">
-        <div class="modal-title-row">
-          <span class="modal-header-icon guide-icon"><ApiOutlined /></span>
-          <div>
-            <h3 class="modal-title">{{ t('hub.modal.guideTitle') }}</h3>
-            <span class="modal-subtitle">
-              {{ t('hub.modal.guideSubtitle') }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="guide-modal-content">
-        <div class="guide-intro-banner">
-          <div class="banner-badge">Streamable HTTP MCP</div>
-          <p>
-            {{ t('hub.modal.guideIntro') }}
-            <code>{{ mcpEndpointUrl }}</code>{{ t('hub.modal.guideIntro2') }}
-            <code>search_flow_hub</code>, <code>get_flow</code>, <code>validate_flow</code>, <code>time_travel_run</code>
-            {{ t('hub.modal.guideIntro3') }}
-          </p>
-        </div>
-
-        <a-tabs v-model:activeKey="activeAgentTab" type="card" class="guide-tabs">
-          <!-- Claude Code -->
-          <a-tab-pane key="claude" tab="Claude Code">
-            <div class="guide-tab-panel">
-              <div class="step-item">
-                <div class="step-num">1</div>
-                <div class="step-detail">
-                  <div class="step-title">{{ t('hub.modal.claudeStep1Title') }}</div>
-                  <p class="step-desc">{{ t('hub.modal.claudeStep1Desc') }}</p>
-                  <div class="code-block-wrapper">
-                    <pre><code>{{ CLAUDE_CLI_COMMAND }}</code></pre>
-                    <a-button
-                      size="small"
-                      type="text"
-                      class="copy-code-btn"
-                      @click="copyToClipboard(CLAUDE_CLI_COMMAND)"
-                    >
-                      <CopyOutlined /> {{ t('common.copy') }}
-                    </a-button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="step-item">
-                <div class="step-num">2</div>
-                <div class="step-detail">
-                  <div class="step-title">{{ t('hub.modal.claudeStep2Title') }}</div>
-                  <p class="step-desc">{{ t('hub.modal.claudeStep2Desc') }}</p>
-                  <div class="code-block-wrapper">
-                    <pre><code>{{ CLAUDE_CONFIG_JSON }}</code></pre>
-                    <a-button
-                      size="small"
-                      type="text"
-                      class="copy-code-btn"
-                      @click="copyToClipboard(CLAUDE_CONFIG_JSON)"
-                    >
-                      <CopyOutlined /> {{ t('common.copy') }}
-                    </a-button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </a-tab-pane>
-
-          <!-- Cursor -->
-          <a-tab-pane key="cursor" tab="Cursor IDE">
-            <div class="guide-tab-panel">
-              <div class="step-item">
-                <div class="step-num">1</div>
-                <div class="step-detail">
-                  <div class="step-title">{{ t('hub.modal.cursorStep1Title') }}</div>
-                  <p class="step-desc">{{ t('hub.modal.cursorStep1Desc') }}</p>
-                  <div class="code-block-wrapper">
-                    <pre><code>{{ CURSOR_CONFIG_JSON }}</code></pre>
-                    <a-button
-                      size="small"
-                      type="text"
-                      class="copy-code-btn"
-                      @click="copyToClipboard(CURSOR_CONFIG_JSON)"
-                    >
-                      <CopyOutlined /> {{ t('common.copy') }}
-                    </a-button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="step-item">
-                <div class="step-num">2</div>
-                <div class="step-detail">
-                  <div class="step-title">{{ t('hub.modal.cursorStep2Title') }}</div>
-                  <p class="step-desc">
-                    {{ t('hub.modal.cursorStep2Desc') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </a-tab-pane>
-
-          <!-- OpenClaw -->
-          <a-tab-pane key="openclaw" tab="OpenClaw">
-            <div class="guide-tab-panel">
-              <div class="step-item">
-                <div class="step-num">1</div>
-                <div class="step-detail">
-                  <div class="step-title">{{ t('hub.modal.openclawStep1Title') }}</div>
-                  <p class="step-desc">{{ t('hub.modal.openclawStep1Desc') }}</p>
-                  <div class="code-block-wrapper">
-                    <pre><code>{{ OPENCLAW_CONFIG_JSON }}</code></pre>
-                    <a-button
-                      size="small"
-                      type="text"
-                      class="copy-code-btn"
-                      @click="copyToClipboard(OPENCLAW_CONFIG_JSON)"
-                    >
-                      <CopyOutlined /> {{ t('common.copy') }}
-                    </a-button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="step-item">
-                <div class="step-num">2</div>
-                <div class="step-detail">
-                  <div class="step-title">{{ t('hub.modal.openclawStep2Title') }}</div>
-                  <p class="step-desc">
-                    {{ t('hub.modal.openclawStep2Desc') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </a-tab-pane>
-        </a-tabs>
-      </div>
-
-      <div class="modal-custom-footer">
-        <a-button type="primary" @click="agentGuideVisible = false">{{ t('common.done') }}</a-button>
-      </div>
-    </a-modal>
   </div>
 </template>
 
@@ -412,7 +257,7 @@ import {
 import PageHeader from '../components/shared/PageHeader.vue'
 import CodeEditor from '../components/shared/CodeEditor.vue'
 import { useClipboard } from '../composables/useClipboard'
-import { HUB_FLOW_I18N, STEP_NAME_EN_MAP, useI18n } from '../i18n'
+import { HUB_FLOW_I18N, localizeFlowYaml, useI18n } from '../i18n'
 import {
   fetchHubFlowDetail,
   fetchHubFlows,
@@ -439,9 +284,6 @@ const loadingCanvasId = ref<string | null>(null)
 const yamlModalVisible = ref(false)
 const activeFlow = ref<HubFlowSummary | null>(null)
 const activeYamlContent = ref('')
-
-const agentGuideVisible = ref(false)
-const activeAgentTab = ref('claude')
 
 // 分类选项
 const categoryOptions = computed(() => [
@@ -509,7 +351,7 @@ const loadFlows = async () => {
     const list = await fetchHubFlows()
     flows.value = list
   } catch (err: any) {
-    message.error(err?.message || 'Failed to fetch Flow Hub list')
+    message.error(err?.message || t('hub.msg.fetchListFailed'))
   } finally {
     loading.value = false
   }
@@ -547,13 +389,10 @@ const getCategoryIcon = (category: string) => {
 
 const localizeHubYaml = (rawYaml: string, flowId: string): string => {
   if (locale.value !== 'en') return rawYaml
-  let out = rawYaml
+  let out = localizeFlowYaml(rawYaml, locale.value)
   const metaEn = HUB_FLOW_I18N[flowId]?.en
   if (metaEn?.description) {
     out = out.replace(/^description:\s*.*$/m, `description: "${metaEn.description}"`)
-  }
-  for (const [zhName, enName] of Object.entries(STEP_NAME_EN_MAP)) {
-    out = out.split(zhName).join(enName)
   }
   return out
 }
@@ -568,7 +407,9 @@ const openYamlModal = async (flow: HubFlowSummary) => {
     const detail: HubFlowDetail = await fetchHubFlowDetail(flow.id)
     activeYamlContent.value = localizeHubYaml(detail.yaml, flow.id)
   } catch (err: any) {
-    activeYamlContent.value = '# Error: ' + (err?.message || 'Network error')
+    activeYamlContent.value = t('hub.msg.yamlErrorPrefix', {
+      msg: err?.message || t('hub.msg.networkError'),
+    })
     message.error(t('hub.msg.fetchYamlFailed'))
   }
 }
@@ -606,7 +447,7 @@ const handleInstall = async (flow: HubFlowSummary, overwrite = false) => {
         },
       })
     } else {
-      message.error(errorMsg || 'Failed to install flow')
+      message.error(errorMsg || t('hub.msg.installFailed'))
     }
   } finally {
     installingFlowId.value = null
@@ -622,7 +463,7 @@ const handleOpenInCanvas = async (flow: HubFlowSummary) => {
       yamlCode = activeYamlContent.value
     } else {
       const detail = await fetchHubFlowDetail(flow.id)
-      yamlCode = detail.yaml
+      yamlCode = localizeHubYaml(detail.yaml, flow.id)
     }
 
     // 存储至 sessionStorage 供画布生命周期读取
@@ -638,59 +479,11 @@ const handleOpenInCanvas = async (flow: HubFlowSummary) => {
       state: { flowYaml: yamlCode },
     })
   } catch (err: any) {
-    message.error(err?.message || 'Failed to load flow into canvas')
+    message.error(err?.message || t('hub.msg.loadCanvasFailed'))
   } finally {
     loadingCanvasId.value = null
   }
 }
-
-// Agent 配置文件代码常量 (使用动态 origin 或默认 3001 端口)
-const mcpEndpointUrl = computed(() => {
-  if (
-    typeof window !== 'undefined' &&
-    window.location?.origin &&
-    !window.location.origin.startsWith('file:')
-  ) {
-    return `${window.location.origin}/mcp`
-  }
-  return 'http://127.0.0.1:3001/mcp'
-})
-
-const CLAUDE_CLI_COMMAND = computed(
-  () => `claude mcp add autoflow ${mcpEndpointUrl.value}`,
-)
-
-const CLAUDE_CONFIG_JSON = computed(
-  () => `{
-  "mcpServers": {
-    "autoflow": {
-      "url": "${mcpEndpointUrl.value}"
-    }
-  }
-}`,
-)
-
-const CURSOR_CONFIG_JSON = computed(
-  () => `{
-  "mcpServers": {
-    "autoflow": {
-      "url": "${mcpEndpointUrl.value}"
-    }
-  }
-}`,
-)
-
-const OPENCLAW_CONFIG_JSON = computed(
-  () => `{
-  "plugins": {
-    "autoflow_mcp": {
-      "type": "mcp-client",
-      "server_url": "${mcpEndpointUrl.value}",
-      "auto_discover_tools": true
-    }
-  }
-}`,
-)
 
 onMounted(() => {
   loadFlows()
@@ -1008,11 +801,6 @@ onMounted(() => {
   color: var(--flow-color-primary);
 }
 
-.modal-header-icon.guide-icon {
-  background: #ECFDF5;
-  color: #10B981;
-}
-
 .modal-title {
   margin: 0;
   font-size: 16px;
@@ -1043,116 +831,5 @@ onMounted(() => {
 .yaml-modal-body {
   border-radius: 8px;
   overflow: hidden;
-}
-
-/* Agent Guide Modal */
-.guide-intro-banner {
-  padding: 14px 18px;
-  margin-bottom: 18px;
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  border-radius: 8px;
-}
-
-.banner-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  margin-bottom: 6px;
-  background: #15803D;
-  color: #FFFFFF;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-.guide-intro-banner p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #166534;
-}
-
-.guide-intro-banner code {
-  padding: 2px 5px;
-  background: #DCFCE7;
-  border-radius: 4px;
-  font-family: var(--flow-font-mono);
-  font-weight: 600;
-  color: #14532D;
-}
-
-.guide-tab-panel {
-  padding-top: 12px;
-}
-
-.step-item {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.step-num {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 24px;
-  height: 24px;
-  background: var(--flow-color-primary);
-  color: #FFFFFF;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.step-detail {
-  flex: 1;
-}
-
-.step-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--flow-text-title);
-  margin-bottom: 4px;
-}
-
-.step-desc {
-  font-size: 12.5px;
-  color: var(--flow-text-secondary);
-  margin-bottom: 8px;
-}
-
-.code-block-wrapper {
-  position: relative;
-  background: #0F172A;
-  border-radius: 8px;
-  padding: 12px 16px;
-  overflow: hidden;
-}
-
-.code-block-wrapper pre {
-  margin: 0;
-}
-
-.code-block-wrapper code {
-  font-family: var(--flow-font-mono);
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: #38BDF8;
-}
-
-.copy-code-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  color: #94A3B8;
-  font-size: 12px;
-  padding: 2px 8px;
-}
-
-.copy-code-btn:hover {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.1);
 }
 </style>

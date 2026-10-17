@@ -7,7 +7,9 @@ import largeOutput from '../../../docs/examples/engine/09_large_output.flow.yaml
 import hooks from '../../../docs/examples/flow_with_hooks.yaml?raw'
 import desktopCheckin from '../../../docs/examples/desktop_checkin.flow.yaml?raw'
 import zhihuDigest from '../../../docs/examples/zhihu_digest.flow.yaml?raw'
-import { locale } from '../i18n'
+import { locale, localizeFlowYaml } from '../i18n'
+
+export { localizeFlowYaml }
 
 export interface FlowExample {
   label: string
@@ -91,14 +93,7 @@ export function getFlowExampleHint(example: FlowExample): string {
 }
 
 export const DEFAULT_FLOW_YAML_ZH = basicActions
-export const DEFAULT_FLOW_YAML_EN = basicActions
-  .replace(
-    '# @brief 内置 Action 串联：core.log / core.sleep / dummy.echo + output_var',
-    '# @brief Built-in Action Chain: core.log / core.sleep / dummy.echo + output_var',
-  )
-  .replace('name: 记录日志', 'name: Log Message')
-  .replace('name: 短暂等待', 'name: Brief Delay')
-  .replace('name: 回显并写入运行时变量', 'name: Echo & Save Runtime Var')
+export const DEFAULT_FLOW_YAML_EN = localizeFlowYaml(basicActions, 'en')
 
 export function getDefaultFlowYaml(): string {
   return locale.value === 'en' ? DEFAULT_FLOW_YAML_EN : DEFAULT_FLOW_YAML_ZH

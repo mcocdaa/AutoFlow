@@ -4,7 +4,7 @@
       <div class="header-left">
         <span class="title-icon">📊</span>
         <span class="title-text">{{ t('timeline.title') }}</span>
-        <a-tag :color="statusColor" class="status-tag">{{ run.status.toUpperCase() }}</a-tag>
+        <a-tag :color="statusColor" class="status-tag">{{ statusText }}</a-tag>
       </div>
       <div class="header-right">
         <span class="meta-label">{{ t('timeline.totalDuration') }}</span>
@@ -60,7 +60,7 @@ import { computed } from 'vue'
 import { useI18n } from '../../i18n'
 import type { RunResult } from '../../types/runs'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 const props = defineProps<{
   run: RunResult | null
@@ -71,6 +71,16 @@ const statusColor = computed(() => {
   if (props.run.status === 'success') return 'success'
   if (props.run.status === 'failed') return 'error'
   return 'processing'
+})
+
+const statusText = computed(() => {
+  if (!props.run) return ''
+  if (locale.value === 'zh') {
+    if (props.run.status === 'success') return t('status.success')
+    if (props.run.status === 'failed') return t('status.failed')
+    return t('status.running')
+  }
+  return props.run.status.toUpperCase()
 })
 
 const processedSteps = computed(() => {
