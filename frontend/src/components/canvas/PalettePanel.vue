@@ -261,11 +261,16 @@ function resolveGroupId(item: PluginCatalogItem): GroupId {
 
 function localizeItem(item: ComponentItem): ComponentItem {
   const i18nMeta = COMPONENT_I18N[item.type]?.[locale.value]
+  const defaultParams =
+    locale.value === 'en' && item.type === 'ai.deepseek_summarize'
+      ? { ...item.defaultParams, input: 'Summarize the following points: {{input}}' }
+      : item.defaultParams
   if (i18nMeta) {
     return {
       ...item,
       label: i18nMeta.label,
       desc: i18nMeta.desc,
+      defaultParams,
     }
   }
   if (locale.value === 'en') {
@@ -275,6 +280,7 @@ function localizeItem(item: ComponentItem): ComponentItem {
         item.kind === 'check' || item.category === 'check'
           ? t('palette.dynamicCheckDesc', { type: item.type })
           : t('palette.dynamicActionDesc', { type: item.type }),
+      defaultParams,
     }
   }
   return item
