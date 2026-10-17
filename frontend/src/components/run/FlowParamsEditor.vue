@@ -1,10 +1,10 @@
 <template>
   <a-collapse v-model:activeKey="activeKey" ghost class="params-collapse">
-    <a-collapse-panel key="params" header="高级参数（input / vars）">
+    <a-collapse-panel key="params" :header="t('run.advancedParams')">
       <p v-if="hint" class="params-hint">{{ hint }}</p>
       <div class="params-grid">
         <div class="param-block">
-          <span class="param-label">input（JSON）</span>
+          <span class="param-label">input (JSON)</span>
           <CodeEditor
             :model-value="inputText"
             language="json"
@@ -13,7 +13,7 @@
           />
         </div>
         <div class="param-block">
-          <span class="param-label">vars（JSON）</span>
+          <span class="param-label">vars (JSON)</span>
           <CodeEditor
             :model-value="varsText"
             language="json"
@@ -28,7 +28,10 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from '../../i18n'
 import CodeEditor from '../shared/CodeEditor.vue'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{

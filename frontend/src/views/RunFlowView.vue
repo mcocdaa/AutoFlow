@@ -1,8 +1,8 @@
 <template>
   <div class="af-page">
     <PageHeader
-      title="运行流程"
-      description="编辑或加载 Flow YAML，执行后查看每一步的结果"
+      :title="t('run.title')"
+      :description="t('run.desc')"
       :icon="PlayCircleOutlined"
     />
 
@@ -20,11 +20,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { PlayCircleOutlined } from '@ant-design/icons-vue'
+import { useI18n } from '../i18n'
 import { useRunsStore } from '../stores/runs'
 import PageHeader from '../components/shared/PageHeader.vue'
 import YamlEditor from '../components/run/YamlEditor.vue'
 import ResultsPanel from '../components/run/ResultsPanel.vue'
 
+const { t } = useI18n()
 const store = useRunsStore()
 
 const currentRun = computed(() => store.currentRun)

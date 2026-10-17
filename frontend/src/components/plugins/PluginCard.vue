@@ -7,14 +7,17 @@
       </div>
     </template>
     <p v-if="description" class="plugin-description">{{ description }}</p>
-    <p v-else class="plugin-description is-muted">暂无描述</p>
+    <p v-else class="plugin-description is-muted">{{ t('common.noDesc') }}</p>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { getPluginDescription } from '../../constants/plugins'
+import { useI18n } from '../../i18n'
 import type { Plugin } from '../../types/plugins'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   plugin: Plugin

@@ -3,13 +3,13 @@
     <div class="panel-header">
       <a-radio-group v-model:value="activeTab" size="small" button-style="solid" class="tab-group">
         <a-radio-button value="node">
-          <span>⚙️ 步骤配置</span>
+          <span>⚙️ {{ t('prop.tab.node') }}</span>
         </a-radio-button>
         <a-radio-button value="yaml">
-          <span>📄 YAML 源码</span>
+          <span>📄 {{ t('prop.tab.yaml') }}</span>
         </a-radio-button>
         <a-radio-button value="triggers">
-          <span>⏰ 触发器</span>
+          <span>⏰ {{ t('prop.tab.triggers') }}</span>
         </a-radio-button>
       </a-radio-group>
     </div>
@@ -28,39 +28,39 @@
               class="delete-step-btn"
               @click="emit('delete-step', selectedStep.id)"
             >
-              删除步骤
+              {{ t('prop.deleteStep') }}
             </a-button>
           </div>
 
           <a-form layout="vertical" size="small">
-            <a-form-item label="步骤 ID (唯一标识)">
+            <a-form-item :label="t('prop.stepIdLabel')">
               <a-input
                 :value="selectedStep.id"
-                placeholder="例如: fetch_data"
+                :placeholder="t('prop.stepIdPlaceholder')"
                 @change="onIdChange($event.target.value)"
               />
             </a-form-item>
 
-            <a-form-item label="步骤名称 (可读说明)">
+            <a-form-item :label="t('prop.stepNameLabel')">
               <a-input
-                v-model:value="selectedStep.name"
-                placeholder="例如: 拉取知乎热榜数据"
-                @change="emitUpdate"
+                :value="displayStepName"
+                :placeholder="t('prop.stepNamePlaceholder')"
+                @change="onNameChange($event.target.value)"
               />
             </a-form-item>
 
-            <a-divider style="margin: 12px 0">动作配置 (Action)</a-divider>
+            <a-divider style="margin: 12px 0">{{ t('prop.actionConfig') }}</a-divider>
 
-            <a-form-item label="动作类型 (Action Type)">
+            <a-form-item :label="t('prop.actionTypeLabel')">
               <a-auto-complete
                 v-model:value="selectedStep.action.type"
                 :options="actionOptions"
-                placeholder="例如: core.log 或 dummy.echo"
+                :placeholder="t('prop.actionTypePlaceholder')"
                 @change="emitUpdate"
               />
             </a-form-item>
 
-            <a-form-item label="参数 (JSON / 模板)">
+            <a-form-item :label="t('prop.paramsLabel')">
               <a-textarea
                 :value="actionParamsJson"
                 :rows="4"
@@ -70,32 +70,42 @@
               />
             </a-form-item>
 
-            <a-divider style="margin: 12px 0">强断言校验 (Check)</a-divider>
+            <a-divider style="margin: 12px 0">{{ t('prop.checkConfig') }}</a-divider>
 
             <div class="check-toggle-row">
               <a-switch
                 :checked="Boolean(selectedStep.check)"
                 @change="toggleCheck"
               />
-              <span class="switch-label">启用步骤强断言 (永不盲信输出)</span>
+              <span class="switch-label">{{ t('prop.enableCheck') }}</span>
             </div>
 
             <div v-if="selectedStep.check" class="check-box">
-              <a-form-item label="断言类型 (Check Type)">
+              <a-form-item :label="t('prop.checkTypeLabel')">
                 <a-select
                   v-model:value="selectedStep.check.type"
-                  placeholder="选择校验断言"
+                  :placeholder="t('prop.checkTypePlaceholder')"
                   @change="emitUpdate"
                 >
-                  <a-select-option value="core.assert_truthy">core.assert_truthy (真值断言)</a-select-option>
-                  <a-select-option value="core.assert_status">core.assert_status (状态码断言)</a-select-option>
-                  <a-select-option value="core.assert_equals">core.assert_equals (相等断言)</a-select-option>
-                  <a-select-option value="text.contains">text.contains (文本包含断言)</a-select-option>
-                  <a-select-option value="core.always_true">core.always_true (恒真断言)</a-select-option>
+                  <a-select-option value="core.assert_truthy">
+                    core.assert_truthy ({{ locale === 'en' ? 'Truthy' : '真值断言' }})
+                  </a-select-option>
+                  <a-select-option value="core.assert_status">
+                    core.assert_status ({{ locale === 'en' ? 'HTTP Status' : '状态码断言' }})
+                  </a-select-option>
+                  <a-select-option value="core.assert_equals">
+                    core.assert_equals ({{ locale === 'en' ? 'Equals' : '相等断言' }})
+                  </a-select-option>
+                  <a-select-option value="text.contains">
+                    text.contains ({{ locale === 'en' ? 'Text Contains' : '文本包含断言' }})
+                  </a-select-option>
+                  <a-select-option value="core.always_true">
+                    core.always_true ({{ locale === 'en' ? 'Always True' : '恒真断言' }})
+                  </a-select-option>
                 </a-select>
               </a-form-item>
 
-              <a-form-item label="断言参数 (JSON)">
+              <a-form-item :label="t('prop.checkParamsLabel')">
                 <a-textarea
                   :value="checkParamsJson"
                   :rows="3"
@@ -107,34 +117,34 @@
             </div>
 
             <a-collapse ghost style="margin-top: 12px">
-              <a-collapse-panel key="advanced" header="高级控制 (条件/循环/重试/导出)">
-                <a-form-item label="执行条件 (Condition 模板)">
+              <a-collapse-panel key="advanced" :header="t('prop.advancedHeader')">
+                <a-form-item :label="t('prop.conditionLabel')">
                   <a-input
                     v-model:value="selectedStep.condition"
-                    placeholder="例如: {{steps.prev.output.success}} == true"
+                    :placeholder="t('prop.conditionPlaceholder')"
                     @change="emitUpdate"
                   />
                 </a-form-item>
 
-                <a-form-item label="循环遍历路径 (For Each)">
+                <a-form-item :label="t('prop.forEachLabel')">
                   <a-input
                     v-model:value="selectedStep.for_each"
-                    placeholder="例如: {{steps.list.output.items}}"
+                    :placeholder="t('prop.forEachPlaceholder')"
                     @change="emitUpdate"
                   />
                 </a-form-item>
 
-                <a-form-item label="导出为变量 (Output Var)">
+                <a-form-item :label="t('prop.outputVarLabel')">
                   <a-input
                     v-model:value="selectedStep.output_var"
-                    placeholder="例如: digest_result"
+                    :placeholder="t('prop.outputVarPlaceholder')"
                     @change="emitUpdate"
                   />
                 </a-form-item>
 
                 <a-row :gutter="8">
                   <a-col :span="12">
-                    <a-form-item label="重试次数">
+                    <a-form-item :label="t('prop.retryAttempts')">
                       <a-input-number
                         :value="selectedStep.retry?.attempts ?? 0"
                         :min="0"
@@ -145,7 +155,7 @@
                     </a-form-item>
                   </a-col>
                   <a-col :span="12">
-                    <a-form-item label="退避间隔(秒)">
+                    <a-form-item :label="t('prop.retryBackoff')">
                       <a-input-number
                         :value="selectedStep.retry?.backoff_seconds ?? 0"
                         :min="0"
@@ -163,15 +173,15 @@
 
         <div v-else class="empty-selection">
           <span class="empty-icon">👆</span>
-          <p>在画布中点击选中任意步骤节点，即可在此编辑其属性与参数</p>
+          <p>{{ t('prop.emptySelection') }}</p>
         </div>
       </div>
 
       <!-- 2. YAML 源码 Tab -->
       <div v-show="activeTab === 'yaml'" class="tab-content yaml-tab">
         <div class="yaml-toolbar">
-          <span class="yaml-tip">双向实时无损同步</span>
-          <a-button size="small" type="link" @click="emit('format-yaml')">格式化</a-button>
+          <span class="yaml-tip">{{ t('prop.yamlSyncTip') }}</span>
+          <a-button size="small" type="link" @click="emit('format-yaml')">{{ t('prop.formatYaml') }}</a-button>
         </div>
         <CodeEditor
           :model-value="yamlText"
@@ -184,26 +194,26 @@
       <div v-show="activeTab === 'triggers'" class="tab-content triggers-tab">
         <div class="trigger-section">
           <div class="section-title">
-            <span>⏰ 内置定时触发</span>
+            <span>⏰ {{ t('prop.cronTitle') }}</span>
           </div>
-          <p class="section-desc">支持标准 5 段式 Cron 表达式定时自动执行</p>
+          <p class="section-desc">{{ t('prop.cronDesc') }}</p>
 
           <a-form layout="vertical" size="small">
-            <a-form-item label="常用快捷预设">
+            <a-form-item :label="t('prop.cronPresetLabel')">
               <a-select
                 v-model:value="selectedCronPreset"
-                placeholder="选择定时周期预设"
+                :placeholder="t('prop.cronPresetPlaceholder')"
                 @change="applyCronPreset"
               >
-                <a-select-option value="* * * * *">每分钟 (* * * * *)</a-select-option>
-                <a-select-option value="*/5 * * * *">每 5 分钟 (*/5 * * * *)</a-select-option>
-                <a-select-option value="0 * * * *">每小时整点 (0 * * * *)</a-select-option>
-                <a-select-option value="0 0 * * *">每天凌晨 00:00 (0 0 * * *)</a-select-option>
-                <a-select-option value="0 9 * * 1-5">工作日早 09:00 (0 9 * * 1-5)</a-select-option>
+                <a-select-option value="* * * * *">{{ t('prop.cronPreset.everyMin') }}</a-select-option>
+                <a-select-option value="*/5 * * * *">{{ t('prop.cronPreset.every5Min') }}</a-select-option>
+                <a-select-option value="0 * * * *">{{ t('prop.cronPreset.hourly') }}</a-select-option>
+                <a-select-option value="0 0 * * *">{{ t('prop.cronPreset.daily') }}</a-select-option>
+                <a-select-option value="0 9 * * 1-5">{{ t('prop.cronPreset.weekdays') }}</a-select-option>
               </a-select>
             </a-form-item>
 
-            <a-form-item label="Cron 表达式">
+            <a-form-item :label="t('prop.cronExprLabel')">
               <div style="display: flex; gap: 8px">
                 <a-input
                   v-model:value="cronExpr"
@@ -211,14 +221,14 @@
                   class="af-mono"
                   @change="emitCronChange"
                 />
-                <a-button size="small" @click="predictCron">预测</a-button>
+                <a-button size="small" @click="predictCron">{{ t('prop.predictBtn') }}</a-button>
               </div>
             </a-form-item>
 
             <div v-if="predictedTimes.length > 0" class="predict-box">
-              <div class="predict-title">未来 5 次触发时间预测:</div>
-              <div v-for="(t, idx) in predictedTimes" :key="idx" class="predict-time af-mono">
-                {{ idx + 1 }}. {{ formatTime(t) }}
+              <div class="predict-title">{{ t('prop.predictTitle') }}</div>
+              <div v-for="(timeStr, idx) in predictedTimes" :key="idx" class="predict-time af-mono">
+                {{ idx + 1 }}. {{ formatTime(timeStr) }}
               </div>
             </div>
           </a-form>
@@ -228,12 +238,12 @@
 
         <div class="trigger-section">
           <div class="section-title">
-            <span>🌐 外部事件触发 (Webhook)</span>
+            <span>🌐 {{ t('prop.webhookTitle') }}</span>
           </div>
-          <p class="section-desc">支持外部监控告警、代码仓库等事件自动触发当前工作流</p>
+          <p class="section-desc">{{ t('prop.webhookDesc') }}</p>
 
           <a-form layout="vertical" size="small">
-            <a-form-item label="关联流程标识">
+            <a-form-item :label="t('prop.webhookFlowLabel')">
               <a-input
                 :value="flowName || 'my_flow'"
                 readonly
@@ -241,17 +251,17 @@
               />
             </a-form-item>
 
-            <a-form-item label="访问凭据 / HMAC 签名密钥">
+            <a-form-item :label="t('prop.webhookTokenLabel')">
               <a-input-password
                 v-model:value="webhookToken"
-                placeholder="设置该流程专用触发密钥"
+                :placeholder="t('prop.webhookTokenPlaceholder')"
                 @change="emitWebhookChange"
               />
             </a-form-item>
 
             <div class="curl-example">
-              <span class="curl-title">安全校验说明</span>
-              <p class="curl-code">配置密钥后将自动启用外部事件网关，支持 HMAC-SHA256 签名校验并将事件载荷注入流程输入参数。</p>
+              <span class="curl-title">{{ t('prop.webhookSecurityTitle') }}</span>
+              <p class="curl-code">{{ t('prop.webhookSecurityDesc') }}</p>
             </div>
           </a-form>
         </div>
@@ -263,8 +273,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import apiClient from '../../api'
+import { STEP_NAME_EN_MAP, useI18n } from '../../i18n'
 import CodeEditor from '../shared/CodeEditor.vue'
 import type { StepSpec } from '../../types/flow'
+
+const { locale, t } = useI18n()
 
 const props = defineProps<{
   selectedStep: StepSpec | null
@@ -302,6 +315,20 @@ const actionOptions = [
   { value: 'desktop.wait' },
   { value: 'desktop.screenshot' },
 ]
+
+const displayStepName = computed(() => {
+  const raw = props.selectedStep?.name ?? ''
+  if (locale.value === 'en' && STEP_NAME_EN_MAP[raw]) {
+    return STEP_NAME_EN_MAP[raw]
+  }
+  return raw
+})
+
+const onNameChange = (newName: string) => {
+  if (!props.selectedStep) return
+  props.selectedStep.name = newName
+  emitUpdate()
+}
 
 // 步骤参数序列化与编辑
 const actionParamsJson = computed(() => {
@@ -434,7 +461,7 @@ const predictCron = async () => {
 }
 
 const formatTime = (iso: string) => {
-  return new Date(iso).toLocaleString('zh-CN', { hour12: false })
+  return new Date(iso).toLocaleString(locale.value === 'en' ? 'en-US' : 'zh-CN', { hour12: false })
 }
 </script>
 

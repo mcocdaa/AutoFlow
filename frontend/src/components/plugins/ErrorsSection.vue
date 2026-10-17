@@ -2,13 +2,13 @@
   <div class="errors-section">
     <h3 class="section-title">
       <WarningOutlined class="title-icon" />
-      插件加载错误
+      {{ t('plugins.errorsTitle') }}
     </h3>
     <a-card>
       <a-table :data-source="errors" :pagination="false" :scroll="{ x: 640 }">
-        <a-table-column title="插件 ID" data-index="plugin_id" width="180" />
-        <a-table-column title="文件路径" data-index="file_path" />
-        <a-table-column title="错误信息" data-index="error" />
+        <a-table-column :title="t('plugins.colPluginId')" data-index="plugin_id" width="180" />
+        <a-table-column :title="t('plugins.colFilePath')" data-index="file_path" />
+        <a-table-column :title="t('plugins.colError')" data-index="error" />
       </a-table>
     </a-card>
   </div>
@@ -16,7 +16,10 @@
 
 <script setup lang="ts">
 import { WarningOutlined } from '@ant-design/icons-vue'
+import { useI18n } from '../../i18n'
 import type { PluginError } from '../../types/plugins'
+
+const { t } = useI18n()
 
 defineProps<{
   errors: PluginError[]

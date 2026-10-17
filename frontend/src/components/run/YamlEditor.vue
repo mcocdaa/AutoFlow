@@ -8,7 +8,7 @@
         </div>
         <a-select
           v-model:value="selectedExample"
-          placeholder="加载示例"
+          :placeholder="t('run.loadExample')"
           class="example-select"
           @change="handleLoadExample"
         >
@@ -17,7 +17,7 @@
             :key="key"
             :value="key"
           >
-            {{ example.label }}
+            {{ getFlowExampleLabel(example) }}
           </a-select-option>
         </a-select>
       </div>
@@ -33,24 +33,34 @@
 
     <div class="editor-footer">
       <div class="dry-run">
-        <a-checkbox v-model:checked="isDryRun">模拟执行</a-checkbox>
-        <span class="dry-run-hint">仅对实现了模拟模式的插件生效</span>
+        <a-checkbox v-model:checked="isDryRun">{{ t('run.dryRun') }}</a-checkbox>
+        <span class="dry-run-hint">{{ t('run.dryRunHint') }}</span>
       </div>
       <a-button type="primary" :loading="loading" @click="handleExecute">
         <template #icon><ArrowRightOutlined /></template>
-        {{ loading ? '执行中' : '执行' }}
+        {{ loading ? t('run.executing') : t('run.execute') }}
       </a-button>
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ArrowRightOutlined, FileTextOutlined } from '@ant-design/icons-vue'
-import { DEFAULT_FLOW_YAML, FLOW_EXAMPLES } from '../../constants/flow-examples'
+import {
+  DEFAULT_FLOW_YAML_EN,
+  DEFAULT_FLOW_YAML_ZH,
+  FLOW_EXAMPLES,
+  getDefaultFlowYaml,
+  getFlowExampleHint,
+  getFlowExampleLabel,
+} from '../../constants/flow-examples'
+import { useI18n } from '../../i18n'
 import { parseJsonInput, parseJsonObject } from '../../utils/json'
 import CodeEditor from '../shared/CodeEditor.vue'
 import FlowParamsEditor from './FlowParamsEditor.vue'
+
+const { t, locale } = useI18n()
 
 defineProps<{
   loading: boolean
@@ -65,18 +75,31 @@ const emit = defineEmits<{
   ]
 }>()
 
-const yamlContent = ref(DEFAULT_FLOW_YAML)
+const yamlContent = ref(getDefaultFlowYaml())
+watch(locale, () => {
+  const trimmed = yamlContent.value.trim()
+  if (
+    trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
+    trimmed === DEFAULT_FLOW_YAML_EN.trim()
+  ) {
+    yamlContent.value = getDefaultFlowYaml()
+  }
+})
 const selectedExample = ref<string>()
 const isDryRun = ref(false)
 const inputText = ref('{}')
 const varsText = ref('{}')
-const exampleHint = ref('')
+
+const exampleHint = computed(() => {
+  if (!selectedExample.value) return ''
+  const example = FLOW_EXAMPLES[selectedExample.value as keyof typeof FLOW_EXAMPLES]
+  return example ? getFlowExampleHint(example) : ''
+})
 
 const handleLoadExample = (key: string) => {
   const example = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!example) return
   yamlContent.value = example.yaml
-  exampleHint.value = example.hint ?? ''
 }
 
 const handleExecute = () => {

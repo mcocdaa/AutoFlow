@@ -1,18 +1,18 @@
 <template>
   <div class="af-page flow-hub-page">
     <PageHeader
-      title="Flow Hub 流程市场"
-      description="精选生产级自动化工作流模板，支持一键安装、可视化编排与外部 Agent 协同调用"
+      :title="t('hub.title')"
+      :description="t('hub.desc')"
       :icon="ShopOutlined"
     >
       <template #actions>
         <a-button type="primary" ghost @click="agentGuideVisible = true">
           <template #icon><ApiOutlined /></template>
-          Agent 接入指南
+          {{ t('hub.agentGuideBtn') }}
         </a-button>
         <a-button :loading="loading" @click="loadFlows">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </a-button>
       </template>
     </PageHeader>
@@ -24,23 +24,23 @@
           <RocketOutlined class="hero-pill-icon" />
           <span>AutoFlow Ecosystem v1.1 Curated Marketplace</span>
         </div>
-        <h2 class="hero-title">高可靠确定性工作流集市</h2>
+        <h2 class="hero-title">{{ t('hub.heroTitle') }}</h2>
         <p class="hero-desc">
-          所有模板均内置 Check 断言校验与自动重试策略。支持本地直接执行，或作为复合 MCP Tool 供 LLM Agent 单次调度。
+          {{ t('hub.heroDesc') }}
         </p>
       </div>
       <div class="hero-stats">
         <div class="stat-card">
           <div class="stat-value">{{ flows.length }}+</div>
-          <div class="stat-label">精选流程模板</div>
+          <div class="stat-label">{{ t('hub.stat.templates') }}</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">{{ totalInstalls.toLocaleString() }}+</div>
-          <div class="stat-label">社区累计部署</div>
+          <div class="stat-label">{{ t('hub.stat.installs') }}</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">100%</div>
-          <div class="stat-label">Check 校验覆盖</div>
+          <div class="stat-label">{{ t('hub.stat.checkCoverage') }}</div>
         </div>
       </div>
     </div>
@@ -55,7 +55,7 @@
           @change="onCategoryChange"
         >
           <a-radio-button
-            v-for="cat in CATEGORY_OPTIONS"
+            v-for="cat in categoryOptions"
             :key="cat.key"
             :value="cat.key"
           >
@@ -67,7 +67,7 @@
       <div class="search-box">
         <a-input-search
           v-model:value="searchQuery"
-          placeholder="搜索流程标题、名称、说明或标签..."
+          :placeholder="t('hub.searchPlaceholder')"
           allow-clear
           size="middle"
           @search="onSearch"
@@ -133,7 +133,7 @@
             </div>
             <div class="installs-info">
               <DownloadOutlined class="meta-icon" />
-              <span>{{ flow.installs.toLocaleString() }} 安装</span>
+              <span>{{ t('hub.installsCount', { count: flow.installs.toLocaleString() }) }}</span>
             </div>
           </div>
 
@@ -145,7 +145,7 @@
               @click="openYamlModal(flow)"
             >
               <template #icon><FileTextOutlined /></template>
-              查看 YAML
+              {{ t('hub.viewYaml') }}
             </a-button>
             <a-button
               size="small"
@@ -154,7 +154,7 @@
               @click="handleInstall(flow)"
             >
               <template #icon><DownloadOutlined /></template>
-              一键安装
+              {{ t('hub.install') }}
             </a-button>
             <a-button
               type="primary"
@@ -164,7 +164,7 @@
               @click="handleOpenInCanvas(flow)"
             >
               <template #icon><ApartmentOutlined /></template>
-              在画布打开
+              {{ t('hub.openInCanvas') }}
             </a-button>
           </div>
         </a-card>
@@ -174,11 +174,11 @@
     <!-- 空结果状态 -->
     <a-card v-else class="empty-state-card">
       <a-empty
-        description="未找到符合条件的流程模板"
+        :description="t('hub.emptyDesc')"
         :image="emptyImage"
       >
         <template #extra>
-          <a-button @click="resetFilters">重置筛选条件</a-button>
+          <a-button @click="resetFilters">{{ t('hub.resetFilters') }}</a-button>
         </template>
       </a-empty>
     </a-card>
@@ -197,13 +197,13 @@
           <span class="modal-header-icon"><FileTextOutlined /></span>
           <div>
             <h3 class="modal-title">{{ activeFlow?.title }}</h3>
-            <span class="modal-subtitle">流程模板源码预览 · {{ activeFlow?.name }}</span>
+            <span class="modal-subtitle">{{ t('hub.modal.yamlSubtitle', { name: activeFlow?.name ?? '' }) }}</span>
           </div>
         </div>
         <div class="modal-header-actions">
           <a-button size="small" @click="copyActiveYaml">
             <template #icon><CopyOutlined /></template>
-            复制代码
+            {{ t('hub.modal.copyCode') }}
           </a-button>
         </div>
       </div>
@@ -217,14 +217,14 @@
       </div>
 
       <div class="modal-custom-footer">
-        <a-button @click="yamlModalVisible = false">关闭</a-button>
+        <a-button @click="yamlModalVisible = false">{{ t('common.close') }}</a-button>
         <div class="footer-right-actions">
           <a-button
             :loading="activeFlow ? installingFlowId === activeFlow.id : false"
             @click="activeFlow && handleInstall(activeFlow)"
           >
             <template #icon><DownloadOutlined /></template>
-            一键安装
+            {{ t('hub.install') }}
           </a-button>
           <a-button
             type="primary"
@@ -232,7 +232,7 @@
             @click="activeFlow && handleOpenInCanvas(activeFlow)"
           >
             <template #icon><ApartmentOutlined /></template>
-            在编排画布中打开
+            {{ t('hub.modal.openInCanvasFull') }}
           </a-button>
         </div>
       </div>
@@ -251,9 +251,9 @@
         <div class="modal-title-row">
           <span class="modal-header-icon guide-icon"><ApiOutlined /></span>
           <div>
-            <h3 class="modal-title">Agent 接入指南 (MCP 协议)</h3>
+            <h3 class="modal-title">{{ t('hub.modal.guideTitle') }}</h3>
             <span class="modal-subtitle">
-              外部 Agent (Claude Code / Cursor / OpenClaw) 通过单次 ToolCall 调度 AutoFlow 确定性流程
+              {{ t('hub.modal.guideSubtitle') }}
             </span>
           </div>
         </div>
@@ -263,9 +263,10 @@
         <div class="guide-intro-banner">
           <div class="banner-badge">Streamable HTTP MCP</div>
           <p>
-            AutoFlow 后端内置 Model Context Protocol (MCP) 服务，端点位于
-            <code>{{ mcpEndpointUrl }}</code>。外部 Agent 可自动发现并调用
-            <code>search_flow_hub</code>, <code>get_flow</code>, <code>validate_flow</code>, <code>time_travel_run</code> 等增强工具。
+            {{ t('hub.modal.guideIntro') }}
+            <code>{{ mcpEndpointUrl }}</code>{{ t('hub.modal.guideIntro2') }}
+            <code>search_flow_hub</code>, <code>get_flow</code>, <code>validate_flow</code>, <code>time_travel_run</code>
+            {{ t('hub.modal.guideIntro3') }}
           </p>
         </div>
 
@@ -276,8 +277,8 @@
               <div class="step-item">
                 <div class="step-num">1</div>
                 <div class="step-detail">
-                  <div class="step-title">终端 CLI 一键添加 MCP Server</div>
-                  <p class="step-desc">在任意项目终端运行以下命令，Claude Code 将自动注册 AutoFlow 工具：</p>
+                  <div class="step-title">{{ t('hub.modal.claudeStep1Title') }}</div>
+                  <p class="step-desc">{{ t('hub.modal.claudeStep1Desc') }}</p>
                   <div class="code-block-wrapper">
                     <pre><code>{{ CLAUDE_CLI_COMMAND }}</code></pre>
                     <a-button
@@ -286,7 +287,7 @@
                       class="copy-code-btn"
                       @click="copyToClipboard(CLAUDE_CLI_COMMAND)"
                     >
-                      <CopyOutlined /> 复制
+                      <CopyOutlined /> {{ t('common.copy') }}
                     </a-button>
                   </div>
                 </div>
@@ -295,8 +296,8 @@
               <div class="step-item">
                 <div class="step-num">2</div>
                 <div class="step-detail">
-                  <div class="step-title">或通过配置文件注册 (~/.claude/config.json)</div>
-                  <p class="step-desc">在 mcpServers 配置节添加 AutoFlow HTTP 端点：</p>
+                  <div class="step-title">{{ t('hub.modal.claudeStep2Title') }}</div>
+                  <p class="step-desc">{{ t('hub.modal.claudeStep2Desc') }}</p>
                   <div class="code-block-wrapper">
                     <pre><code>{{ CLAUDE_CONFIG_JSON }}</code></pre>
                     <a-button
@@ -305,7 +306,7 @@
                       class="copy-code-btn"
                       @click="copyToClipboard(CLAUDE_CONFIG_JSON)"
                     >
-                      <CopyOutlined /> 复制
+                      <CopyOutlined /> {{ t('common.copy') }}
                     </a-button>
                   </div>
                 </div>
@@ -319,8 +320,8 @@
               <div class="step-item">
                 <div class="step-num">1</div>
                 <div class="step-detail">
-                  <div class="step-title">项目级 MCP 配置 (.cursor/mcp.json)</div>
-                  <p class="step-desc">在工作区根目录创建或编辑 <code>.cursor/mcp.json</code>：</p>
+                  <div class="step-title">{{ t('hub.modal.cursorStep1Title') }}</div>
+                  <p class="step-desc">{{ t('hub.modal.cursorStep1Desc') }}</p>
                   <div class="code-block-wrapper">
                     <pre><code>{{ CURSOR_CONFIG_JSON }}</code></pre>
                     <a-button
@@ -329,7 +330,7 @@
                       class="copy-code-btn"
                       @click="copyToClipboard(CURSOR_CONFIG_JSON)"
                     >
-                      <CopyOutlined /> 复制
+                      <CopyOutlined /> {{ t('common.copy') }}
                     </a-button>
                   </div>
                 </div>
@@ -338,9 +339,9 @@
               <div class="step-item">
                 <div class="step-num">2</div>
                 <div class="step-detail">
-                  <div class="step-title">在 Cursor Composer 中使用</div>
+                  <div class="step-title">{{ t('hub.modal.cursorStep2Title') }}</div>
                   <p class="step-desc">
-                    配置完成后，Cursor 对话框将自动显示 AutoFlow 工具，可直接指示 Agent：“查询 Flow Hub 上的 SRE 流程并进行静态校验”。
+                    {{ t('hub.modal.cursorStep2Desc') }}
                   </p>
                 </div>
               </div>
@@ -353,8 +354,8 @@
               <div class="step-item">
                 <div class="step-num">1</div>
                 <div class="step-detail">
-                  <div class="step-title">OpenClaw Gateway 插件配置文件</div>
-                  <p class="step-desc">在 OpenClaw 智能体编排网络中将 AutoFlow 作为专用确定性执行器接入：</p>
+                  <div class="step-title">{{ t('hub.modal.openclawStep1Title') }}</div>
+                  <p class="step-desc">{{ t('hub.modal.openclawStep1Desc') }}</p>
                   <div class="code-block-wrapper">
                     <pre><code>{{ OPENCLAW_CONFIG_JSON }}</code></pre>
                     <a-button
@@ -363,7 +364,7 @@
                       class="copy-code-btn"
                       @click="copyToClipboard(OPENCLAW_CONFIG_JSON)"
                     >
-                      <CopyOutlined /> 复制
+                      <CopyOutlined /> {{ t('common.copy') }}
                     </a-button>
                   </div>
                 </div>
@@ -372,9 +373,9 @@
               <div class="step-item">
                 <div class="step-num">2</div>
                 <div class="step-detail">
-                  <div class="step-title">多步流程确定性保障</div>
+                  <div class="step-title">{{ t('hub.modal.openclawStep2Title') }}</div>
                   <p class="step-desc">
-                    OpenClaw 负责规划与意图分解，复杂运维与数据流交由 AutoFlow 本地执行引擎与 Check 机制兜底，保障执行确定性。
+                    {{ t('hub.modal.openclawStep2Desc') }}
                   </p>
                 </div>
               </div>
@@ -384,7 +385,7 @@
       </div>
 
       <div class="modal-custom-footer">
-        <a-button type="primary" @click="agentGuideVisible = false">完成</a-button>
+        <a-button type="primary" @click="agentGuideVisible = false">{{ t('common.done') }}</a-button>
       </div>
     </a-modal>
   </div>
@@ -411,6 +412,7 @@ import {
 import PageHeader from '../components/shared/PageHeader.vue'
 import CodeEditor from '../components/shared/CodeEditor.vue'
 import { useClipboard } from '../composables/useClipboard'
+import { HUB_FLOW_I18N, STEP_NAME_EN_MAP, useI18n } from '../i18n'
 import {
   fetchHubFlowDetail,
   fetchHubFlows,
@@ -419,6 +421,7 @@ import {
   type HubFlowSummary,
 } from '../api/hub'
 
+const { locale, t } = useI18n()
 const router = useRouter()
 const { copyToClipboard } = useClipboard()
 
@@ -441,13 +444,23 @@ const agentGuideVisible = ref(false)
 const activeAgentTab = ref('claude')
 
 // 分类选项
-const CATEGORY_OPTIONS = [
-  { key: 'all', label: '全部', backendCategory: undefined },
-  { key: 'sre', label: 'SRE 运维自愈', backendCategory: 'SRE / 运维自愈' },
-  { key: 'digest', label: '智能采集研报', backendCategory: '自动化数据采集' },
-  { key: 'agent', label: 'Agent 工具链', backendCategory: 'Agent 工具链' },
-  { key: 'rpa', label: '桌面 RPA', backendCategory: '桌面 RPA' },
-]
+const categoryOptions = computed(() => [
+  { key: 'all', label: t('hub.cat.all'), backendCategory: undefined },
+  { key: 'sre', label: t('hub.cat.sre'), backendCategory: 'SRE / 运维自愈' },
+  { key: 'digest', label: t('hub.cat.digest'), backendCategory: '自动化数据采集' },
+  { key: 'agent', label: t('hub.cat.agent'), backendCategory: 'Agent 工具链' },
+  { key: 'rpa', label: t('hub.cat.rpa'), backendCategory: '桌面 RPA' },
+])
+
+function localizeHubFlow(flow: HubFlowSummary): HubFlowSummary {
+  if (locale.value === 'en' && HUB_FLOW_I18N[flow.id]?.en) {
+    return {
+      ...flow,
+      ...HUB_FLOW_I18N[flow.id].en,
+    }
+  }
+  return flow
+}
 
 // 累计安装量计算
 const totalInstalls = computed(() => {
@@ -460,7 +473,7 @@ const filteredFlows = computed(() => {
 
   // 分类匹配
   if (selectedCategoryKey.value !== 'all') {
-    const matchedOption = CATEGORY_OPTIONS.find((c) => c.key === selectedCategoryKey.value)
+    const matchedOption = categoryOptions.value.find((c) => c.key === selectedCategoryKey.value)
     if (matchedOption?.backendCategory) {
       const targetCat = matchedOption.backendCategory.toLowerCase()
       result = result.filter(
@@ -472,19 +485,21 @@ const filteredFlows = computed(() => {
     }
   }
 
+  const localized = result.map(localizeHubFlow)
+
   // 搜索关键词匹配
   const q = searchQuery.value.trim().toLowerCase()
   if (q) {
-    result = result.filter(
+    return localized.filter(
       (f) =>
         f.title.toLowerCase().includes(q) ||
         f.name.toLowerCase().includes(q) ||
         f.description.toLowerCase().includes(q) ||
-        f.tags.some((t) => t.toLowerCase().includes(q)),
+        f.tags.some((tag) => tag.toLowerCase().includes(q)),
     )
   }
 
-  return result
+  return localized
 })
 
 // 加载流程市场列表
@@ -494,7 +509,7 @@ const loadFlows = async () => {
     const list = await fetchHubFlows()
     flows.value = list
   } catch (err: any) {
-    message.error(err?.message || '获取 Flow Hub 列表失败')
+    message.error(err?.message || 'Failed to fetch Flow Hub list')
   } finally {
     loading.value = false
   }
@@ -516,7 +531,7 @@ const resetFilters = () => {
 // 分类标签色彩与图标助手
 const getCategoryColor = (category: string): string => {
   if (category.includes('SRE') || category.includes('运维')) return 'blue'
-  if (category.includes('采集') || category.includes('研报')) return 'purple'
+  if (category.includes('采集') || category.includes('研报') || category.includes('Scraping')) return 'purple'
   if (category.includes('Agent')) return 'green'
   if (category.includes('RPA')) return 'orange'
   return 'default'
@@ -524,24 +539,37 @@ const getCategoryColor = (category: string): string => {
 
 const getCategoryIcon = (category: string) => {
   if (category.includes('SRE') || category.includes('运维')) return SafetyCertificateOutlined
-  if (category.includes('采集') || category.includes('研报')) return SyncOutlined
+  if (category.includes('采集') || category.includes('研报') || category.includes('Scraping')) return SyncOutlined
   if (category.includes('Agent')) return ApiOutlined
   if (category.includes('RPA')) return RocketOutlined
   return ShopOutlined
 }
 
+const localizeHubYaml = (rawYaml: string, flowId: string): string => {
+  if (locale.value !== 'en') return rawYaml
+  let out = rawYaml
+  const metaEn = HUB_FLOW_I18N[flowId]?.en
+  if (metaEn?.description) {
+    out = out.replace(/^description:\s*.*$/m, `description: "${metaEn.description}"`)
+  }
+  for (const [zhName, enName] of Object.entries(STEP_NAME_EN_MAP)) {
+    out = out.split(zhName).join(enName)
+  }
+  return out
+}
+
 // 打开 YAML 预览弹窗
 const openYamlModal = async (flow: HubFlowSummary) => {
   activeFlow.value = flow
-  activeYamlContent.value = '正在拉取 YAML 源码...'
+  activeYamlContent.value = t('hub.msg.fetchingYaml')
   yamlModalVisible.value = true
 
   try {
     const detail: HubFlowDetail = await fetchHubFlowDetail(flow.id)
-    activeYamlContent.value = detail.yaml
+    activeYamlContent.value = localizeHubYaml(detail.yaml, flow.id)
   } catch (err: any) {
-    activeYamlContent.value = '# 获取 YAML 失败: ' + (err?.message || '网络错误')
-    message.error('获取流程 YAML 失败')
+    activeYamlContent.value = '# Error: ' + (err?.message || 'Network error')
+    message.error(t('hub.msg.fetchYamlFailed'))
   }
 }
 
@@ -557,7 +585,7 @@ const handleInstall = async (flow: HubFlowSummary, overwrite = false) => {
   try {
     await installHubFlow(flow.id, overwrite)
     message.success({
-      content: `流程「${flow.title}」安装成功！`,
+      content: t('hub.msg.installSuccess', { title: flow.title }),
       duration: 3,
     })
     if (yamlModalVisible.value) {
@@ -568,17 +596,17 @@ const handleInstall = async (flow: HubFlowSummary, overwrite = false) => {
     // 冲突处理：文件已存在
     if (errorMsg.includes('already exists') || err?.response?.status === 409) {
       Modal.confirm({
-        title: '流程已存在',
-        content: `已存在同名流程「${flow.title}」，是否确认覆盖安装？`,
-        okText: '确认覆盖',
+        title: t('hub.msg.existsTitle'),
+        content: t('hub.msg.existsContent', { title: flow.title }),
+        okText: t('hub.msg.confirmOverwrite'),
         okType: 'danger',
-        cancelText: '取消',
+        cancelText: t('common.cancel'),
         onOk: async () => {
           await handleInstall(flow, true)
         },
       })
     } else {
-      message.error(errorMsg || '安装流程失败')
+      message.error(errorMsg || 'Failed to install flow')
     }
   } finally {
     installingFlowId.value = null
@@ -590,7 +618,7 @@ const handleOpenInCanvas = async (flow: HubFlowSummary) => {
   loadingCanvasId.value = flow.id
   try {
     let yamlCode = ''
-    if (activeFlow.value?.id === flow.id && activeYamlContent.value && !activeYamlContent.value.startsWith('# 获取 YAML 失败')) {
+    if (activeFlow.value?.id === flow.id && activeYamlContent.value && !activeYamlContent.value.startsWith('#')) {
       yamlCode = activeYamlContent.value
     } else {
       const detail = await fetchHubFlowDetail(flow.id)
@@ -599,7 +627,7 @@ const handleOpenInCanvas = async (flow: HubFlowSummary) => {
 
     // 存储至 sessionStorage 供画布生命周期读取
     sessionStorage.setItem('autoflow_canvas_yaml', yamlCode)
-    message.success(`已将 [${flow.title}] 加载至编排画布`)
+    message.success(t('hub.msg.loadedToCanvas', { title: flow.title }))
 
     if (yamlModalVisible.value) {
       yamlModalVisible.value = false
@@ -610,7 +638,7 @@ const handleOpenInCanvas = async (flow: HubFlowSummary) => {
       state: { flowYaml: yamlCode },
     })
   } catch (err: any) {
-    message.error(err?.message || '读取流程源码并载入画布失败')
+    message.error(err?.message || 'Failed to load flow into canvas')
   } finally {
     loadingCanvasId.value = null
   }

@@ -1,18 +1,18 @@
 <template>
   <div class="af-page">
     <PageHeader
-      title="插件管理"
-      description="查看已加载的插件与可用的 Action / Check"
+      :title="t('plugins.title')"
+      :description="t('plugins.desc')"
       :icon="AppstoreOutlined"
     >
       <template #actions>
         <a-button :loading="store.loading" @click="refresh">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </a-button>
         <a-button type="primary" @click="navigateToRunFlow">
           <template #icon><PlayCircleOutlined /></template>
-          去运行流程
+          {{ t('plugins.goToRun') }}
         </a-button>
       </template>
     </PageHeader>
@@ -26,7 +26,7 @@
       :checks="store.checks"
     />
 
-    <h3 class="af-section-title">已安装插件</h3>
+    <h3 class="af-section-title">{{ t('plugins.installedTitle') }}</h3>
     <a-row v-if="store.loading && store.plugins.length === 0" :gutter="[24, 24]">
       <a-col v-for="n in 3" :key="n" :xs="24" :sm="12" :lg="8">
         <a-card><a-skeleton active :paragraph="{ rows: 3 }" /></a-card>
@@ -44,26 +44,26 @@
       </a-col>
     </a-row>
     <a-card v-else>
-      <a-empty description="未加载任何插件" :image="emptyImage" />
+      <a-empty :description="t('plugins.empty')" :image="emptyImage" />
     </a-card>
 
     <ErrorsSection v-if="store.errors.length > 0" :errors="store.errors" />
 
     <TagSection
-      title="已注册 Action"
+      :title="t('plugins.registeredActions')"
       :icon="ThunderboltOutlined"
       :items="store.actions"
       tag-color="blue"
-      search-placeholder="搜索 Action"
+      :search-placeholder="t('plugins.searchAction')"
       @copy="copyToClipboard"
     />
 
     <TagSection
-      title="已注册 Check"
+      :title="t('plugins.registeredChecks')"
       :icon="CheckCircleOutlined"
       :items="store.checks"
       tag-color="orange"
-      search-placeholder="搜索 Check"
+      :search-placeholder="t('plugins.searchCheck')"
       @copy="copyToClipboard"
     />
   </div>
@@ -80,6 +80,7 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
+import { useI18n } from '../i18n'
 import { usePluginsStore } from '../stores/plugins'
 import { useClipboard } from '../composables/useClipboard'
 import PageHeader from '../components/shared/PageHeader.vue'
@@ -88,6 +89,7 @@ import PluginCard from '../components/plugins/PluginCard.vue'
 import ErrorsSection from '../components/plugins/ErrorsSection.vue'
 import TagSection from '../components/shared/TagSection.vue'
 
+const { t } = useI18n()
 const store = usePluginsStore()
 const router = useRouter()
 const { copyToClipboard } = useClipboard()

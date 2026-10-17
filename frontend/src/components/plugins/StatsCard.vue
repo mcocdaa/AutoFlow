@@ -21,7 +21,10 @@ import {
   CheckCircleOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
+import { useI18n } from '../../i18n'
 import type { Plugin } from '../../types/plugins'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   plugins: Plugin[]
@@ -31,19 +34,19 @@ const props = defineProps<{
 
 const stats = computed(() => [
   {
-    label: '插件',
+    label: t('plugins.statPlugins'),
     value: props.plugins.length,
     icon: AppstoreOutlined,
     tone: 'is-primary',
   },
   {
-    label: 'Action',
+    label: t('plugins.statActions'),
     value: props.actions.length,
     icon: ThunderboltOutlined,
     tone: 'is-success',
   },
   {
-    label: 'Check',
+    label: t('plugins.statChecks'),
     value: props.checks.length,
     icon: CheckCircleOutlined,
     tone: 'is-warning',

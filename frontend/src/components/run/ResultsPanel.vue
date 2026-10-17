@@ -4,7 +4,7 @@
       <div class="card-header">
         <div class="card-title">
           <BarChartOutlined class="card-icon" />
-          执行结果
+          {{ t('run.resultTitle') }}
         </div>
         <a-tag v-if="run" :color="runStatus.color">{{ runStatus.text }}</a-tag>
       </div>
@@ -17,7 +17,7 @@
     <div v-if="run" class="run-details">
       <div class="run-meta">
         <div class="meta-item">
-          <span class="meta-label">流程</span>
+          <span class="meta-label">{{ t('run.metaFlow') }}</span>
           <span class="meta-value">{{ run.flow_name }}</span>
         </div>
         <div class="meta-item">
@@ -25,17 +25,17 @@
           <span class="meta-value af-mono">{{ run.run_id }}</span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">耗时</span>
+          <span class="meta-label">{{ t('run.metaDuration') }}</span>
           <span class="meta-value">{{ run.duration_ms !== null ? run.duration_ms + ' ms' : '—' }}</span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">开始</span>
+          <span class="meta-label">{{ t('run.metaStarted') }}</span>
           <span class="meta-value">{{ formatTime(run.started_at) }}</span>
         </div>
         <div v-if="run.parent_run_id" class="meta-item">
-          <span class="meta-label">分叉自</span>
+          <span class="meta-label">{{ t('run.metaForkedFrom') }}</span>
           <span class="meta-value af-mono">
-            {{ run.parent_run_id }} · 第 {{ run.fork_step_index }} 步
+            {{ t('debug.forkedFrom', { runId: run.parent_run_id, stepIdx: run.fork_step_index ?? 0 }) }}
           </span>
         </div>
       </div>
@@ -45,7 +45,7 @@
       <div class="steps-section">
         <h4 class="steps-title">
           <UnorderedListOutlined />
-          步骤
+          {{ t('run.stepsTitle') }}
         </h4>
         <a-collapse v-if="run.steps.length > 0" class="steps-collapse">
           <a-collapse-panel v-for="(step, index) in run.steps" :key="step.step_id">
@@ -63,17 +63,17 @@
                 <span class="step-duration">{{ step.duration_ms }} ms</span>
                 <a-dropdown v-if="forkable" class="step-fork" @click.stop>
                   <a-button type="link" size="small" @click.stop>
-                    分叉
+                    {{ t('run.forkBtn') }}
                     <DownOutlined />
                   </a-button>
                   <template #overlay>
                     <a-menu @click="onForkMenuClick($event, index)">
-                      <a-menu-item key="retry">重试该步</a-menu-item>
+                      <a-menu-item key="retry">{{ t('run.forkRetry') }}</a-menu-item>
                       <a-menu-item
                         key="after"
                         :disabled="index >= run.steps.length - 1"
                       >
-                        从下一步继续
+                        {{ t('run.forkNext') }}
                       </a-menu-item>
                     </a-menu>
                   </template>
@@ -86,14 +86,14 @@
             </div>
 
             <div v-if="step.check_passed !== null" class="step-check">
-              <span class="check-label">检查</span>
+              <span class="check-label">{{ t('debug.checkLabel') }}</span>
               <a-tag :color="step.check_passed ? 'success' : 'error'">
-                {{ step.check_passed ? '通过' : '未通过' }}
+                {{ step.check_passed ? t('debug.checkPassed') : t('debug.checkFailed') }}
               </a-tag>
             </div>
 
             <div v-if="step.iterations && step.iterations.length > 0" class="iterations">
-              <span class="output-label">迭代（for_each，共 {{ step.iterations.length }} 次）</span>
+              <span class="output-label">{{ t('run.iterationsForEach', { count: step.iterations.length }) }}</span>
               <div
                 v-for="(iteration, index) in step.iterations"
                 :key="index"
@@ -106,7 +106,7 @@
                     v-if="iteration.check_passed !== null"
                     :color="iteration.check_passed ? 'success' : 'error'"
                   >
-                    {{ iteration.check_passed ? '通过' : '未通过' }}
+                    {{ iteration.check_passed ? t('debug.checkPassed') : t('debug.checkFailed') }}
                   </a-tag>
                   <span class="iteration-duration">{{ iteration.duration_ms }} ms</span>
                 </div>
@@ -123,7 +123,7 @@
             </div>
 
             <div v-if="artifactsOf(step).length > 0" class="artifacts">
-              <span class="output-label">产物</span>
+              <span class="output-label">{{ t('debug.artifactsLabel') }}</span>
               <div class="artifact-list">
                 <a
                   v-for="artifact in artifactsOf(step)"
@@ -140,12 +140,12 @@
             </div>
 
             <div class="step-output">
-              <span class="output-label">输出</span>
+              <span class="output-label">{{ t('debug.outputLabel') }}</span>
               <pre class="output-pre af-mono">{{ formatOutput(step.action_output) }}</pre>
             </div>
           </a-collapse-panel>
         </a-collapse>
-        <a-empty v-else description="该流程没有步骤记录" :image="emptyImage" />
+        <a-empty v-else :description="t('run.noStepsRecord')" :image="emptyImage" />
       </div>
 
       <div v-if="run.hook_results?.length" class="hooks-section">
@@ -156,11 +156,11 @@
         <div v-for="(hook, index) in run.hook_results" :key="index" class="hook-item">
           <div class="hook-head">
             <a-tag :color="hook.hook === 'on_success' ? 'green' : 'red'">
-              {{ hook.hook === 'on_success' ? '成功钩子' : '失败钩子' }}
+              {{ hook.hook === 'on_success' ? t('debug.hookOnSuccess') : t('debug.hookOnFailure') }}
             </a-tag>
             <span class="hook-action af-mono">{{ hook.action_type }}</span>
             <a-tag :color="hook.status === 'success' ? 'success' : 'error'">
-              {{ hook.status === 'success' ? '执行成功' : '执行失败' }}
+              {{ hook.status === 'success' ? t('debug.hookExecSuccess') : t('debug.hookExecFailed') }}
             </a-tag>
             <span class="hook-duration">{{ hook.duration_ms }} ms</span>
           </div>
@@ -172,17 +172,17 @@
             show-icon
             class="hook-error"
           />
-          <span class="output-label">输出</span>
+          <span class="output-label">{{ t('debug.outputLabel') }}</span>
           <pre class="output-pre af-mono">{{ formatOutput(hook.output) }}</pre>
           <div v-if="artifactsOfValue(hook.output).length > 0" class="artifacts">
-            <span class="output-label">产物</span>
+            <span class="output-label">{{ t('debug.artifactsLabel') }}</span>
             <div class="artifact-list">
               <a
                 v-for="artifact in artifactsOfValue(hook.output)"
                 :key="artifact.path"
-                class="artifact-link"
                 :href="artifactUrl(artifact.path)"
                 :download="artifact.path"
+                class="artifact-link"
               >
                 <FileOutlined />
                 <span class="artifact-path af-mono">{{ artifact.path }}</span>
@@ -197,7 +197,7 @@
     <a-empty
       v-else-if="!error"
       class="empty-state"
-      description="在左侧编辑或加载 Flow YAML 后点击执行"
+      :description="t('run.emptyResult')"
       :image="emptyImage"
     />
   </a-card>
@@ -215,8 +215,11 @@ import {
 } from '@ant-design/icons-vue'
 import { buildArtifactUrl } from '../../api'
 import { RUN_STATUS_META, STEP_STATUS_META } from '../../constants/run-status'
+import { useI18n } from '../../i18n'
 import { artifactsOfValue, collectArtifacts, uniqueArtifacts } from '../../utils/artifacts'
 import type { ArtifactRef, RunResult, RunStepResult } from '../../types/runs'
+
+const { locale, t } = useI18n()
 
 const props = defineProps<{
   run: RunResult | null
@@ -251,7 +254,7 @@ const formatInline = (value: unknown): string => {
 
 const formatTime = (value: string | null): string => {
   if (!value) return '—'
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return new Date(value).toLocaleString(locale.value === 'en' ? 'en-US' : 'zh-CN', { hour12: false })
 }
 
 const formatSize = (size: number): string => {
