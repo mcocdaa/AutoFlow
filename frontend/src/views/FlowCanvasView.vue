@@ -29,6 +29,8 @@
           style="width: 118px"
           size="small"
           allow-clear
+          :dropdown-match-select-width="false"
+          option-label-prop="label"
           :loading="loadingServerFlows"
           @change="handleSelectServerFlow"
         >
@@ -36,8 +38,9 @@
             v-for="item in serverFlows"
             :key="item.slug"
             :value="item.slug"
+            :label="item.name"
           >
-            {{ item.name }}
+            {{ item.name }}{{ item.description ? ` — ${localizeFlowYaml(item.description, locale)}` : '' }}
           </a-select-option>
         </a-select>
 
@@ -190,13 +193,11 @@ import * as yaml from 'js-yaml'
 import { getFlow, listFlows, saveFlow, type FlowRecord } from '../api/client'
 import { useRunsStore } from '../stores/runs'
 import {
-  DEFAULT_FLOW_YAML_EN,
-  DEFAULT_FLOW_YAML_ZH,
   FLOW_EXAMPLES,
   getDefaultFlowYaml,
   getFlowExampleLabel,
 } from '../constants/flow-examples'
-import { localizeFlowYaml, STEP_NAME_EN_MAP, STEP_NAME_ZH_MAP, useI18n } from '../i18n'
+import { localizeFlowYaml, useI18n } from '../i18n'
 import type { FlowNodeData, FlowSpec, StepSpec } from '../types/flow'
 import type { RunStepResult } from '../types/runs'
 import type { ComponentItem } from '../components/canvas/PalettePanel.vue'
@@ -247,13 +248,21 @@ const currentSelectedStep = computed<StepSpec | null>(() => {
 // ---------------- 画布与 YAML 双向同步 ----------------
 
 /** 将 YAML 代码无损解析并投影到画布 */
-const parseYamlToCanvas = (rawYaml: string) => {
+const parseYamlToCanvas = (rawYaml: string, preserveState = false) => {
   try {
     const doc = yaml.load(rawYaml) as FlowSpec
     if (!doc || !Array.isArray(doc.steps)) return
 
+    const prevNodeMap = new Map<string, any>(
+      preserveState ? nodes.value.map((n) => [n.id, n]) : [],
+    )
+
     flowName.value = doc.name || 'unnamed_flow'
-    flowDesc.value = doc.description || ''
+    if (doc.description !== undefined) {
+      flowDesc.value = doc.description
+    } else if (!preserveState) {
+      flowDesc.value = ''
+    }
     cronValue.value = doc.cron || doc.trigger?.cron || ''
     webhookTokenValue.value = doc.trigger?.webhook_token || ''
     flowHooks.value = doc.hooks
@@ -267,14 +276,18 @@ const parseYamlToCanvas = (rawYaml: string) => {
     const nodeGapY = 160
 
     doc.steps.forEach((step: StepSpec, index: number) => {
+      const prevNode = prevNodeMap.get(step.id)
       newNodes.push({
         id: step.id,
         type: 'flowNode',
-        position: { x: startX, y: startY + index * nodeGapY },
+        position: prevNode?.position ?? { x: startX, y: startY + index * nodeGapY },
         data: {
           step,
           index,
-          status: 'idle',
+          status: prevNode?.data?.status ?? 'idle',
+          duration_ms: prevNode?.data?.duration_ms,
+          check_passed: prevNode?.data?.check_passed,
+          error: prevNode?.data?.error,
         } as FlowNodeData,
       })
 
@@ -363,14 +376,28 @@ const syncCanvasToYaml = () => {
     doc.hooks = flowHooks.value
   }
 
-  yamlCode.value = yaml.dump(doc, { indent: 2, noRefs: true })
+  const lines = yamlCode.value.split('\n')
+  const headerCommentLines: string[] = []
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('#')) {
+      headerCommentLines.push(line)
+    } else if (trimmed === '') {
+      if (headerCommentLines.length > 0) headerCommentLines.push(line)
+    } else {
+      break
+    }
+  }
+  const headerPrefix = headerCommentLines.join('\n').trim()
+  const dumped = yaml.dump(doc, { indent: 2, noRefs: true, lineWidth: -1 })
+  yamlCode.value = headerPrefix ? `${headerPrefix}\n\n${dumped}` : dumped
 }
 
 /** 格式化当前 YAML */
 const formatYaml = () => {
   try {
     const doc = yaml.load(yamlCode.value)
-    yamlCode.value = yaml.dump(doc, { indent: 2, noRefs: true })
+    yamlCode.value = yaml.dump(doc, { indent: 2, noRefs: true, lineWidth: -1 })
     message.success(t('canvas.yamlFormatted'))
   } catch {
     message.error(t('canvas.yamlFormatError'))
@@ -379,7 +406,7 @@ const formatYaml = () => {
 
 const onYamlEdited = (newYaml: string) => {
   yamlCode.value = newYaml
-  parseYamlToCanvas(newYaml)
+  parseYamlToCanvas(newYaml, true)
 }
 
 // ---------------- 节点交互与拖拽 ----------------
@@ -596,6 +623,7 @@ const handleSelectExample = (key: string) => {
   const ex = FLOW_EXAMPLES[key as keyof typeof FLOW_EXAMPLES]
   if (!ex) return
   selectedServerFlow.value = undefined
+  store.currentRun = null
   const localizedYaml = localizeFlowYaml(ex.yaml, locale.value)
   yamlCode.value = localizedYaml
   parseYamlToCanvas(localizedYaml)
@@ -618,10 +646,12 @@ const handleSelectServerFlow = async (slug?: string) => {
   try {
     const record = await getFlow(slug)
     selectedExampleKey.value = undefined
+    store.currentRun = null
     const localizedYaml = localizeFlowYaml(record.flow_yaml, locale.value)
     yamlCode.value = localizedYaml
     parseYamlToCanvas(localizedYaml)
     setTimeout(() => fitView({ padding: 0.2 }), 100)
+    message.destroy()
     message.success(t('canvas.flowLoaded', { name: record.name }))
   } catch (err: any) {
     message.error(t('canvas.flowLoadError', { msg: err?.message || err }))
@@ -639,6 +669,7 @@ const handleSaveServerFlow = async () => {
     const saved = await saveFlow(rawSlug, yamlCode.value)
     selectedServerFlow.value = saved.slug
     await loadServerFlows()
+    message.destroy()
     message.success(t('canvas.flowSaved', { name: saved.name || saved.slug }))
   } catch (err: any) {
     message.error(t('canvas.flowSaveError', { msg: err?.message || err }))
@@ -681,16 +712,19 @@ const handleRunFlow = async () => {
         }
       })
     }
+    message.destroy()
     message.success(t('canvas.runSuccess'))
   } catch (err: any) {
     nodes.value.forEach((n) => {
       n.data.status = 'failed'
     })
+    message.destroy()
     message.error(t('canvas.runError', { msg: err.message || err }))
   }
 }
 
 const handleStepDebug = () => {
+  message.destroy()
   syncCanvasToYaml()
   sessionStorage.setItem('autoflow_debug_yaml', yamlCode.value)
   router.push('/debug')
@@ -718,39 +752,19 @@ watch(
 )
 
 watch(locale, (newLocale) => {
-  const trimmed = yamlCode.value.trim()
-  if (
-    trimmed === DEFAULT_FLOW_YAML_ZH.trim() ||
-    trimmed === DEFAULT_FLOW_YAML_EN.trim()
-  ) {
-    yamlCode.value = getDefaultFlowYaml()
-    parseYamlToCanvas(yamlCode.value)
-    return
+  message.destroy()
+  if (flowDesc.value) {
+    flowDesc.value = localizeFlowYaml(flowDesc.value, newLocale)
   }
-  const localizedYaml = localizeFlowYaml(yamlCode.value, newLocale)
-  if (localizedYaml !== yamlCode.value) {
-    yamlCode.value = localizedYaml
-    parseYamlToCanvas(localizedYaml)
-    return
-  }
-  const map = newLocale === 'en' ? STEP_NAME_EN_MAP : STEP_NAME_ZH_MAP
-  let changed = false
-  nodes.value.forEach((node) => {
-    const stepName = node.data?.step?.name
-    if (stepName && map[stepName]) {
-      node.data.step.name = map[stepName]
-      changed = true
-    }
-  })
-  if (changed) {
-    syncCanvasToYaml()
-  }
+  yamlCode.value = localizeFlowYaml(yamlCode.value, newLocale)
+  parseYamlToCanvas(yamlCode.value, true)
 })
 
 onMounted(() => {
   const pendingYaml = sessionStorage.getItem('autoflow_canvas_yaml')
   if (pendingYaml) {
     sessionStorage.removeItem('autoflow_canvas_yaml')
+    store.currentRun = null
     yamlCode.value = localizeFlowYaml(pendingYaml, locale.value)
   }
   parseYamlToCanvas(yamlCode.value)

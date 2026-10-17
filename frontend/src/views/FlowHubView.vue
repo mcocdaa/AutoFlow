@@ -237,7 +237,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Empty, Modal, message } from 'ant-design-vue'
 import {
@@ -290,7 +290,7 @@ const categoryOptions = computed(() => [
   { key: 'all', label: t('hub.cat.all'), backendCategory: undefined },
   { key: 'sre', label: t('hub.cat.sre'), backendCategory: 'SRE / 运维自愈' },
   { key: 'digest', label: t('hub.cat.digest'), backendCategory: '自动化数据采集' },
-  { key: 'agent', label: t('hub.cat.agent'), backendCategory: 'Agent 工具链' },
+  { key: 'agent', label: t('hub.cat.agent'), backendCategory: '质量门禁' },
   { key: 'rpa', label: t('hub.cat.rpa'), backendCategory: '桌面 RPA' },
 ])
 
@@ -301,7 +301,8 @@ function localizeHubFlow(flow: HubFlowSummary): HubFlowSummary {
       ...HUB_FLOW_I18N[flow.id].en,
     }
   }
-  return flow
+  const orig = flows.value.find((f) => f.id === flow.id)
+  return orig ? { ...orig } : flow
 }
 
 // 累计安装量计算
@@ -374,7 +375,7 @@ const resetFilters = () => {
 const getCategoryColor = (category: string): string => {
   if (category.includes('SRE') || category.includes('运维')) return 'blue'
   if (category.includes('采集') || category.includes('研报') || category.includes('Scraping')) return 'purple'
-  if (category.includes('Agent')) return 'green'
+  if (category.includes('质量') || category.includes('Quality') || category.includes('Agent')) return 'green'
   if (category.includes('RPA')) return 'orange'
   return 'default'
 }
@@ -382,20 +383,31 @@ const getCategoryColor = (category: string): string => {
 const getCategoryIcon = (category: string) => {
   if (category.includes('SRE') || category.includes('运维')) return SafetyCertificateOutlined
   if (category.includes('采集') || category.includes('研报') || category.includes('Scraping')) return SyncOutlined
-  if (category.includes('Agent')) return ApiOutlined
+  if (category.includes('质量') || category.includes('Quality') || category.includes('Agent')) return ApiOutlined
   if (category.includes('RPA')) return RocketOutlined
   return ShopOutlined
 }
 
 const localizeHubYaml = (rawYaml: string, flowId: string): string => {
-  if (locale.value !== 'en') return rawYaml
   let out = localizeFlowYaml(rawYaml, locale.value)
-  const metaEn = HUB_FLOW_I18N[flowId]?.en
-  if (metaEn?.description) {
-    out = out.replace(/^description:\s*.*$/m, `description: "${metaEn.description}"`)
+  if (locale.value === 'en') {
+    const metaEn = HUB_FLOW_I18N[flowId]?.en
+    if (metaEn?.description) {
+      out = out.replace(/^description:\s*.*$/m, `description: "${metaEn.description}"`)
+    }
   }
   return out
 }
+
+watch(locale, (newLoc) => {
+  message.destroy()
+  if (activeFlow.value) {
+    activeFlow.value = localizeHubFlow(activeFlow.value)
+  }
+  if (activeYamlContent.value && !activeYamlContent.value.startsWith('#')) {
+    activeYamlContent.value = localizeFlowYaml(activeYamlContent.value, newLoc)
+  }
+})
 
 // 打开 YAML 预览弹窗
 const openYamlModal = async (flow: HubFlowSummary) => {

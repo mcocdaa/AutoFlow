@@ -145,18 +145,18 @@ const messages: Record<Locale, Record<string, string>> = {
 
     // Flow Hub View
     'hub.title': 'Flow Hub 流程市场',
-    'hub.desc': '精选生产级自动化工作流模板，支持一键安装、可视化编排与外部 Agent 协同调用',
+    'hub.desc': '精选生产级自动化工作流模板，支持一键安装、可视化编排与全链路状态追踪',
+    'hub.subtitle': '精选生产级自动化工作流模板，支持一键安装、可视化编排与全链路状态追踪',
     'hub.heroPill': 'AutoFlow v1.1 精选自动化工作流市场',
-    'hub.agentGuideBtn': 'Agent 接入指南',
     'hub.heroTitle': '高可靠确定性工作流集市',
-    'hub.heroDesc': '所有模板均内置 Check 断言校验与自动重试策略。支持本地直接执行，或作为复合 MCP Tool 供 LLM Agent 单次调度。',
+    'hub.heroDesc': '所有模板均内置 Check 断言校验、异常分支与自动重试策略，开箱即用。',
     'hub.stat.templates': '精选流程模板',
     'hub.stat.installs': '社区累计部署',
     'hub.stat.checkCoverage': 'Check 校验覆盖',
     'hub.cat.all': '全部',
     'hub.cat.sre': 'SRE 运维自愈',
     'hub.cat.digest': '智能采集研报',
-    'hub.cat.agent': 'Agent 工具链',
+    'hub.cat.agent': '质量门禁',
     'hub.cat.rpa': '桌面 RPA',
     'hub.searchPlaceholder': '搜索流程标题、名称、说明或标签...',
     'hub.installsCount': '{count} 安装',
@@ -168,23 +168,6 @@ const messages: Record<Locale, Record<string, string>> = {
     'hub.modal.yamlSubtitle': '流程模板源码预览 · {name}',
     'hub.modal.copyCode': '复制代码',
     'hub.modal.openInCanvasFull': '在编排画布中打开',
-    'hub.modal.guideTitle': 'Agent 接入指南 (MCP 协议)',
-    'hub.modal.guideSubtitle': '外部 Agent (Claude Code / Cursor / OpenClaw) 通过单次 ToolCall 调度 AutoFlow 确定性流程',
-    'hub.modal.guideIntro': 'AutoFlow 后端内置 Model Context Protocol (MCP) 服务，端点位于',
-    'hub.modal.guideIntro2': '。外部 Agent 可自动发现并调用',
-    'hub.modal.guideIntro3': '等增强工具。',
-    'hub.modal.claudeStep1Title': '终端 CLI 一键添加 MCP Server',
-    'hub.modal.claudeStep1Desc': '在任意项目终端运行以下命令，Claude Code 将自动注册 AutoFlow 工具：',
-    'hub.modal.claudeStep2Title': '或通过配置文件注册 (~/.claude/config.json)',
-    'hub.modal.claudeStep2Desc': '在 mcpServers 配置节添加 AutoFlow HTTP 端点：',
-    'hub.modal.cursorStep1Title': '项目级 MCP 配置 (.cursor/mcp.json)',
-    'hub.modal.cursorStep1Desc': '在工作区根目录创建或编辑 .cursor/mcp.json：',
-    'hub.modal.cursorStep2Title': '在 Cursor Composer 中使用',
-    'hub.modal.cursorStep2Desc': '配置完成后，Cursor 对话框将自动显示 AutoFlow 工具，可直接指示 Agent：“查询 Flow Hub 上的 SRE 流程并进行静态校验”。',
-    'hub.modal.openclawStep1Title': 'OpenClaw Gateway 插件配置文件',
-    'hub.modal.openclawStep1Desc': '在 OpenClaw 智能体编排网络中将 AutoFlow 作为专用确定性执行器接入：',
-    'hub.modal.openclawStep2Title': '多步流程确定性保障',
-    'hub.modal.openclawStep2Desc': 'OpenClaw 负责规划与意图分解，复杂运维与数据流交由 AutoFlow 本地执行引擎与 Check 机制兜底，保障执行确定性。',
     'hub.msg.fetchListFailed': '获取流程市场列表失败',
     'hub.msg.fetchingYaml': '正在拉取 YAML 源码...',
     'hub.msg.fetchYamlFailed': '获取流程 YAML 失败',
@@ -497,18 +480,18 @@ const messages: Record<Locale, Record<string, string>> = {
 
     // Flow Hub View
     'hub.title': 'Flow Hub Marketplace',
-    'hub.desc': 'Curated production workflow templates with one-click install, visual editing, and MCP Agent invocation',
+    'hub.desc': 'Curated production workflow templates with one-click install, visual orchestration, and end-to-end execution tracking',
+    'hub.subtitle': 'Curated production workflow templates with one-click install, visual orchestration, and end-to-end execution tracking',
     'hub.heroPill': 'AutoFlow Ecosystem v1.1 Curated Marketplace',
-    'hub.agentGuideBtn': 'Agent MCP Guide',
     'hub.heroTitle': 'Deterministic Workflow Marketplace',
-    'hub.heroDesc': 'Every template includes built-in Check assertions and retry policies. Run locally or expose as composite MCP Tools for LLM Agents.',
+    'hub.heroDesc': 'Every template includes built-in Check assertions, fallback branches, and automatic retry policies out of the box.',
     'hub.stat.templates': 'Curated Templates',
     'hub.stat.installs': 'Community Installs',
     'hub.stat.checkCoverage': 'Check Coverage',
     'hub.cat.all': 'All',
     'hub.cat.sre': 'SRE Auto-Remediation',
     'hub.cat.digest': 'AI Scraping & Digest',
-    'hub.cat.agent': 'Agent Toolchains',
+    'hub.cat.agent': 'Quality Gate',
     'hub.cat.rpa': 'Desktop RPA',
     'hub.searchPlaceholder': 'Search flow title, name, description, or tags...',
     'hub.installsCount': '{count} installs',
@@ -520,23 +503,6 @@ const messages: Record<Locale, Record<string, string>> = {
     'hub.modal.yamlSubtitle': 'Template YAML Preview · {name}',
     'hub.modal.copyCode': 'Copy Code',
     'hub.modal.openInCanvasFull': 'Open in Visual Canvas',
-    'hub.modal.guideTitle': 'Agent MCP Integration Guide',
-    'hub.modal.guideSubtitle': 'Invoke deterministic AutoFlow pipelines from Claude Code, Cursor, or OpenClaw via a single ToolCall',
-    'hub.modal.guideIntro': 'AutoFlow includes a built-in Model Context Protocol (MCP) server at',
-    'hub.modal.guideIntro2': '. External Agents can discover and call',
-    'hub.modal.guideIntro3': 'and more.',
-    'hub.modal.claudeStep1Title': 'Add MCP Server via Claude CLI',
-    'hub.modal.claudeStep1Desc': 'Run the following command in your terminal to register AutoFlow tools:',
-    'hub.modal.claudeStep2Title': 'Or Register via Config (~/.claude/config.json)',
-    'hub.modal.claudeStep2Desc': 'Add the AutoFlow HTTP endpoint under mcpServers:',
-    'hub.modal.cursorStep1Title': 'Workspace MCP Config (.cursor/mcp.json)',
-    'hub.modal.cursorStep1Desc': 'Create or update .cursor/mcp.json in your workspace root:',
-    'hub.modal.cursorStep2Title': 'Use in Cursor Composer',
-    'hub.modal.cursorStep2Desc': 'Once configured, Cursor Composer automatically detects AutoFlow tools for querying and running deterministic flows.',
-    'hub.modal.openclawStep1Title': 'OpenClaw Gateway Plugin Config',
-    'hub.modal.openclawStep1Desc': 'Connect AutoFlow as a deterministic execution engine in OpenClaw:',
-    'hub.modal.openclawStep2Title': 'Multi-Step Deterministic Guarantees',
-    'hub.modal.openclawStep2Desc': 'OpenClaw handles high-level planning while AutoFlow enforces step-level Check assertions and retries.',
     'hub.msg.fetchListFailed': 'Failed to fetch Flow Hub list',
     'hub.msg.fetchingYaml': 'Fetching YAML source...',
     'hub.msg.fetchYamlFailed': 'Failed to fetch flow YAML',
@@ -729,7 +695,7 @@ const messages: Record<Locale, Record<string, string>> = {
 export const COMPONENT_I18N: Record<string, { zh: { label: string; desc: string }; en: { label: string; desc: string } }> = {
   'core.log': {
     zh: { label: '输出日志', desc: '在执行日志中记录调试信息' },
-    en: { label: 'Log Message', desc: 'Write structured debug info to run logs' },
+    en: { label: 'Log Output', desc: 'Write structured debug info to run logs' },
   },
   'core.sleep': {
     zh: { label: '延时等待', desc: '暂停流程执行指定秒数' },
@@ -765,7 +731,7 @@ export const COMPONENT_I18N: Record<string, { zh: { label: string; desc: string 
   },
   'desktop.activate_window': {
     zh: { label: '激活桌面窗口', desc: '按窗口标题查找并激活前置目标应用窗口' },
-    en: { label: 'Activate Window', desc: 'Find and focus desktop window by title' },
+    en: { label: 'Focus Desktop Window', desc: 'Find and focus desktop window by title' },
   },
   'desktop.click': {
     zh: { label: '模拟鼠标点击', desc: '控制桌面鼠标在指定坐标点击' },
@@ -860,9 +826,9 @@ export const HUB_FLOW_I18N: Record<
   },
   'hub-agent-mcp-toolchain': {
     en: {
-      title: 'Agent Deterministic Check Toolchain (MCP)',
-      category: 'Agent Toolchains',
-      description: 'Deterministic multi-step pipeline exposed via MCP for single-toolcall invocation by Claude Code / Cursor',
+      title: 'Pre-Release Quality Gate & Deterministic Validation',
+      category: 'Quality Gate',
+      description: 'Pre-flight Environment Check ➔ Deterministic Execution ➔ Strong Assertion Gate',
     },
   },
   'hub-desktop-rpa': {
@@ -877,8 +843,12 @@ export const HUB_FLOW_I18N: Record<
 // Default step names translation map for built-in examples when displayed in EN
 export const STEP_NAME_EN_MAP: Record<string, string> = {
   记录日志: 'Log Message',
+  输出日志: 'Log Output',
   短暂等待: 'Brief Delay',
+  延时等待: 'Sleep Delay',
   回显并写入运行时变量: 'Echo & Save Runtime Var',
+  数据回显: 'Echo Payload',
+  采集系统负载与近期日志: 'Collect System Load & Recent Logs',
   收集系统负载与日志诊断: 'Collect System Load & Logs',
   执行自愈脚本或容器重启: 'Run Recovery or Restart Container',
   拉取知乎热榜: 'Fetch Trending Feed',
@@ -890,12 +860,21 @@ export const STEP_NAME_EN_MAP: Record<string, string> = {
   '输出 70KB 文本': 'Emit 70KB Output',
   执行工作: 'Execute Task',
   激活窗口: 'Activate Window',
+  激活桌面窗口: 'Focus Desktop Window',
   点击按钮: 'Click Button',
+  模拟鼠标点击: 'Mouse Click',
   '输入（脱敏）': 'Type Input (Masked)',
+  键盘文本输入: 'Type Text',
   截图留存: 'Capture Screenshot',
+  屏幕截屏: 'Screenshot',
   抓取知乎回答: 'Fetch Answer Content',
+  知乎回答采集: 'Fetch Answer',
+  知乎草稿投递: 'Post Answer Draft',
   '调用 DeepSeek 总结': 'Summarize with DeepSeek',
-  '请用中文总结要点，输出 3-6 条要点。': 'Summarize the key points into 3-6 bullet items.',
+  'DeepSeek 推理': 'DeepSeek Summarize',
+  'KnowFlow 归档': 'KnowFlow Archive',
+  'HTTP 请求': 'HTTP Request',
+  命令执行: 'Shell Command',
   'input 全量替换': 'Replace Input Value',
   'vars 属性链 + 内联替换': 'Vars Property Chain & Inline Replace',
   'steps 属性链引用': 'Steps Property Chain Reference',
@@ -908,6 +887,14 @@ export const STEP_NAME_EN_MAP: Record<string, string> = {
 export const STEP_NAME_ZH_MAP: Record<string, string> = Object.fromEntries(
   Object.entries(STEP_NAME_EN_MAP).map(([zh, en]) => [en, zh]),
 )
+
+export function localizeStepName(name?: string | null, loc: Locale = locale.value): string {
+  if (!name) return ''
+  if (loc === 'en') {
+    return STEP_NAME_EN_MAP[name] ?? name
+  }
+  return STEP_NAME_ZH_MAP[name] ?? name
+}
 
 export const YAML_COMMENT_EN_MAP: Record<string, string> = {
   '# @brief 内置 Action 串联：core.log / core.sleep / dummy.echo + output_var':
@@ -947,10 +934,14 @@ export const FLOW_DESC_EN_MAP: Record<string, string> = {
     HUB_FLOW_I18N['hub-zhihu-digest'].en.description,
   '将易出错的多步骤外部调用封装为确定性带 Check 的复合 MCP 工具':
     HUB_FLOW_I18N['hub-agent-mcp-toolchain'].en.description,
+  '发布前质量门禁：前置环境检查 -> 确定性变更执行 -> 强断言校验':
+    HUB_FLOW_I18N['hub-agent-mcp-toolchain'].en.description,
   '跨系统桌面客户端数据捕获与自动对齐同步':
     HUB_FLOW_I18N['hub-desktop-rpa'].en.description,
   'MCP 示例流程：记录日志并回显输入':
-    'MCP Example Workflow: Log start message and echo input',
+    'Example Flow: Log & Echo Input',
+  '示例流程：记录日志并回显输入':
+    'Example Flow: Log & Echo Input',
   'AutoFlow 自动化流程': 'AutoFlow Automated Workflow',
 }
 
@@ -958,28 +949,79 @@ export const FLOW_DESC_ZH_MAP: Record<string, string> = Object.fromEntries(
   Object.entries(FLOW_DESC_EN_MAP).map(([zh, en]) => [en, zh]),
 )
 
+export const FLOW_PARAM_EN_MAP: Record<string, string> = {
+  '正在诊断异常告警: {{input.alert_id}}': 'Diagnosing anomaly alert: {{input.alert_id}}',
+  '已重启异常服务 {{input.service_name}}': 'restarted service {{input.service_name}}',
+  '每日精选研报已生成': 'Daily digest generated successfully',
+  '正在校验任务前置环境: {{input.task}}': 'Environment verified for task {{input.task}}',
+  '已通过质量门禁并完成变更': 'applied',
+  '正在检查桌面客户端进程状态': 'Verifying desktop client process status',
+  '已采集 120 条记录并通过完整性校验': 'Extracted 120 records and verified integrity',
+  '示例流程开始执行': 'example flow start',
+  '来自预设流程的问候': 'hello from flows/',
+  '请用中文总结要点，输出 3-6 条要点。': 'Summarize the key points into 3-6 bullet items.',
+  '请精炼以下要点: {{input}}': 'Summarize the following points: {{input}}',
+}
+
+export const FLOW_PARAM_ZH_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(FLOW_PARAM_EN_MAP).map(([zh, en]) => [en, zh]),
+)
+
+export const FLOW_YAML_ZH_TO_EN: Array<[string, string]> = [
+  ...Object.entries(FLOW_DESC_EN_MAP),
+  ...Object.entries(STEP_NAME_EN_MAP),
+  ...Object.entries(FLOW_PARAM_EN_MAP),
+]
+
+function replaceYamlScalar(text: string, from: string, to: string): string {
+  if (!from || !text.includes(from)) return text
+  // Single-line plain text (e.g., dropdown option or description input)
+  if (!text.includes('\n')) {
+    return text.split(from).join(to)
+  }
+  let out = text
+  // 1. Double-quoted value
+  out = out.split(`"${from}"`).join(`"${to}"`)
+  // 2. Single-quoted value
+  out = out.split(`'${from}'`).join(`'${to}'`)
+  // 3. Unquoted YAML value after `: `
+  const needsQuotes = to.includes(': ') || to.includes('#') || to.startsWith('{')
+  const replacement = needsQuotes ? `: "${to}"` : `: ${to}`
+  out = out.split(`: ${from}`).join(replacement)
+  // 4. Fallback for any remaining substring occurrence
+  if (out.includes(from)) {
+    out = out.split(from).join(to)
+  }
+  return out
+}
+
 export function localizeFlowYaml(rawYaml: string, loc: Locale = locale.value): string {
+  if (!rawYaml) return rawYaml
   let out = rawYaml
   if (loc === 'en') {
     for (const [zhComment, enComment] of Object.entries(YAML_COMMENT_EN_MAP)) {
       out = out.split(zhComment).join(enComment)
     }
-    for (const [zhDesc, enDesc] of Object.entries(FLOW_DESC_EN_MAP)) {
-      out = out.split(zhDesc).join(enDesc)
-    }
-    for (const [zhName, enName] of Object.entries(STEP_NAME_EN_MAP)) {
-      out = out.split(zhName).join(enName)
+    const pairs = [
+      ...Object.entries(FLOW_DESC_EN_MAP),
+      ...Object.entries(FLOW_PARAM_EN_MAP),
+      ...Object.entries(STEP_NAME_EN_MAP),
+    ].sort((a, b) => b[0].length - a[0].length)
+    for (const [zhVal, enVal] of pairs) {
+      out = replaceYamlScalar(out, zhVal, enVal)
     }
     return out
   }
   for (const [enComment, zhComment] of Object.entries(YAML_COMMENT_ZH_MAP)) {
     out = out.split(enComment).join(zhComment)
   }
-  for (const [enDesc, zhDesc] of Object.entries(FLOW_DESC_ZH_MAP)) {
-    out = out.split(enDesc).join(zhDesc)
-  }
-  for (const [enName, zhName] of Object.entries(STEP_NAME_ZH_MAP)) {
-    out = out.split(enName).join(zhName)
+  const pairs = [
+    ...Object.entries(FLOW_DESC_ZH_MAP),
+    ...Object.entries(FLOW_PARAM_ZH_MAP),
+    ...Object.entries(STEP_NAME_ZH_MAP),
+  ].sort((a, b) => b[0].length - a[0].length)
+  for (const [enVal, zhVal] of pairs) {
+    out = replaceYamlScalar(out, enVal, zhVal)
   }
   return out
 }

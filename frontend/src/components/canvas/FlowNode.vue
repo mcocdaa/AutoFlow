@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
-import { STEP_NAME_EN_MAP, useI18n } from '../../i18n'
+import { localizeStepName, useI18n } from '../../i18n'
 import type { FlowNodeData } from '../../types/flow'
 
 const { locale, t } = useI18n()
@@ -74,12 +74,7 @@ const props = defineProps<{
 }>()
 
 const displayStepName = computed(() => {
-  const raw = props.data.step.name
-  if (!raw) return ''
-  if (locale.value === 'en' && STEP_NAME_EN_MAP[raw]) {
-    return STEP_NAME_EN_MAP[raw]
-  }
-  return raw
+  return localizeStepName(props.data.step.name, locale.value)
 })
 
 const actionCategoryClass = computed(() => {
