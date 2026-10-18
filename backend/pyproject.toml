@@ -1,6 +1,6 @@
 [project]
 name = "autoflow-backend"
-version = "1.2.0"
+version = "1.2.1"
 description = "AutoFlow Backend API and Execution Engine"
 authors = [{ name = "AutoFlow Team", email = "team@autoflow.dev" }]
 requires-python = ">=3.12"
