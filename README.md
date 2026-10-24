@@ -102,7 +102,7 @@ All runtime settings live in `.env` (copied from `.env.example`):
 ### Documentation & Resources
 
 - 📚 [Documentation Index](docs/index.md) · [Architecture Overview](docs/architecture/index.md) · [Roadmap](docs/roadmap.md)
-- 🔌 [MCP Server Guide](docs/zh/modules/mcp.md) · [Plugin Development Guide](plugin_manger/docs/index.md)
+- 🔌 [MCP Server Guide](docs/en/modules/mcp.md) · [Plugin Development Guide](docs/en/plugin-dev-guide.md)
 - 🧪 [Example Flows](docs/examples/index.md) (`docs/examples/engine/` covers all DAG capabilities)
 
 > **Security Note**: `/api/v1/runs/execute` can run privileged plugin actions (such as `openclaw.exec`). Do not expose an unauthenticated instance directly to the public internet; deploy behind an internal network or authenticated reverse proxy.

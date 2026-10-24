@@ -11,4 +11,5 @@ version: "1.0"
 
 ## 文件列表
 
-- [overview](overview.md): 架构总览
+- [中文架构总览](../zh/architecture/overview.md): 架构总览（中文）
+- [Architecture Overview (EN)](../en/architecture/overview.md): Architecture overview (English)

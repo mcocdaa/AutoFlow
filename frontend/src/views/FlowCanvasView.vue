@@ -475,7 +475,7 @@ const addNodeFromPalette = (item: ComponentItem) => {
           name: item.label,
           action: {
             type: 'core.log',
-            params: { message: `Check step: ${item.label}` },
+            params: { message: t('canvas.checkStepMessage', { label: item.label }) },
           },
           check: {
             type: item.type,

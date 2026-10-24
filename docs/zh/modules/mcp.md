@@ -25,7 +25,7 @@ AutoFlow 在同一个镜像内提供 **MCP（Model Context Protocol）Server**�
 | `replay_run` | `run_id`、`wait` | 重放保存的请求，生成新运行 |
 | `get_artifact` | `run_id`、`path`、`max_bytes` | 读取文本产物（默认上限 256 KiB，超出截断） |
 
-`flows/` 目录约定见仓库根 [flows/README.md](../../flows/README.md)；也可用 `FLOWS_DIR` 指向其他目录。
+`flows/` 目录约定见仓库根 [flows/README.md](../../../flows/README.md)；也可用 `FLOWS_DIR` 指向其他目录。
 
 ## 客户端配置
 

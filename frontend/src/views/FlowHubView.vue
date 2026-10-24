@@ -512,7 +512,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
   padding: 24px 32px;
   margin-bottom: 24px;
   background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
@@ -593,8 +594,9 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  row-gap: 10px;
   margin-bottom: 20px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .category-tabs {

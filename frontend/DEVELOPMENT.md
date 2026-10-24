@@ -221,5 +221,5 @@ border-radius: 12px;
 - [Vue 3 文档](https://cn.vuejs.org/)
 - [Ant Design Vue 文档](https://antdv.com/)
 - [Pinia 文档](https://pinia.vuejs.org/zh/)
-- [项目结构说明](./src/README.md)
-- [FDS 设计规范](../task.md)
+- [前端架构与总览](../docs/zh/frontend/overview.md)
+- [主题与设计令牌](./src/theme/flow-design-theme.ts)
