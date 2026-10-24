@@ -17,6 +17,11 @@
     </div>
 
     <div class="palette-content">
+      <a-empty
+        v-if="filteredGroups.length === 0"
+        :description="t('common.noMatch')"
+        style="margin: 32px 0"
+      />
       <div
         v-for="group in filteredGroups"
         :key="group.id"

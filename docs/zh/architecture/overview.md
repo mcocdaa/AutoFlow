@@ -35,4 +35,5 @@ AutoFlow 按“框架运行时 + 多端客户端 + 插件扩展”拆分，核�
 
 以下为早期的总体设计说明书（偏“大而全”），后续将逐步把可落地的“规范/约定”拆分到 `docs/zh/specs/` 与 `docs/zh/modules/`：
 
-- 旧版总体设计：[`../../architecture/README.md`](../../architecture/README.md)
+- 架构文档索引：[`../../architecture/index.md`](../../architecture/index.md)
+- 产品调研与演进架构白皮书：[`../../product_research_and_plan.md`](../../product_research_and_plan.md)

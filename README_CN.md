@@ -107,6 +107,6 @@ curl -s http://localhost:3001/api/v1/plugins/catalog | jq .
 
 > **安全提示**：`/api/v1/runs/execute` 可执行任意已注册插件动作（如 `openclaw.exec` 系统命令）。请勿将未配置鉴权的服务直接暴露到公网；生产部署请置于内网或带认证的反向代理网关之后。
 
-## 📄 License
+## 📄 开源协议
 
 本项目基于 [MIT License](LICENSE) 开源。

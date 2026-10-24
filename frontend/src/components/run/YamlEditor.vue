@@ -4,7 +4,7 @@
       <div class="card-header">
         <div class="card-title">
           <FileTextOutlined class="card-icon" />
-          Flow YAML
+          {{ t('common.flowYaml') }}
         </div>
           <a-select
             v-model:value="selectedExample"
