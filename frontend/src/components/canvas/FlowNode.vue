@@ -16,34 +16,34 @@
       </div>
       <div class="node-status-indicator" :class="`indicator-${data.status || 'idle'}`">
         <span v-if="data.status === 'running'" class="pulse-dot"></span>
-        <span v-else-if="data.status === 'success'" class="icon-success">✓</span>
-        <span v-else-if="data.status === 'failed'" class="icon-failed">✕</span>
+        <CheckOutlined v-else-if="data.status === 'success'" class="icon-success" />
+        <CloseOutlined v-else-if="data.status === 'failed'" class="icon-failed" />
       </div>
     </div>
 
     <div class="node-body">
       <div class="action-tag" :class="actionCategoryClass">
-        <span class="action-icon">{{ actionCategoryIcon }}</span>
+        <component :is="actionCategoryIcon" class="action-icon" />
         <span class="action-type af-mono">{{ data.step.action.type }}</span>
       </div>
 
       <div v-if="data.step.check" class="check-tag">
-        <span class="check-icon">🛡️</span>
+        <SafetyCertificateOutlined class="check-icon" />
         <span class="check-type af-mono">{{ data.step.check.type }}</span>
       </div>
 
       <div class="extra-badges">
         <span v-if="data.step.condition" class="badge-tag badge-condition" :title="t('node.conditionTitle')">
-          ⚡ if
+          <BranchesOutlined class="badge-icon" /> if
         </span>
         <span v-if="data.step.for_each" class="badge-tag badge-loop" :title="t('node.loopTitle')">
-          🔁 loop
+          <RetweetOutlined class="badge-icon" /> loop
         </span>
         <span v-if="data.step.retry && data.step.retry.attempts > 0" class="badge-tag badge-retry" :title="t('node.retryTitle')">
-          🔄 x{{ data.step.retry.attempts }}
+          <SyncOutlined class="badge-icon" /> x{{ data.step.retry.attempts }}
         </span>
         <span v-if="data.step.output_var" class="badge-tag badge-var" :title="t('node.outputVarTitle')">
-          📦 ${{ data.step.output_var }}
+          <CodeOutlined class="badge-icon" /> ${{ data.step.output_var }}
         </span>
       </div>
 
@@ -60,8 +60,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
+import {
+  BranchesOutlined,
+  BulbOutlined,
+  CheckOutlined,
+  ClockCircleOutlined,
+  CloseOutlined,
+  CodeOutlined,
+  DesktopOutlined,
+  FileTextOutlined,
+  GlobalOutlined,
+  RetweetOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  SyncOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons-vue'
 import { localizeStepName, useI18n } from '../../i18n'
 import type { FlowNodeData } from '../../types/flow'
 
@@ -87,15 +103,16 @@ const actionCategoryClass = computed(() => {
   return 'cat-other'
 })
 
-const actionCategoryIcon = computed(() => {
+const actionCategoryIcon = computed<Component>(() => {
   const type = props.data.step.action.type || ''
-  if (type.startsWith('core.log')) return '📝'
-  if (type.startsWith('core.')) return '⚙️'
-  if (type.startsWith('dummy.')) return '📦'
-  if (type.startsWith('ai.') || type.includes('deepseek')) return '🤖'
-  if (type.startsWith('zhihu.') || type.startsWith('openclaw.')) return '🕷️'
-  if (type.startsWith('desktop.')) return '🖥️'
-  return '⚡'
+  if (type.startsWith('core.log')) return FileTextOutlined
+  if (type.startsWith('core.sleep')) return ClockCircleOutlined
+  if (type.startsWith('core.')) return SettingOutlined
+  if (type.startsWith('dummy.')) return CodeOutlined
+  if (type.startsWith('ai.') || type.includes('deepseek')) return BulbOutlined
+  if (type.startsWith('zhihu.') || type.startsWith('openclaw.')) return GlobalOutlined
+  if (type.startsWith('desktop.')) return DesktopOutlined
+  return ThunderboltOutlined
 })
 </script>
 
@@ -320,10 +337,18 @@ const actionCategoryIcon = computed(() => {
 }
 
 .badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-icon {
+  font-size: 10px;
 }
 
 .badge-condition { background: #fef3c7; color: #92400e; }

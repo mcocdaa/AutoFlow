@@ -62,35 +62,35 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "core.log": {
         "label": "输出日志",
         "desc": "在执行日志中记录调试信息",
-        "icon": "📝",
+        "icon": "file-text",
         "category": "core",
         "defaultParams": {"message": "Processing flow step..."},
     },
     "core.sleep": {
         "label": "延时等待",
         "desc": "暂停流程执行指定秒数",
-        "icon": "⏱️",
+        "icon": "clock",
         "category": "core",
         "defaultParams": {"seconds": 1},
     },
     "dummy.echo": {
         "label": "数据回显",
         "desc": "原样回显输入数据或构造结构化结果",
-        "icon": "📦",
+        "icon": "code",
         "category": "dummy",
         "defaultParams": {"message": "hello"},
     },
     "openclaw.http_request": {
         "label": "HTTP 请求",
         "desc": "向外部 REST API 发起 GET/POST 请求",
-        "icon": "🌐",
+        "icon": "global",
         "category": "core",
         "defaultParams": {"url": "https://api.example.com", "method": "GET"},
     },
     "openclaw.exec": {
         "label": "命令执行",
         "desc": "执行本地 Bash 脚本或系统指令",
-        "icon": "💻",
+        "icon": "terminal",
         "category": "core",
         "defaultParams": {"command": 'echo "hello from shell"'},
     },
@@ -98,14 +98,14 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "ai.deepseek_summarize": {
         "label": "DeepSeek 推理",
         "desc": "调用大模型进行智能摘要与信息提取",
-        "icon": "🧠",
+        "icon": "bulb",
         "category": "ai",
         "defaultParams": {"input": "请精炼以下要点: {{input}}", "dry_run": True},
     },
     "zhihu.fetch_answer": {
         "label": "知乎回答采集",
         "desc": "拉取知乎指定问题回答正文内容",
-        "icon": "📑",
+        "icon": "read",
         "category": "scraper",
         "defaultParams": {
             "url": "https://www.zhihu.com/question/784489052/answer/1946200783080125276",
@@ -115,7 +115,7 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "zhihu.post_answer_draft": {
         "label": "知乎草稿投递",
         "desc": "将 Markdown 内容自动投递至知乎草稿",
-        "icon": "✍️",
+        "icon": "edit",
         "category": "scraper",
         "defaultParams": {
             "question_url": "https://www.zhihu.com/question/784489052",
@@ -126,7 +126,7 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "openclaw.knowflow_record": {
         "label": "KnowFlow 归档",
         "desc": "将流程结果沉淀至 KnowFlow 知识库",
-        "icon": "🕷️",
+        "icon": "database",
         "category": "scraper",
         "defaultParams": {"name": "digest_report", "project_id": "default"},
     },
@@ -134,28 +134,28 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "desktop.activate_window": {
         "label": "激活桌面窗口",
         "desc": "按窗口标题查找并激活前置目标应用窗口",
-        "icon": "🪟",
+        "icon": "desktop",
         "category": "desktop",
         "defaultParams": {"title": "App", "dry_run": True},
     },
     "desktop.click": {
         "label": "模拟鼠标点击",
         "desc": "控制桌面鼠标在指定坐标点击",
-        "icon": "🖱️",
+        "icon": "aim",
         "category": "desktop",
         "defaultParams": {"x": 500, "y": 300, "dry_run": True},
     },
     "desktop.double_click": {
         "label": "模拟鼠标双击",
         "desc": "控制桌面鼠标在指定坐标双击",
-        "icon": "🖱️",
+        "icon": "aim",
         "category": "desktop",
         "defaultParams": {"x": 500, "y": 300, "dry_run": True},
     },
     "desktop.drag": {
         "label": "鼠标拖拽移动",
         "desc": "从起始坐标按住拖拽至目标坐标",
-        "icon": "↔️",
+        "icon": "drag",
         "category": "desktop",
         "defaultParams": {
             "from_x": 100,
@@ -168,28 +168,28 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "desktop.type_text": {
         "label": "键盘文本输入",
         "desc": "模拟键盘向当前焦点窗口输入字符串",
-        "icon": "⌨️",
+        "icon": "key",
         "category": "desktop",
         "defaultParams": {"text": "hello", "dry_run": True},
     },
     "desktop.hotkey": {
         "label": "组合快捷键",
         "desc": "发送 Ctrl/Alt/Shift 等系统组合快捷键",
-        "icon": "🎹",
+        "icon": "thunderbolt",
         "category": "desktop",
         "defaultParams": {"keys": ["ctrl", "s"], "dry_run": True},
     },
     "desktop.wait": {
         "label": "桌面等待",
         "desc": "在桌面自动化步骤之间等待指定时长",
-        "icon": "⏳",
+        "icon": "clock",
         "category": "desktop",
         "defaultParams": {"seconds": 1, "dry_run": True},
     },
     "desktop.screenshot": {
         "label": "屏幕截屏",
         "desc": "截取当前桌面屏幕保存为产物",
-        "icon": "📸",
+        "icon": "camera",
         "category": "desktop",
         "defaultParams": {"name": "screenshot.png", "dry_run": True},
     },
@@ -197,63 +197,63 @@ KNOWN_CATALOG_METADATA: dict[str, dict[str, Any]] = {
     "core.assert_truthy": {
         "label": "真值断言",
         "desc": "强校验 Action 输出必须为真",
-        "icon": "✅",
+        "icon": "check-circle",
         "category": "check",
         "defaultParams": {"value": True},
     },
     "core.assert_status": {
         "label": "状态码断言",
         "desc": "校验 HTTP 请求状态码为 200/201",
-        "icon": "🎯",
+        "icon": "safety",
         "category": "check",
         "defaultParams": {"expected_status": 200},
     },
     "core.assert_equals": {
         "label": "相等断言",
         "desc": "强校验输出或字段等于期望值",
-        "icon": "⚖️",
+        "icon": "diff",
         "category": "check",
         "defaultParams": {"actual": "{{input}}", "expected": "ok"},
     },
     "text.contains": {
         "label": "文本包含断言",
         "desc": "校验输出文本包含指定关键字",
-        "icon": "🔍",
+        "icon": "search",
         "category": "check",
         "defaultParams": {"needle": "ok"},
     },
     "core.always_true": {
         "label": "恒真断言",
         "desc": "始终通过的占位校验断言",
-        "icon": "🟢",
+        "icon": "check",
         "category": "check",
         "defaultParams": {},
     },
     "openclaw.status_code_ok": {
         "label": "HTTP 状态码校验",
         "desc": "校验 OpenClaw HTTP 响应状态码等于期望值",
-        "icon": "🌐",
+        "icon": "global",
         "category": "check",
         "defaultParams": {"expected": 200},
     },
     "openclaw.exit_code_zero": {
         "label": "零退出码校验",
         "desc": "校验命令执行退出码 exit_code == 0",
-        "icon": "💻",
+        "icon": "terminal",
         "category": "check",
         "defaultParams": {},
     },
     "desktop.image_exists": {
         "label": "屏幕图像匹配校验",
         "desc": "检测屏幕上是否存在指定模板图像",
-        "icon": "🖼️",
+        "icon": "picture",
         "category": "check",
         "defaultParams": {"template_path": "template.png", "timeout_seconds": 1},
     },
     "desktop.window_title_contains": {
         "label": "窗口标题包含校验",
         "desc": "校验当前活动窗口标题包含指定文本",
-        "icon": "🪟",
+        "icon": "desktop",
         "category": "check",
         "defaultParams": {"needle": "App"},
     },
@@ -279,7 +279,7 @@ def _build_catalog_item(
     short_name = type_name.split(".")[-1].replace("_", " ").title()
     if kind == "check":
         category = "check"
-        icon = "🛡️"
+        icon = "safety"
         desc = f"动态注册校验断言: {type_name}"
     else:
         category_map = {
@@ -291,7 +291,7 @@ def _build_catalog_item(
             "desktop": "desktop",
         }
         category = category_map.get(prefix, "core")
-        icon = "🔌"
+        icon = "api"
         desc = f"动态注册动作插件: {type_name}"
 
     return PluginCatalogItem(

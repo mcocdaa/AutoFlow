@@ -442,87 +442,88 @@ onMounted(() => {
 .security-hero-card {
   padding: 18px 22px;
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  background: var(--flow-bg-card);
+  border: 1px solid var(--flow-border-color);
   border-radius: var(--flow-border-radius-lg);
-  color: #FFFFFF;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+  color: var(--flow-text-primary);
+  box-shadow: var(--flow-shadow-light);
 }
 
 .security-hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
+  gap: 6px;
+  padding: 3px 10px;
   margin-bottom: 14px;
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
-  color: #6EE7B7;
+  color: #047857;
 }
 
 .hero-badge-icon {
   font-size: 13px;
-  color: #34D399;
+  color: #10b981;
 }
 
 .security-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .security-col {
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--flow-border-color-soft);
+  border-radius: 8px;
 }
 
 .col-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .col-icon {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .col-icon.primary {
-  color: #60A5FA;
+  color: #2563eb;
 }
 
 .col-icon.info {
-  color: #38BDF8;
+  color: #0284c7;
 }
 
 .col-icon.warning {
-  color: #FBBF24;
+  color: #d97706;
 }
 
 .col-title {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
-  color: #F8FAFC;
+  color: var(--flow-text-title);
 }
 
 .col-desc {
   margin: 0;
   font-size: 12.5px;
   line-height: 1.6;
-  color: #94A3B8;
+  color: var(--flow-text-secondary);
 }
 
 .col-desc code {
   padding: 2px 5px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #f1f5f9;
   border-radius: 4px;
   font-family: var(--flow-font-mono);
-  color: #38BDF8;
+  color: #0284c7;
 }
 
 .code-tag {
@@ -530,15 +531,15 @@ onMounted(() => {
   margin: 0 4px;
   font-family: var(--flow-font-mono);
   font-size: 12px;
-  background: rgba(37, 99, 235, 0.3);
-  border-color: rgba(96, 165, 250, 0.5);
-  color: #BFDBFE;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
   transition: all 0.2s ease;
 }
 
 .code-tag:hover {
-  background: rgba(37, 99, 235, 0.5);
-  color: #FFFFFF;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .copy-tag-icon {

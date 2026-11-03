@@ -2,7 +2,7 @@
   <div v-if="run && run.steps.length > 0" class="timeline-container">
     <div class="timeline-header">
       <div class="header-left">
-        <span class="title-icon">📊</span>
+        <BarChartOutlined class="title-icon" />
         <span class="title-text">{{ t('timeline.title') }}</span>
         <a-tag :color="statusColor" class="status-tag">{{ statusText }}</a-tag>
       </div>
@@ -25,7 +25,7 @@
           <span class="step-idx">{{ idx + 1 }}.</span>
           <span class="step-id af-mono">{{ step.step_id }}</span>
           <span v-if="step.isBottleneck" class="bottleneck-tag" :title="t('timeline.bottleneckTitle')">
-            ⚡ {{ t('timeline.bottleneckTag', { pct: step.percentOfTotal }) }}
+            <ThunderboltOutlined /> {{ t('timeline.bottleneckTag', { pct: step.percentOfTotal }) }}
           </span>
         </div>
 
@@ -57,6 +57,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { BarChartOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
 import { useI18n } from '../../i18n'
 import type { RunResult } from '../../types/runs'
 
@@ -146,7 +147,8 @@ const processedSteps = computed(() => {
 }
 
 .title-icon {
-  font-size: 15px;
+  font-size: 14px;
+  color: #2563eb;
 }
 
 .title-text {
@@ -196,7 +198,7 @@ const processedSteps = computed(() => {
 }
 
 .row-label {
-  width: 220px;
+  width: 176px;
   flex: none;
   display: flex;
   align-items: center;

@@ -818,28 +818,28 @@ export const HUB_FLOW_I18N: Record<
     en: {
       title: 'SRE Alert Diagnostics & Auto-Remediation',
       category: 'SRE Auto-Remediation',
-      description: 'Alert Trigger ➔ Log Diagnostics ➔ Recovery Execution ➔ Self-Healing Check Verification',
+      description: 'Alert Trigger → Log Diagnostics → Recovery Execution → Self-Healing Check Verification',
     },
   },
   'hub-zhihu-digest': {
     en: {
       title: 'Trending Q&A Scraper & LLM Digest',
       category: 'AI Scraping & Digest',
-      description: 'Scheduled Feed Scraping ➔ DeepSeek/LLM Key Insight Extraction ➔ Multi-Channel Delivery',
+      description: 'Scheduled Feed Scraping → DeepSeek/LLM Key Insight Extraction → Multi-Channel Delivery',
     },
   },
   'hub-agent-mcp-toolchain': {
     en: {
       title: 'Pre-Release Quality Gate & Deterministic Validation',
       category: 'Quality Gate',
-      description: 'Pre-flight Environment Check ➔ Deterministic Execution ➔ Strong Assertion Gate',
+      description: 'Pre-flight Environment Check → Deterministic Execution → Strong Assertion Gate',
     },
   },
   'hub-desktop-rpa': {
     en: {
       title: 'Cross-Client Desktop RPA Data Sync',
       category: 'Desktop RPA',
-      description: 'Monitor Desktop Client ➔ Extract Window Data ➔ Schema Assertion Check ➔ Automated DB Sync',
+      description: 'Monitor Desktop Client → Extract Window Data → Schema Assertion Check → Automated DB Sync',
     },
   },
 }

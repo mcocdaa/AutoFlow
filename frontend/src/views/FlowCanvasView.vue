@@ -5,7 +5,7 @@
       <div class="toolbar-left">
         <div class="flow-meta">
           <div class="flow-name-row">
-            <span class="flow-icon">⚡</span>
+            <ApartmentOutlined class="flow-icon" />
             <input
               v-model="flowName"
               class="flow-name-input"
@@ -821,6 +821,7 @@ onMounted(() => {
 
 .flow-icon {
   font-size: 14px;
+  color: #2563eb;
   flex-shrink: 0;
 }
 
@@ -913,6 +914,12 @@ onMounted(() => {
 }
 
 @media (max-width: 1100px) {
+  .flow-name-input,
+  .flow-desc-input {
+    width: 100%;
+    max-width: 120px;
+  }
+
   .sider-left {
     width: 205px;
   }
