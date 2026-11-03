@@ -27,9 +27,11 @@
             type="button"
             class="lang-toggle-btn"
             data-testid="lang-toggle-btn"
+            data-action="toggle-locale"
             @click="toggleLocale"
           >
-            {{ locale === 'zh' ? '🌐 EN' : '🌐 中文' }}
+            <GlobalOutlined />
+            <span>{{ locale === 'zh' ? 'EN' : '中文' }}</span>
           </button>
           <a-button type="primary" class="new-flow-btn" @click="navigateToRunFlow">
             <template #icon><PlusOutlined /></template>
@@ -106,6 +108,7 @@ import {
   ApartmentOutlined,
   AppstoreOutlined,
   BugOutlined,
+  GlobalOutlined,
   HistoryOutlined,
   KeyOutlined,
   MenuFoldOutlined,
@@ -191,7 +194,7 @@ const navigateToRunFlow = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   height: 32px;
   padding: 0 12px;
   border-radius: 9999px;

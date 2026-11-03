@@ -2,7 +2,7 @@
   <div class="palette-panel">
     <div class="palette-header">
       <div class="palette-title">
-        <span class="icon">🧩</span>
+        <AppstoreOutlined class="icon" />
         <span>{{ t('palette.title') }}</span>
       </div>
       <a-input
@@ -28,7 +28,7 @@
         class="component-group"
       >
         <div class="group-title">
-          <span>{{ group.icon }}</span>
+          <component :is="resolveGroupIcon(group.id)" class="group-icon" />
           <span>{{ group.title }}</span>
           <span class="group-count">{{ group.items.length }}</span>
         </div>
@@ -43,7 +43,7 @@
             @click="emit('add-node', item)"
           >
             <div class="card-top">
-              <span class="card-icon">{{ item.icon }}</span>
+              <component :is="resolveItemIcon(item)" class="card-icon" />
               <span class="card-label">{{ item.label }}</span>
               <a-button
                 type="text"
@@ -65,8 +65,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { SearchOutlined } from '@ant-design/icons-vue'
+import { computed, onMounted, ref, type Component } from 'vue'
+import {
+  AimOutlined,
+  ApiOutlined,
+  AppstoreOutlined,
+  BulbOutlined,
+  CameraOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CodeOutlined,
+  DatabaseOutlined,
+  DesktopOutlined,
+  DiffOutlined,
+  DragOutlined,
+  EditOutlined,
+  FileImageOutlined,
+  FileTextOutlined,
+  GlobalOutlined,
+  KeyOutlined,
+  ReadOutlined,
+  RobotOutlined,
+  SafetyCertificateOutlined,
+  SearchOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons-vue'
 import { getPluginCatalog, type PluginCatalogItem } from '../../api/client'
 import { COMPONENT_I18N, useI18n } from '../../i18n'
 
@@ -100,13 +123,13 @@ const searchQuery = ref('')
 const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
   {
     id: 'core',
-    icon: '⚡',
+    icon: 'thunderbolt',
     items: [
       {
         type: 'core.log',
         label: '输出日志',
         desc: '在执行日志中记录调试信息',
-        icon: '📝',
+        icon: 'file-text',
         category: 'core',
         defaultParams: { message: 'Processing flow step...' },
       },
@@ -114,7 +137,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'dummy.echo',
         label: '数据回显',
         desc: '原样回显输入数据或构造结构化结果',
-        icon: '📦',
+        icon: 'code',
         category: 'dummy',
         defaultParams: { message: 'hello' },
       },
@@ -122,7 +145,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'openclaw.http_request',
         label: 'HTTP 请求',
         desc: '向外部 REST API 发起 GET/POST 请求',
-        icon: '🌐',
+        icon: 'global',
         category: 'core',
         defaultParams: { url: 'https://api.example.com', method: 'GET' },
       },
@@ -130,7 +153,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'openclaw.exec',
         label: '命令执行',
         desc: '执行本地 Bash 脚本或系统指令',
-        icon: '💻',
+        icon: 'terminal',
         category: 'core',
         defaultParams: { command: 'echo "hello from shell"' },
       },
@@ -138,13 +161,13 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
   },
   {
     id: 'ai',
-    icon: '🤖',
+    icon: 'robot',
     items: [
       {
         type: 'ai.deepseek_summarize',
         label: 'DeepSeek 推理',
         desc: '调用大模型进行智能摘要与信息提取',
-        icon: '🧠',
+        icon: 'bulb',
         category: 'ai',
         defaultParams: { input: '请精炼以下要点: {{input}}', dry_run: true },
       },
@@ -152,7 +175,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'zhihu.fetch_answer',
         label: '知乎回答采集',
         desc: '拉取知乎指定问题回答正文内容',
-        icon: '📑',
+        icon: 'read',
         category: 'scraper',
         defaultParams: {
           url: 'https://www.zhihu.com/question/784489052/answer/1946200783080125276',
@@ -163,7 +186,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'openclaw.knowflow_record',
         label: 'KnowFlow 归档',
         desc: '将流程结果沉淀至 KnowFlow 知识库',
-        icon: '🕷️',
+        icon: 'database',
         category: 'scraper',
         defaultParams: { name: 'digest_report', project_id: 'default' },
       },
@@ -171,13 +194,13 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
   },
   {
     id: 'desktop',
-    icon: '🖥️',
+    icon: 'desktop',
     items: [
       {
         type: 'desktop.click',
         label: '模拟鼠标点击',
         desc: '控制桌面鼠标在指定坐标点击',
-        icon: '🖱️',
+        icon: 'aim',
         category: 'desktop',
         defaultParams: { x: 500, y: 300, dry_run: true },
       },
@@ -185,7 +208,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'desktop.screenshot',
         label: '屏幕截屏',
         desc: '截取当前桌面屏幕保存为产物',
-        icon: '📸',
+        icon: 'camera',
         category: 'desktop',
         defaultParams: { name: 'screenshot.png', dry_run: true },
       },
@@ -193,13 +216,13 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
   },
   {
     id: 'check',
-    icon: '🛡️',
+    icon: 'safety',
     items: [
       {
         type: 'core.assert_truthy',
         label: '真值断言',
         desc: '强校验 Action 输出必须为真',
-        icon: '✅',
+        icon: 'check-circle',
         category: 'check',
         defaultParams: { value: true },
       },
@@ -207,7 +230,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'core.assert_status',
         label: '状态码断言',
         desc: '校验 HTTP 请求状态码为 200/201',
-        icon: '🎯',
+        icon: 'safety',
         category: 'check',
         defaultParams: { expected_status: 200 },
       },
@@ -215,7 +238,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'core.assert_equals',
         label: '相等断言',
         desc: '强校验输出或字段等于期望值',
-        icon: '⚖️',
+        icon: 'diff',
         category: 'check',
         defaultParams: { actual: '{{input}}', expected: 'ok' },
       },
@@ -223,7 +246,7 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'text.contains',
         label: '文本包含断言',
         desc: '校验输出文本包含指定关键字',
-        icon: '🔍',
+        icon: 'search',
         category: 'check',
         defaultParams: { needle: 'ok' },
       },
@@ -231,13 +254,62 @@ const DEFAULT_COMPONENT_GROUPS: ComponentGroup[] = [
         type: 'core.always_true',
         label: '恒真断言',
         desc: '始终通过的占位校验断言',
-        icon: '🟢',
+        icon: 'check',
         category: 'check',
         defaultParams: {},
       },
     ],
   },
 ]
+
+const GROUP_ICON_MAP: Record<GroupId, Component> = {
+  core: ThunderboltOutlined,
+  ai: RobotOutlined,
+  desktop: DesktopOutlined,
+  check: SafetyCertificateOutlined,
+}
+
+const ITEM_ICON_MAP: Record<string, Component> = {
+  'file-text': FileTextOutlined,
+  clock: ClockCircleOutlined,
+  code: CodeOutlined,
+  global: GlobalOutlined,
+  terminal: CodeOutlined,
+  bulb: BulbOutlined,
+  read: ReadOutlined,
+  edit: EditOutlined,
+  database: DatabaseOutlined,
+  desktop: DesktopOutlined,
+  aim: AimOutlined,
+  drag: DragOutlined,
+  key: KeyOutlined,
+  thunderbolt: ThunderboltOutlined,
+  camera: CameraOutlined,
+  'check-circle': CheckCircleOutlined,
+  safety: SafetyCertificateOutlined,
+  diff: DiffOutlined,
+  search: SearchOutlined,
+  check: CheckCircleOutlined,
+  picture: FileImageOutlined,
+  api: ApiOutlined,
+}
+
+function resolveGroupIcon(groupId: GroupId): Component {
+  return GROUP_ICON_MAP[groupId] ?? ApiOutlined
+}
+
+function resolveItemIcon(item: ComponentItem): Component {
+  if (item.icon && ITEM_ICON_MAP[item.icon]) {
+    return ITEM_ICON_MAP[item.icon]
+  }
+  if (item.kind === 'check' || item.category === 'check') {
+    return SafetyCertificateOutlined
+  }
+  if (item.type.startsWith('desktop.')) return DesktopOutlined
+  if (item.type.startsWith('ai.')) return BulbOutlined
+  if (item.type.startsWith('zhihu.') || item.type.startsWith('openclaw.')) return GlobalOutlined
+  return CodeOutlined
+}
 
 const componentGroups = ref<ComponentGroup[]>(
   DEFAULT_COMPONENT_GROUPS.map((g) => ({
@@ -308,7 +380,7 @@ const loadPluginCatalog = async () => {
           type: actionType,
           label: actionType.split('.').pop() || actionType,
           desc: `动态注册动作插件: ${actionType}`,
-          icon: '🔌',
+          icon: 'api',
           category: actionType.split('.')[0] || 'core',
           kind: 'action',
           defaultParams: {},
@@ -321,7 +393,7 @@ const loadPluginCatalog = async () => {
           type: checkType,
           label: checkType.split('.').pop() || checkType,
           desc: `动态注册校验断言: ${checkType}`,
-          icon: '🛡️',
+          icon: 'safety',
           category: 'check',
           kind: 'check',
           defaultParams: {},
@@ -334,14 +406,14 @@ const loadPluginCatalog = async () => {
       const targetGroupId = resolveGroupId(catItem)
       let group = groups.find((g) => g.id === targetGroupId)
       if (!group) {
-        group = { id: targetGroupId, icon: '🔌', items: [] }
+        group = { id: targetGroupId, icon: 'api', items: [] }
         groups.push(group)
       }
       group.items.push({
         type: catItem.type,
         label: catItem.label,
         desc: catItem.desc,
-        icon: catItem.icon || '🔌',
+        icon: catItem.icon || 'api',
         category: catItem.kind === 'check' ? 'check' : catItem.category,
         kind: catItem.kind,
         defaultParams: catItem.defaultParams || {},
@@ -416,7 +488,13 @@ const onDragStart = (event: DragEvent, item: ComponentItem) => {
 }
 
 .palette-title .icon {
-  font-size: 16px;
+  font-size: 15px;
+  color: #2563eb;
+}
+
+.group-icon {
+  font-size: 13px;
+  color: #475569;
 }
 
 .search-input {
@@ -492,6 +570,8 @@ const onDragStart = (event: DragEvent, item: ComponentItem) => {
 
 .card-icon {
   font-size: 13px;
+  color: #475569;
+  flex-shrink: 0;
 }
 
 .card-label {
@@ -499,6 +579,10 @@ const onDragStart = (event: DragEvent, item: ComponentItem) => {
   font-weight: 600;
   color: #1e293b;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .add-btn {

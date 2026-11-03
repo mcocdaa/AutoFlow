@@ -3,13 +3,13 @@
     <div class="panel-header">
       <a-radio-group v-model:value="activeTab" size="small" button-style="solid" class="tab-group">
         <a-radio-button value="node">
-          <span>⚙️ {{ t('prop.tab.node') }}</span>
+          <span class="tab-label"><SettingOutlined /> {{ t('prop.tab.node') }}</span>
         </a-radio-button>
         <a-radio-button value="yaml">
-          <span>📄 {{ t('prop.tab.yaml') }}</span>
+          <span class="tab-label"><FileTextOutlined /> {{ t('prop.tab.yaml') }}</span>
         </a-radio-button>
         <a-radio-button value="triggers">
-          <span>⏰ {{ t('prop.tab.triggers') }}</span>
+          <span class="tab-label"><ClockCircleOutlined /> {{ t('prop.tab.triggers') }}</span>
         </a-radio-button>
       </a-radio-group>
     </div>
@@ -173,7 +173,7 @@
         </div>
 
         <div v-else class="empty-selection">
-          <span class="empty-icon">👆</span>
+          <SelectOutlined class="empty-icon" />
           <p>{{ t('prop.emptySelection') }}</p>
         </div>
       </div>
@@ -195,7 +195,8 @@
       <div v-show="activeTab === 'triggers'" class="tab-content triggers-tab">
         <div class="trigger-section">
           <div class="section-title">
-            <span>⏰ {{ t('prop.cronTitle') }}</span>
+            <ClockCircleOutlined class="section-icon" />
+            <span>{{ t('prop.cronTitle') }}</span>
           </div>
           <p class="section-desc">{{ t('prop.cronDesc') }}</p>
 
@@ -239,7 +240,8 @@
 
         <div class="trigger-section">
           <div class="section-title">
-            <span>🌐 {{ t('prop.webhookTitle') }}</span>
+            <GlobalOutlined class="section-icon" />
+            <span>{{ t('prop.webhookTitle') }}</span>
           </div>
           <p class="section-desc">{{ t('prop.webhookDesc') }}</p>
 
@@ -273,6 +275,13 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import {
+  ClockCircleOutlined,
+  FileTextOutlined,
+  GlobalOutlined,
+  SelectOutlined,
+  SettingOutlined,
+} from '@ant-design/icons-vue'
 import apiClient from '../../api'
 import { localizeStepName, useI18n } from '../../i18n'
 import CodeEditor from '../shared/CodeEditor.vue'
@@ -509,6 +518,12 @@ const formatTime = (iso: string) => {
   white-space: nowrap;
 }
 
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .panel-body {
   flex: 1;
   overflow-y: auto;
@@ -584,7 +599,8 @@ const formatTime = (iso: string) => {
 }
 
 .empty-icon {
-  font-size: 28px;
+  font-size: 24px;
+  color: #cbd5e1;
   margin-bottom: 12px;
 }
 
@@ -607,9 +623,17 @@ const formatTime = (iso: string) => {
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 700;
   color: #0f172a;
+}
+
+.section-icon {
+  color: #2563eb;
+  font-size: 13px;
 }
 
 .section-desc {

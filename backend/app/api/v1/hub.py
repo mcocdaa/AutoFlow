@@ -23,7 +23,7 @@ CURATED_HUB_FLOWS = [
         "version": "1.0.0",
         "installs": 1280,
         "rating": 4.9,
-        "description": "监控告警触发 ➔ 采集故障日志 ➔ 执行修复动作 ➔ 校验确认自愈",
+        "description": "监控告警触发 → 采集故障日志 → 执行修复动作 → 校验确认自愈",
         "tags": ["sre", "devops", "self-healing", "monitoring"],
         "yaml": """version: "1"
 name: sre_auto_remediation
@@ -56,7 +56,7 @@ steps:
         "version": "1.2.0",
         "installs": 3450,
         "rating": 4.8,
-        "description": "定时采集平台热门问答 ➔ DeepSeek/LLM 提炼关键观点 ➔ 微信/飞书多端分发",
+        "description": "定时采集平台热门问答 → DeepSeek/LLM 提炼关键观点 → 微信/飞书多端分发",
         "tags": ["scraper", "zhihu", "ai-digest", "deepseek"],
         "yaml": """version: "1"
 name: zhihu_content_digest
@@ -86,7 +86,7 @@ steps:
         "version": "1.0.1",
         "installs": 2100,
         "rating": 4.95,
-        "description": "前置环境检查 ➔ 确定性变更执行 ➔ 强断言门禁校验，保障发布与变更零失误",
+        "description": "前置环境检查 → 确定性变更执行 → 强断言门禁校验，保障发布与变更零失误",
         "tags": ["quality-gate", "validation", "ci-cd", "safe-actions"],
         "yaml": """version: "1"
 name: agent_safe_pipeline
@@ -119,7 +119,7 @@ steps:
         "version": "1.0.0",
         "installs": 980,
         "rating": 4.85,
-        "description": "监控桌面客户端状态 ➔ 提取业务窗口数据 ➔ 执行格式校验 ➔ 自动对齐入库",
+        "description": "监控桌面客户端状态 → 提取业务窗口数据 → 执行格式校验 → 自动对齐入库",
         "tags": ["rpa", "desktop", "sync", "automation"],
         "yaml": """version: "1"
 name: desktop_rpa_sync

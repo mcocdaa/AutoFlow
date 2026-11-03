@@ -514,12 +514,13 @@ onMounted(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
-  padding: 24px 32px;
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  background: var(--flow-bg-card);
+  border: 1px solid var(--flow-border-color);
   border-radius: var(--flow-border-radius-lg);
-  color: #FFFFFF;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+  color: var(--flow-text-primary);
+  box-shadow: var(--flow-shadow-light);
 }
 
 .hero-content {
@@ -529,63 +530,62 @@ onMounted(() => {
 .hero-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  margin-bottom: 12px;
-  background: rgba(37, 99, 235, 0.25);
-  border: 1px solid rgba(59, 130, 246, 0.4);
+  gap: 6px;
+  padding: 3px 10px;
+  margin-bottom: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
-  color: #93C5FD;
+  color: #1d4ed8;
 }
 
 .hero-pill-icon {
-  color: #60A5FA;
+  color: #2563eb;
 }
 
 .hero-title {
-  margin: 0 0 8px;
-  font-size: 22px;
-  font-weight: 700;
-  color: #F8FAFC;
-  letter-spacing: -0.3px;
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--flow-text-title);
+  letter-spacing: -0.2px;
 }
 
 .hero-desc {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.6;
-  color: #94A3B8;
+  color: var(--flow-text-secondary);
 }
 
 .hero-stats {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   flex: none;
 }
 
 .stat-card {
-  min-width: 110px;
-  padding: 12px 18px;
+  min-width: 108px;
+  padding: 10px 16px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  backdrop-filter: blur(4px);
+  background: #f8fafc;
+  border: 1px solid var(--flow-border-color-soft);
+  border-radius: 8px;
 }
 
 .stat-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: #38BDF8;
+  font-size: 20px;
+  font-weight: 650;
+  color: #2563eb;
   font-family: var(--flow-font-mono);
 }
 
 .stat-label {
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 11.5px;
-  color: #94A3B8;
+  color: var(--flow-text-secondary);
 }
 
 /* 过滤栏 */
